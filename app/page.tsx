@@ -14,7 +14,7 @@ type Ride = {
   price_per_seat: number
   notes: string | null
   status: string
-  role: string | null
+  role: 'driver' | 'passenger' | null
 }
 
 type Profile = {
@@ -23,9 +23,21 @@ type Profile = {
   username: string | null
   phone: string | null
   bio: string | null
-  preferred_role: string | null
+  role: 'driver' | 'passenger'
   car_brand: string | null
   license_plate: string | null
+}
+
+type RoleChangeRequest = {
+  id: number
+  user_id: number
+  from_role: 'driver' | 'passenger'
+  to_role: 'driver' | 'passenger'
+  reason: string | null
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled'
+  admin_note: string | null
+  created_at: string
+  reviewed_at: string | null
 }
 
 type TabType =
@@ -34,6 +46,7 @@ type TabType =
   | 'search'
   | 'history'
   | 'profile'
+  | 'admin'
 
 declare global {
   interface Window {
@@ -207,6 +220,17 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 600,
+  } as React.CSSProperties,
+
+  successButton: {
+    padding: '10px 14px',
+    background: '#16a34a',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: 10,
+    cursor: 'pointer',
+    fontSize: 14,
+    fontWeight: 700,
   } as React.CSSProperties,
 
   warningButton: {
@@ -431,6 +455,13 @@ function getRoleLabel(role: string | null) {
   return role === 'passenger' ? 'Sərnişin' : 'Sürücü'
 }
 
+function getStatusLabel(status: string | null) {
+  if (status === 'approved') return 'Təsdiqləndi'
+  if (status === 'rejected') return 'Rədd edildi'
+  if (status === 'cancelled') return 'Ləğv edildi'
+  return 'Gözləmədə'
+}
+
 function isPastDate(dateStr: string) {
   if (!dateStr) return false
   const selected = new Date(`${dateStr}T00:00:00`)
@@ -459,14 +490,19 @@ export default function Home() {
   const [myRides, setMyRides] = useState<Ride[]>([])
   const [historyRides, setHistoryRides] = useState<Ride[]>([])
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [roleRequests, setRoleRequests] = useState<RoleChangeRequest[]>([])
+  const [adminRequests, setAdminRequests] = useState<RoleChangeRequest[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
+  const [requestSaving, setRequestSaving] = useState(false)
+  const [adminActionLoading, setAdminActionLoading] = useState<number | null>(null)
   const [message, setMessage] = useState('')
   const [editingRideId, setEditingRideId] = useState<number | null>(null)
 
-  const [role, setRole] = useState('driver')
+  const [initialRole, setInitialRole] = useState<'driver' | 'passenger'>('passenger')
   const [origin, setOrigin] = useState('')
   const [destination, setDestination] = useState('')
   const [rideDate, setRideDate] = useState('')
@@ -479,9 +515,12 @@ export default function Home() {
   const [profileUsername, setProfileUsername] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
   const [profileBio, setProfileBio] = useState('')
-  const [preferredRole, setPreferredRole] = useState('driver')
   const [carBrand, setCarBrand] = useState('')
   const [licensePlate, setLicensePlate] = useState('')
+
+  const [requestedRole, setRequestedRole] = useState<'driver' | 'passenger'>('driver')
+  const [requestReason, setRequestReason] = useState('')
+  const [adminNoteMap, setAdminNoteMap] = useState<Record<number, string>>({})
 
   const [searchText, setSearchText] = useState('')
   const [filterRole, setFilterRole] = useState('all')
@@ -498,9 +537,8 @@ export default function Home() {
     return { driverId, username, fullName }
   }
 
-  function resetForm() {
+  function resetRideForm() {
     setEditingRideId(null)
-    setRole(preferredRole || 'driver')
     setOrigin('')
     setDestination('')
     setRideDate('')
@@ -554,11 +592,68 @@ export default function Home() {
 
   async function initializeData() {
     await Promise.all([
+      checkAdmin(),
+      getProfile(),
       getRides(),
       getMyRides(),
       getHistoryRides(),
-      getProfile(),
+      getMyRoleRequests(),
     ])
+  }
+
+  async function checkAdmin() {
+    const { driverId } = getTelegramUser()
+
+    const { data } = await supabase
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', driverId)
+      .maybeSingle()
+
+    const admin = !!data
+    setIsAdmin(admin)
+
+    if (admin) {
+      await getAdminRequests()
+    }
+  }
+
+  async function getProfile() {
+    const { driverId, username, fullName } = getTelegramUser()
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', driverId)
+      .maybeSingle()
+
+    if (error) {
+      console.error('Profile read error:', JSON.stringify(error, null, 2))
+      return
+    }
+
+    if (data) {
+      const p = data as Profile
+      setProfile(p)
+      setProfileFullName(p.full_name || fullName)
+      setProfileUsername(p.username || username)
+      setProfilePhone(p.phone || '')
+      setProfileBio(p.bio || '')
+      setCarBrand(p.car_brand || '')
+      setLicensePlate(p.license_plate || '')
+      setInitialRole(p.role || 'passenger')
+      setRequestedRole(p.role === 'driver' ? 'passenger' : 'driver')
+    } else {
+      setProfile(null)
+      setProfileFullName(fullName)
+      setProfileUsername(username)
+      setProfilePhone('')
+      setProfileBio('')
+      setCarBrand('')
+      setLicensePlate('')
+      setInitialRole('passenger')
+      setRequestedRole('driver')
+    }
   }
 
   async function getRides() {
@@ -614,83 +709,204 @@ export default function Home() {
     }
   }
 
-  async function getProfile() {
-    const { driverId, username, fullName } = getTelegramUser()
+  async function getMyRoleRequests() {
+    const { driverId } = getTelegramUser()
 
     const { data, error } = await supabase
-      .from('profiles')
+      .from('role_change_requests')
       .select('*')
-      .eq('id', driverId)
-      .maybeSingle()
+      .eq('user_id', driverId)
+      .order('id', { ascending: false })
 
     if (error) {
-      console.error('Profile read error:', JSON.stringify(error, null, 2))
-      return
-    }
-
-    if (data) {
-      const p = data as Profile
-      setProfile(p)
-      setProfileFullName(p.full_name || fullName)
-      setProfileUsername(p.username || username)
-      setProfilePhone(p.phone || '')
-      setProfileBio(p.bio || '')
-      setPreferredRole(p.preferred_role || 'driver')
-      setCarBrand(p.car_brand || '')
-      setLicensePlate(p.license_plate || '')
-      setRole(p.preferred_role || 'driver')
+      console.error('My role requests error:', JSON.stringify(error, null, 2))
     } else {
-      setProfile(null)
-      setProfileFullName(fullName)
-      setProfileUsername(username)
-      setProfilePhone('')
-      setProfileBio('')
-      setPreferredRole('driver')
-      setCarBrand('')
-      setLicensePlate('')
-      setRole('driver')
+      setRoleRequests((data as RoleChangeRequest[]) || [])
     }
   }
 
-  async function handleSaveProfile(e: React.FormEvent) {
+  async function getAdminRequests() {
+    const { data, error } = await supabase
+      .from('role_change_requests')
+      .select('*')
+      .order('id', { ascending: false })
+
+    if (error) {
+      console.error('Admin requests error:', JSON.stringify(error, null, 2))
+    } else {
+      setAdminRequests((data as RoleChangeRequest[]) || [])
+    }
+  }
+
+  async function handleCreateOrUpdateProfile(e: React.FormEvent) {
     e.preventDefault()
     setProfileSaving(true)
     setMessage('')
 
-    if (preferredRole === 'driver' && (!carBrand.trim() || !licensePlate.trim())) {
-      setMessage('Sürücü profili üçün avtomobil markası və dövlət qeydiyyat nömrəsi məcburidir.')
+    const { driverId } = getTelegramUser()
+
+    if (!profilePhone.trim()) {
+      setMessage('Telefon nömrəsi məcburidir.')
       setProfileSaving(false)
       return
     }
 
-    const { driverId } = getTelegramUser()
+    const effectiveRole = profile ? profile.role : initialRole
 
-    const { error } = await supabase
-      .from('profiles')
-      .upsert({
-        id: driverId,
-        full_name: profileFullName,
-        username: profileUsername,
-        phone: profilePhone,
-        bio: profileBio,
-        preferred_role: preferredRole,
-        car_brand: preferredRole === 'driver' ? carBrand : null,
-        license_plate: preferredRole === 'driver' ? licensePlate : null,
-        updated_at: new Date().toISOString(),
-      })
+    if (effectiveRole === 'driver' && (!carBrand.trim() || !licensePlate.trim())) {
+      setMessage('Sürücü üçün avtomobil markası və dövlət qeydiyyat nömrəsi məcburidir.')
+      setProfileSaving(false)
+      return
+    }
 
-    if (error) {
-      console.error('Profile save error:', JSON.stringify(error, null, 2))
-      setMessage('Profil yadda saxlanmadı.')
+    if (profile) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: profileFullName,
+          username: profileUsername,
+          phone: profilePhone,
+          bio: profileBio,
+          car_brand: profile.role === 'driver' ? carBrand : null,
+          license_plate: profile.role === 'driver' ? licensePlate : null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', driverId)
+
+      if (error) {
+        console.error('Profile update error:', JSON.stringify(error, null, 2))
+        setMessage('Profil yenilənmədi.')
+      } else {
+        setMessage('Profil yeniləndi.')
+        await getProfile()
+      }
     } else {
-      setMessage('Profil uğurla yadda saxlanıldı.')
-      await getProfile()
+      const { error } = await supabase
+        .from('profiles')
+        .insert({
+          id: driverId,
+          full_name: profileFullName,
+          username: profileUsername,
+          phone: profilePhone,
+          bio: profileBio,
+          role: initialRole,
+          car_brand: initialRole === 'driver' ? carBrand : null,
+          license_plate: initialRole === 'driver' ? licensePlate : null,
+        })
+
+      if (error) {
+        console.error('Profile insert error:', JSON.stringify(error, null, 2))
+        setMessage('Profil yaradılmadı. Bu telefon nömrəsi artıq istifadə oluna bilər.')
+      } else {
+        setMessage('Profil yaradıldı.')
+        await getProfile()
+      }
     }
 
     setProfileSaving(false)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleCreateRoleRequest(e: React.FormEvent) {
+    e.preventDefault()
+    setRequestSaving(true)
+    setMessage('')
+
+    const { driverId } = getTelegramUser()
+
+    if (!profile) {
+      setMessage('Əvvəl profil yaratmaq lazımdır.')
+      setRequestSaving(false)
+      return
+    }
+
+    if (requestedRole === profile.role) {
+      setMessage('Yeni rol cari rolla eyni ola bilməz.')
+      setRequestSaving(false)
+      return
+    }
+
+    const hasPending = roleRequests.some((item) => item.status === 'pending')
+    if (hasPending) {
+      setMessage('Artıq gözləmədə olan rol dəyişiklik sorğusu var.')
+      setRequestSaving(false)
+      return
+    }
+
+    const { error } = await supabase
+      .from('role_change_requests')
+      .insert({
+        user_id: driverId,
+        from_role: profile.role,
+        to_role: requestedRole,
+        reason: requestReason,
+        status: 'pending',
+      })
+
+    if (error) {
+      console.error('Role request insert error:', JSON.stringify(error, null, 2))
+      setMessage('Rol dəyişiklik sorğusu göndərilmədi.')
+    } else {
+      setMessage('Rol dəyişiklik sorğusu göndərildi.')
+      setRequestReason('')
+      await getMyRoleRequests()
+      if (isAdmin) await getAdminRequests()
+    }
+
+    setRequestSaving(false)
+  }
+
+  async function handleAdminDecision(request: RoleChangeRequest, decision: 'approved' | 'rejected') {
+    setAdminActionLoading(request.id)
+    setMessage('')
+
+    const note = adminNoteMap[request.id] || ''
+
+    const { error: requestError } = await supabase
+      .from('role_change_requests')
+      .update({
+        status: decision,
+        admin_note: note,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', request.id)
+
+    if (requestError) {
+      console.error('Admin request update error:', JSON.stringify(requestError, null, 2))
+      setMessage('Sorğu statusu yenilənmədi.')
+      setAdminActionLoading(null)
+      return
+    }
+
+    if (decision === 'approved') {
+      const profileUpdate: Record<string, any> = {
+        role: request.to_role,
+        updated_at: new Date().toISOString(),
+      }
+
+      if (request.to_role === 'passenger') {
+        profileUpdate.car_brand = null
+        profileUpdate.license_plate = null
+      }
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update(profileUpdate)
+        .eq('id', request.user_id)
+
+      if (profileError) {
+        console.error('Approved role profile update error:', JSON.stringify(profileError, null, 2))
+        setMessage('Profil rolu yenilənmədi.')
+        setAdminActionLoading(null)
+        return
+      }
+    }
+
+    setMessage(decision === 'approved' ? 'Sorğu təsdiqləndi.' : 'Sorğu rədd edildi.')
+    await Promise.all([getAdminRequests(), getMyRoleRequests(), getProfile()])
+    setAdminActionLoading(null)
+  }
+
+  async function handleSubmitRide(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
     setMessage('')
@@ -712,11 +928,17 @@ export default function Home() {
       return
     }
 
+    if (!profile) {
+      setMessage('Əvvəl profil yaratmaq lazımdır.')
+      setSubmitting(false)
+      return
+    }
+
     if (editingRideId) {
       const { error } = await supabase
         .from('ride_listings')
         .update({
-          role,
+          role: profile.role,
           origin,
           destination,
           ride_date: rideDate,
@@ -724,6 +946,7 @@ export default function Home() {
           seats: Number(seats),
           price_per_seat: Number(pricePerSeat),
           notes,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', editingRideId)
 
@@ -731,8 +954,8 @@ export default function Home() {
         console.error('Edit ride error:', JSON.stringify(error, null, 2))
         setMessage('Elan yenilənmədi.')
       } else {
-        setMessage('Elan uğurla yeniləndi.')
-        resetForm()
+        setMessage('Elan yeniləndi.')
+        resetRideForm()
         await initializeData()
         setActiveTab('dashboard')
       }
@@ -741,7 +964,7 @@ export default function Home() {
         .from('ride_listings')
         .insert({
           driver_id: driverId,
-          role,
+          role: profile.role,
           origin,
           destination,
           ride_date: rideDate,
@@ -758,8 +981,8 @@ export default function Home() {
         console.error('Insert ride error:', JSON.stringify(error, null, 2))
         setMessage('Elan əlavə olunmadı.')
       } else {
-        setMessage('Elan uğurla əlavə olundu.')
-        resetForm()
+        setMessage('Elan əlavə olundu.')
+        resetRideForm()
         await initializeData()
         setActiveTab('dashboard')
       }
@@ -768,9 +991,8 @@ export default function Home() {
     setSubmitting(false)
   }
 
-  function handleEdit(ride: Ride) {
+  function handleEditRide(ride: Ride) {
     setEditingRideId(ride.id)
-    setRole(ride.role || 'driver')
     setOrigin(ride.origin || '')
     setDestination(ride.destination || '')
     setRideDate(ride.ride_date || '')
@@ -782,13 +1004,16 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  async function handleDelete(rideId: number) {
+  async function handleDeleteRide(rideId: number) {
     const confirmed = window.confirm('Bu elanı silmək istəyirsən?')
     if (!confirmed) return
 
     const { error } = await supabase
       .from('ride_listings')
-      .update({ status: 'cancelled' })
+      .update({
+        status: 'cancelled',
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', rideId)
 
     if (error) {
@@ -796,7 +1021,7 @@ export default function Home() {
       setMessage('Elan silinmədi.')
     } else {
       setMessage('Elan silindi.')
-      if (editingRideId === rideId) resetForm()
+      if (editingRideId === rideId) resetRideForm()
       await initializeData()
     }
   }
@@ -825,16 +1050,6 @@ export default function Home() {
     })
   }, [rides, searchText, filterRole, filterDate])
 
-  const driverRides = useMemo(
-    () => filteredRides.filter((ride) => (ride.role || 'driver') === 'driver'),
-    [filteredRides]
-  )
-
-  const passengerRides = useMemo(
-    () => filteredRides.filter((ride) => (ride.role || 'driver') === 'passenger'),
-    [filteredRides]
-  )
-
   const matchedRides = useMemo(() => {
     const myLatestRide = myRides[0]
     if (!myLatestRide) return []
@@ -852,15 +1067,14 @@ export default function Home() {
     })
   }, [rides, myRides])
 
-  const activeDriverCount = myRides.filter((x) => (x.role || 'driver') === 'driver').length
-  const activePassengerCount = myRides.filter((x) => (x.role || 'driver') === 'passenger').length
-  const currentDashboardRole = preferredRole || role || 'driver'
+  const currentRole = profile?.role || initialRole
+  const pendingRoleRequest = roleRequests.find((x) => x.status === 'pending')
 
   return (
     <main style={styles.page}>
       <div style={styles.headerCard}>
         <h1 style={styles.title}>Yolüstü</h1>
-        <p style={styles.subtitle}>Sürətli ride-sharing dashboard</p>
+        <p style={styles.subtitle}>1 profil, 1 aktiv rol, sorğu ilə rol dəyişikliyi</p>
       </div>
 
       <div style={styles.topTabs}>
@@ -870,6 +1084,7 @@ export default function Home() {
           { key: 'search', label: 'Axtarış' },
           { key: 'history', label: 'Tarixçə' },
           { key: 'profile', label: 'Profil' },
+          ...(isAdmin ? [{ key: 'admin', label: 'Admin' }] : []),
         ].map((item) => (
           <button
             key={item.key}
@@ -888,9 +1103,7 @@ export default function Home() {
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>
-              {currentDashboardRole === 'passenger'
-                ? 'Sərnişin dashboard'
-                : 'Sürücü dashboard'}
+              {currentRole === 'driver' ? 'Sürücü dashboard' : 'Sərnişin dashboard'}
             </h2>
 
             <div style={styles.threeColumnGrid}>
@@ -903,75 +1116,11 @@ export default function Home() {
                 <h3>{matchedRides.length}</h3>
               </div>
               <div style={styles.statsCard}>
-                <p style={styles.mutedText}>Tarixçə sayı</p>
-                <h3>{historyRides.length}</h3>
+                <p style={styles.mutedText}>Rol statusu</p>
+                <h3>{getRoleLabel(currentRole)}</h3>
               </div>
             </div>
           </section>
-
-          <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Profil xülasəsi</h2>
-            <div style={styles.twoColumnGrid}>
-              <div style={styles.statsCard}>
-                <p style={styles.infoRow}><strong>Ad:</strong> {profileFullName || '-'}</p>
-                <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(preferredRole)}</p>
-                <p style={styles.infoRow}><strong>Telefon:</strong> {profilePhone || '-'}</p>
-              </div>
-
-              <div style={styles.statsCard}>
-                {preferredRole === 'driver' ? (
-                  <>
-                    <p style={styles.infoRow}><strong>Avtomobil markası:</strong> {carBrand || '-'}</p>
-                    <p style={styles.infoRow}><strong>Dövlət qeydiyyat nömrəsi:</strong> {licensePlate || '-'}</p>
-                  </>
-                ) : (
-                  <p style={styles.infoRow}><strong>Qeyd:</strong> Sərnişin profilində avtomobil məlumatı tələb olunmur.</p>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {currentDashboardRole === 'driver' ? (
-            <section style={styles.sectionCard}>
-              <h2 style={styles.sectionTitle}>Sürücü paneli</h2>
-              <div style={styles.threeColumnGrid}>
-                <div style={styles.statsCard}>
-                  <p style={styles.mutedText}>Sürücü elanlarım</p>
-                  <h3>{activeDriverCount}</h3>
-                </div>
-                <div style={styles.statsCard}>
-                  <p style={styles.mutedText}>Mənə uyğun sərnişinlər</p>
-                  <h3>{matchedRides.filter((x) => (x.role || 'driver') === 'passenger').length}</h3>
-                </div>
-                <div style={styles.statsCard}>
-                  <p style={styles.mutedText}>Sürətli keçid</p>
-                  <button type="button" onClick={() => setActiveTab('create')} style={styles.secondaryButton}>
-                    Yeni sürücü elanı yarat
-                  </button>
-                </div>
-              </div>
-            </section>
-          ) : (
-            <section style={styles.sectionCard}>
-              <h2 style={styles.sectionTitle}>Sərnişin paneli</h2>
-              <div style={styles.threeColumnGrid}>
-                <div style={styles.statsCard}>
-                  <p style={styles.mutedText}>Sərnişin elanlarım</p>
-                  <h3>{activePassengerCount}</h3>
-                </div>
-                <div style={styles.statsCard}>
-                  <p style={styles.mutedText}>Mənə uyğun sürücülər</p>
-                  <h3>{matchedRides.filter((x) => (x.role || 'driver') === 'driver').length}</h3>
-                </div>
-                <div style={styles.statsCard}>
-                  <p style={styles.mutedText}>Sürətli keçid</p>
-                  <button type="button" onClick={() => setActiveTab('create')} style={styles.secondaryButton}>
-                    Yeni sərnişin elanı yarat
-                  </button>
-                </div>
-              </div>
-            </section>
-          )}
 
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Mənə uyğun elanlar</h2>
@@ -1013,11 +1162,12 @@ export default function Home() {
                     <p style={styles.infoRow}><strong>Yer sayı:</strong> {ride.seats}</p>
                     <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
                     {ride.notes && <p style={styles.infoRow}><strong>Qeyd:</strong> {ride.notes}</p>}
+
                     <div style={styles.actionRow}>
-                      <button type="button" onClick={() => handleEdit(ride)} style={styles.warningButton}>
+                      <button type="button" onClick={() => handleEditRide(ride)} style={styles.warningButton}>
                         Redaktə et
                       </button>
-                      <button type="button" onClick={() => handleDelete(ride.id)} style={styles.dangerButton}>
+                      <button type="button" onClick={() => handleDeleteRide(ride.id)} style={styles.dangerButton}>
                         Sil
                       </button>
                     </div>
@@ -1035,147 +1185,142 @@ export default function Home() {
             {editingRideId ? 'Elanı redaktə et' : 'Yeni elan yarat'}
           </h2>
 
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <div style={styles.fieldWrap}>
-              <label style={styles.label}>Rol</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                style={styles.select}
-              >
-                <option value="driver">Sürücü</option>
-                <option value="passenger">Sərnişin</option>
-              </select>
-            </div>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.label}>Haradan</label>
-              <input
-                value={origin}
-                onChange={(e) => setOrigin(e.target.value)}
-                required
-                style={styles.input}
-                placeholder="Məsələn: 20 Yanvar"
-              />
-            </div>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.label}>Hara</label>
-              <input
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                required
-                style={styles.input}
-                placeholder="Məsələn: Koroğlu"
-              />
-            </div>
-
-            <div style={styles.twoColumnGrid}>
+          {!profile ? (
+            <p style={styles.mutedText}>Əvvəl profil yaratmaq lazımdır.</p>
+          ) : (
+            <form onSubmit={handleSubmitRide} style={styles.form}>
               <div style={styles.fieldWrap}>
-                <label style={styles.label}>Tarix</label>
+                <label style={styles.label}>Aktiv rol</label>
+                <input value={getRoleLabel(profile.role)} readOnly style={styles.input} />
+              </div>
+
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Haradan</label>
                 <input
-                  type="date"
-                  value={rideDate}
-                  onChange={(e) => setRideDate(e.target.value)}
+                  value={origin}
+                  onChange={(e) => setOrigin(e.target.value)}
                   required
                   style={styles.input}
+                  placeholder="Məsələn: 20 Yanvar"
                 />
-                <div style={styles.quickRow}>
-                  <button type="button" style={styles.secondaryButton} onClick={() => applyQuickDate('today')}>
-                    Bu gün
-                  </button>
-                  <button type="button" style={styles.secondaryButton} onClick={() => applyQuickDate('tomorrow')}>
-                    Sabah
-                  </button>
-                  <button type="button" style={styles.secondaryButton} onClick={() => applyQuickDate('dayAfter')}>
-                    Birigün
-                  </button>
+              </div>
+
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Hara</label>
+                <input
+                  value={destination}
+                  onChange={(e) => setDestination(e.target.value)}
+                  required
+                  style={styles.input}
+                  placeholder="Məsələn: Koroğlu"
+                />
+              </div>
+
+              <div style={styles.twoColumnGrid}>
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>Tarix</label>
+                  <input
+                    type="date"
+                    value={rideDate}
+                    onChange={(e) => setRideDate(e.target.value)}
+                    required
+                    style={styles.input}
+                  />
+                  <div style={styles.quickRow}>
+                    <button type="button" style={styles.secondaryButton} onClick={() => applyQuickDate('today')}>
+                      Bu gün
+                    </button>
+                    <button type="button" style={styles.secondaryButton} onClick={() => applyQuickDate('tomorrow')}>
+                      Sabah
+                    </button>
+                    <button type="button" style={styles.secondaryButton} onClick={() => applyQuickDate('dayAfter')}>
+                      Birigün
+                    </button>
+                  </div>
+                  {showPastDateWarning && <p style={styles.warningText}>Seçilən tarix keçmiş tarixdir.</p>}
                 </div>
-                {showPastDateWarning && (
-                  <p style={styles.warningText}>Seçilən tarix keçmiş tarixdir.</p>
-                )}
-              </div>
 
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Saat</label>
-                <input
-                  type="time"
-                  value={departureTime}
-                  onChange={(e) => setDepartureTime(e.target.value)}
-                  step={60}
-                  required
-                  style={styles.input}
-                />
-                <div style={styles.quickRow}>
-                  <button type="button" style={styles.secondaryButton} onClick={() => applyQuickTime('now')}>
-                    İndi
-                  </button>
-                  <button type="button" style={styles.secondaryButton} onClick={() => applyQuickTime('plus30')}>
-                    +30 dəq
-                  </button>
-                  <button type="button" style={styles.secondaryButton} onClick={() => applyQuickTime('plus60')}>
-                    +1 saat
-                  </button>
-                  <button type="button" style={styles.secondaryButton} onClick={() => applyQuickTime('evening')}>
-                    Axşam 18:00
-                  </button>
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>Saat</label>
+                  <input
+                    type="time"
+                    value={departureTime}
+                    onChange={(e) => setDepartureTime(e.target.value)}
+                    step={60}
+                    required
+                    style={styles.input}
+                  />
+                  <div style={styles.quickRow}>
+                    <button type="button" style={styles.secondaryButton} onClick={() => applyQuickTime('now')}>
+                      İndi
+                    </button>
+                    <button type="button" style={styles.secondaryButton} onClick={() => applyQuickTime('plus30')}>
+                      +30 dəq
+                    </button>
+                    <button type="button" style={styles.secondaryButton} onClick={() => applyQuickTime('plus60')}>
+                      +1 saat
+                    </button>
+                    <button type="button" style={styles.secondaryButton} onClick={() => applyQuickTime('evening')}>
+                      Axşam 18:00
+                    </button>
+                  </div>
+                  {showPastTimeWarning ? (
+                    <p style={styles.warningText}>Seçilən saat bu gün üçün artıq keçmiş saatdır.</p>
+                  ) : (
+                    <p style={styles.mutedText}>Saat seçimi sərbəstdir.</p>
+                  )}
                 </div>
-                {showPastTimeWarning ? (
-                  <p style={styles.warningText}>Seçilən saat bu gün üçün artıq keçmiş saatdır.</p>
-                ) : (
-                  <p style={styles.mutedText}>Saat seçimi sərbəstdir.</p>
-                )}
               </div>
-            </div>
 
-            <div style={styles.twoColumnGrid}>
+              <div style={styles.twoColumnGrid}>
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>Yer sayı / nəfər sayı</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={seats}
+                    onChange={(e) => setSeats(e.target.value)}
+                    required
+                    style={styles.input}
+                  />
+                </div>
+
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>Qiymət</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={pricePerSeat}
+                    onChange={(e) => setPricePerSeat(e.target.value)}
+                    required
+                    style={styles.input}
+                  />
+                </div>
+              </div>
+
               <div style={styles.fieldWrap}>
-                <label style={styles.label}>Yer sayı / nəfər sayı</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={seats}
-                  onChange={(e) => setSeats(e.target.value)}
-                  required
-                  style={styles.input}
+                <label style={styles.label}>Qeyd</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  style={styles.textarea}
+                  placeholder="Əlavə qeyd"
                 />
               </div>
 
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Qiymət</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  value={pricePerSeat}
-                  onChange={(e) => setPricePerSeat(e.target.value)}
-                  required
-                  style={styles.input}
-                />
+              <div style={styles.buttonRow}>
+                <button type="submit" disabled={submitting} style={styles.primaryButton}>
+                  {submitting ? 'Göndərilir...' : editingRideId ? 'Yenilə' : 'Elanı əlavə et'}
+                </button>
+
+                <button type="button" onClick={resetRideForm} style={styles.cancelButton}>
+                  Formu təmizlə
+                </button>
               </div>
-            </div>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.label}>Qeyd</label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-                style={styles.textarea}
-                placeholder="Əlavə qeyd"
-              />
-            </div>
-
-            <div style={styles.buttonRow}>
-              <button type="submit" disabled={submitting} style={styles.primaryButton}>
-                {submitting ? 'Göndərilir...' : editingRideId ? 'Yenilə' : 'Elanı əlavə et'}
-              </button>
-
-              <button type="button" onClick={resetForm} style={styles.cancelButton}>
-                Formu təmizlə
-              </button>
-            </div>
-          </form>
+            </form>
+          )}
         </section>
       )}
 
@@ -1235,11 +1380,7 @@ export default function Home() {
                   Filteri sıfırla
                 </button>
 
-                <button
-                  type="button"
-                  onClick={initializeData}
-                  style={styles.secondaryButton}
-                >
+                <button type="button" onClick={initializeData} style={styles.secondaryButton}>
                   Yenilə
                 </button>
               </div>
@@ -1249,7 +1390,9 @@ export default function Home() {
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Filter nəticələri</h2>
 
-            {filteredRides.length === 0 ? (
+            {loading ? (
+              <p style={styles.mutedText}>Yüklənir...</p>
+            ) : filteredRides.length === 0 ? (
               <p style={styles.mutedText}>Filterə uyğun elan tapılmadı.</p>
             ) : (
               <div style={styles.ridesGrid}>
@@ -1268,18 +1411,22 @@ export default function Home() {
               </div>
             )}
           </section>
+        </>
+      )}
 
+      {activeTab === 'history' && (
+        <>
           <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Sürücü elanları</h2>
-            {loading ? (
-              <p style={styles.mutedText}>Yüklənir...</p>
-            ) : driverRides.length === 0 ? (
-              <p style={styles.mutedText}>Sürücü elanı tapılmadı.</p>
+            <h2 style={styles.sectionTitle}>Elan tarixçəsi</h2>
+
+            {historyRides.length === 0 ? (
+              <p style={styles.mutedText}>Tarixçədə elan yoxdur.</p>
             ) : (
               <div style={styles.ridesGrid}>
-                {driverRides.map((ride) => (
-                  <div key={ride.id} style={styles.rideCard}>
-                    <div style={styles.badge}>Sürücü</div>
+                {historyRides.map((ride) => (
+                  <div key={ride.id} style={styles.resultCard}>
+                    <div style={styles.badge}>{ride.status}</div>
+                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
                     <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
                     <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
                     <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
@@ -1292,21 +1439,20 @@ export default function Home() {
           </section>
 
           <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Sərnişin elanları</h2>
-            {loading ? (
-              <p style={styles.mutedText}>Yüklənir...</p>
-            ) : passengerRides.length === 0 ? (
-              <p style={styles.mutedText}>Sərnişin elanı tapılmadı.</p>
+            <h2 style={styles.sectionTitle}>Rol dəyişiklik tarixçəsi</h2>
+
+            {roleRequests.length === 0 ? (
+              <p style={styles.mutedText}>Rol dəyişiklik sorğusu yoxdur.</p>
             ) : (
               <div style={styles.ridesGrid}>
-                {passengerRides.map((ride) => (
-                  <div key={ride.id} style={styles.rideCard}>
-                    <div style={styles.badge}>Sərnişin</div>
-                    <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
-                    <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
-                    <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
-                    <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
-                    <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
+                {roleRequests.map((item) => (
+                  <div key={item.id} style={styles.resultCard}>
+                    <div style={styles.badge}>{getStatusLabel(item.status)}</div>
+                    <p style={styles.infoRow}><strong>Köhnə rol:</strong> {getRoleLabel(item.from_role)}</p>
+                    <p style={styles.infoRow}><strong>Yeni rol:</strong> {getRoleLabel(item.to_role)}</p>
+                    <p style={styles.infoRow}><strong>Səbəb:</strong> {item.reason || '-'}</p>
+                    <p style={styles.infoRow}><strong>Admin qeydi:</strong> {item.admin_note || '-'}</p>
+                    <p style={styles.infoRow}><strong>Tarix:</strong> {item.created_at}</p>
                   </div>
                 ))}
               </div>
@@ -1315,134 +1461,219 @@ export default function Home() {
         </>
       )}
 
-      {activeTab === 'history' && (
-        <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>Elan tarixçəsi</h2>
-
-          {historyRides.length === 0 ? (
-            <p style={styles.mutedText}>Tarixçədə elan yoxdur.</p>
-          ) : (
-            <div style={styles.ridesGrid}>
-              {historyRides.map((ride) => (
-                <div key={ride.id} style={styles.resultCard}>
-                  <div style={styles.badge}>{ride.status}</div>
-                  <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
-                  <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
-                  <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
-                  <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
-                  <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
-                  <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
       {activeTab === 'profile' && (
-        <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>Profil idarəetməsi</h2>
+        <>
+          <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>{profile ? 'Profil idarəetməsi' : 'Profil yarat'}</h2>
 
-          <form onSubmit={handleSaveProfile} style={styles.form}>
-            <div style={styles.fieldWrap}>
-              <label style={styles.label}>Ad soyad</label>
-              <input
-                value={profileFullName}
-                onChange={(e) => setProfileFullName(e.target.value)}
-                style={styles.input}
-                placeholder="Ad soyad"
-              />
-            </div>
-
-            <div style={styles.twoColumnGrid}>
+            <form onSubmit={handleCreateOrUpdateProfile} style={styles.form}>
               <div style={styles.fieldWrap}>
-                <label style={styles.label}>Username</label>
+                <label style={styles.label}>Ad soyad</label>
                 <input
-                  value={profileUsername}
-                  onChange={(e) => setProfileUsername(e.target.value)}
+                  value={profileFullName}
+                  onChange={(e) => setProfileFullName(e.target.value)}
                   style={styles.input}
-                  placeholder="username"
+                  placeholder="Ad soyad"
                 />
               </div>
 
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Telefon</label>
-                <input
-                  value={profilePhone}
-                  onChange={(e) => setProfilePhone(e.target.value)}
-                  style={styles.input}
-                  placeholder="+994..."
-                />
-              </div>
-            </div>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.label}>Bio</label>
-              <textarea
-                value={profileBio}
-                onChange={(e) => setProfileBio(e.target.value)}
-                rows={3}
-                style={styles.textarea}
-                placeholder="Qısa məlumat"
-              />
-            </div>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.label}>Default rol</label>
-              <select
-                value={preferredRole}
-                onChange={(e) => {
-                  setPreferredRole(e.target.value)
-                  setRole(e.target.value)
-                  if (e.target.value !== 'driver') {
-                    setCarBrand('')
-                    setLicensePlate('')
-                  }
-                }}
-                style={styles.select}
-              >
-                <option value="driver">Sürücü</option>
-                <option value="passenger">Sərnişin</option>
-              </select>
-            </div>
-
-            {preferredRole === 'driver' && (
               <div style={styles.twoColumnGrid}>
                 <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Avtomobil markası</label>
+                  <label style={styles.label}>Username</label>
                   <input
-                    value={carBrand}
-                    onChange={(e) => setCarBrand(e.target.value)}
+                    value={profileUsername}
+                    onChange={(e) => setProfileUsername(e.target.value)}
                     style={styles.input}
-                    placeholder="Məsələn: Toyota Prius"
-                    required={preferredRole === 'driver'}
+                    placeholder="username"
                   />
                 </div>
 
                 <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
+                  <label style={styles.label}>Telefon</label>
                   <input
-                    value={licensePlate}
-                    onChange={(e) => setLicensePlate(e.target.value)}
+                    value={profilePhone}
+                    onChange={(e) => setProfilePhone(e.target.value)}
                     style={styles.input}
-                    placeholder="Məsələn: 10-AB-123"
-                    required={preferredRole === 'driver'}
+                    placeholder="+994..."
+                    required
                   />
                 </div>
               </div>
-            )}
 
-            <div style={styles.buttonRow}>
-              <button type="submit" disabled={profileSaving} style={styles.primaryButton}>
-                {profileSaving ? 'Yadda saxlanılır...' : 'Profili yadda saxla'}
-              </button>
-            </div>
-          </form>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Bio</label>
+                <textarea
+                  value={profileBio}
+                  onChange={(e) => setProfileBio(e.target.value)}
+                  rows={3}
+                  style={styles.textarea}
+                  placeholder="Qısa məlumat"
+                />
+              </div>
+
+              {!profile ? (
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>İlkin rol</label>
+                  <select
+                    value={initialRole}
+                    onChange={(e) => setInitialRole(e.target.value as 'driver' | 'passenger')}
+                    style={styles.select}
+                  >
+                    <option value="driver">Sürücü</option>
+                    <option value="passenger">Sərnişin</option>
+                  </select>
+                </div>
+              ) : (
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>Aktiv rol</label>
+                  <input value={getRoleLabel(profile.role)} readOnly style={styles.input} />
+                </div>
+              )}
+
+              {(profile ? profile.role === 'driver' : initialRole === 'driver') && (
+                <div style={styles.twoColumnGrid}>
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>Avtomobil markası</label>
+                    <input
+                      value={carBrand}
+                      onChange={(e) => setCarBrand(e.target.value)}
+                      style={styles.input}
+                      placeholder="Məsələn: Toyota Prius"
+                      required={profile ? profile.role === 'driver' : initialRole === 'driver'}
+                    />
+                  </div>
+
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
+                    <input
+                      value={licensePlate}
+                      onChange={(e) => setLicensePlate(e.target.value)}
+                      style={styles.input}
+                      placeholder="Məsələn: 10-AB-123"
+                      required={profile ? profile.role === 'driver' : initialRole === 'driver'}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div style={styles.buttonRow}>
+                <button type="submit" disabled={profileSaving} style={styles.primaryButton}>
+                  {profileSaving ? 'Yadda saxlanılır...' : profile ? 'Profili yenilə' : 'Profili yarat'}
+                </button>
+              </div>
+            </form>
+          </section>
 
           {profile && (
-            <div style={{ marginTop: 20 }}>
-              <p style={styles.infoRow}><strong>Aktiv profil ID:</strong> {profile.id}</p>
-              <p style={styles.infoRow}><strong>Seçilmiş default rol:</strong> {getRoleLabel(preferredRole)}</p>
+            <section style={styles.sectionCard}>
+              <h2 style={styles.sectionTitle}>Rol dəyişiklik sorğusu</h2>
+
+              {pendingRoleRequest ? (
+                <p style={styles.mutedText}>
+                  Artıq bir gözləmədə olan sorğu var: {getRoleLabel(pendingRoleRequest.from_role)} → {getRoleLabel(pendingRoleRequest.to_role)}.
+                </p>
+              ) : (
+                <form onSubmit={handleCreateRoleRequest} style={styles.form}>
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>Cari rol</label>
+                    <input value={getRoleLabel(profile.role)} readOnly style={styles.input} />
+                  </div>
+
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>Yeni rol</label>
+                    <select
+                      value={requestedRole}
+                      onChange={(e) => setRequestedRole(e.target.value as 'driver' | 'passenger')}
+                      style={styles.select}
+                    >
+                      <option value="driver">Sürücü</option>
+                      <option value="passenger">Sərnişin</option>
+                    </select>
+                  </div>
+
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>Səbəb</label>
+                    <textarea
+                      value={requestReason}
+                      onChange={(e) => setRequestReason(e.target.value)}
+                      rows={3}
+                      style={styles.textarea}
+                      placeholder="Niyə rol dəyişmək istəyirsən?"
+                    />
+                  </div>
+
+                  <div style={styles.buttonRow}>
+                    <button type="submit" disabled={requestSaving} style={styles.primaryButton}>
+                      {requestSaving ? 'Göndərilir...' : 'Sorğu göndər'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </section>
+          )}
+        </>
+      )}
+
+      {activeTab === 'admin' && isAdmin && (
+        <section style={styles.sectionCard}>
+          <h2 style={styles.sectionTitle}>Admin paneli</h2>
+
+          {adminRequests.length === 0 ? (
+            <p style={styles.mutedText}>Sorğu yoxdur.</p>
+          ) : (
+            <div style={styles.ridesGrid}>
+              {adminRequests.map((item) => (
+                <div key={item.id} style={styles.resultCard}>
+                  <div style={styles.badge}>{getStatusLabel(item.status)}</div>
+                  <p style={styles.infoRow}><strong>User ID:</strong> {item.user_id}</p>
+                  <p style={styles.infoRow}><strong>Köhnə rol:</strong> {getRoleLabel(item.from_role)}</p>
+                  <p style={styles.infoRow}><strong>Yeni rol:</strong> {getRoleLabel(item.to_role)}</p>
+                  <p style={styles.infoRow}><strong>Səbəb:</strong> {item.reason || '-'}</p>
+                  <p style={styles.infoRow}><strong>Tarix:</strong> {item.created_at}</p>
+
+                  {item.status === 'pending' ? (
+                    <>
+                      <div style={styles.fieldWrap}>
+                        <label style={styles.label}>Admin qeydi</label>
+                        <textarea
+                          value={adminNoteMap[item.id] || ''}
+                          onChange={(e) =>
+                            setAdminNoteMap((prev) => ({
+                              ...prev,
+                              [item.id]: e.target.value,
+                            }))
+                          }
+                          rows={2}
+                          style={styles.textarea}
+                          placeholder="Qərar qeydi"
+                        />
+                      </div>
+
+                      <div style={styles.actionRow}>
+                        <button
+                          type="button"
+                          style={styles.successButton}
+                          disabled={adminActionLoading === item.id}
+                          onClick={() => handleAdminDecision(item, 'approved')}
+                        >
+                          Təsdiqlə
+                        </button>
+
+                        <button
+                          type="button"
+                          style={styles.dangerButton}
+                          disabled={adminActionLoading === item.id}
+                          onClick={() => handleAdminDecision(item, 'rejected')}
+                        >
+                          Rədd et
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <p style={styles.infoRow}><strong>Admin qeydi:</strong> {item.admin_note || '-'}</p>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </section>
