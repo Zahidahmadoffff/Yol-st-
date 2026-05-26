@@ -1,12 +1,43 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import dynamic from 'next/dynamic'
+
+// LiveMap SSR olmadan yüklənir (Leaflet browser API tələb edir)
+const LiveMap = dynamic(() => import('./components/LiveMap'), { ssr: false })
+const LocationPicker = dynamic(() => import('./components/LocationPicker'), { ssr: false })
 
 type RideStatus = 'active' | 'full' | 'cancelled' | 'completed'
 type UserRole = 'driver' | 'passenger'
-type TabType = 'dashboard' | 'create' | 'search' | 'requests' | 'chat' | 'history' | 'profile'
-type TestProfileKey = '1' | '2'
+type AppRole = UserRole | 'admin'
+type ConversationStatus = 'active' | 'closed'
+type RideRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled'
+type ReportStatus = 'open' | 'in_review' | 'resolved' | 'dismissed'
+
+type TabType =
+  | 'dashboard'
+  | 'create'
+  | 'search'
+  | 'requests'
+  | 'chat'
+  | 'history'
+  | 'reviews'
+  | 'profile'
+  | 'admin'
+
+type AdminSection =
+  | 'overview'
+  | 'users'
+  | 'rides'
+  | 'requests'
+  | 'conversations'
+  | 'messages'
+  | 'reviews'
+  | 'reports'
+  | 'audit'
+
+type TestProfileKey = '1' | '2' | '3'
 
 type Ride = {
   id: string
@@ -35,8 +66,24 @@ type Profile = {
   role: UserRole
   car_brand: string | null
   license_plate: string | null
+  is_blocked?: boolean
+  admin_note?: string | null
+  last_seen_at?: string | null
 }
-
+type SavedPlace = {
+  id: number
+  user_id: number
+  label: string
+  address_text: string
+  lat: number | null
+  lng: number | null
+  place_type: string | null
+  notes: string | null
+  use_count: number
+  last_used_at: string | null
+  created_at: string
+  updated_at: string
+}
 type RideRequest = {
   id: number
   ride_id: string
@@ -46,9 +93,13 @@ type RideRequest = {
   owner_role: UserRole
   message_text: string | null
   seats_requested: number
-  status: 'pending' | 'accepted' | 'rejected' | 'cancelled'
+  status: RideRequestStatus
   created_at: string
   updated_at: string
+}
+
+type RideRequestWithRide = RideRequest & {
+  ride?: Ride | null
 }
 
 type Conversation = {
@@ -57,9 +108,14 @@ type Conversation = {
   request_id: number | null
   driver_user_id: number
   passenger_user_id: number
-  status: 'active' | 'closed'
+  status: ConversationStatus
   created_at: string
   updated_at: string
+}
+
+type ConversationWithMeta = Conversation & {
+  ride?: Ride | null
+  unread_count?: number
 }
 
 type Message = {
@@ -71,30 +127,119 @@ type Message = {
   created_at: string
 }
 
-const TEST_USERS = {
+type Review = {
+  id: number
+  ride_id: string | null
+  conversation_id: number | null
+  request_id: number | null
+  reviewer_id: number
+  reviewee_id: number
+  rating: number
+  comment_text: string | null
+  created_at: string
+}
+
+type ReviewWithMeta = Review & {
+  ride?: Ride | null
+}
+
+type UserOverview = {
+  id: number
+  full_name: string | null
+  username: string | null
+  phone: string | null
+  bio: string | null
+  role: UserRole
+  car_brand: string | null
+  license_plate: string | null
+  is_blocked: boolean
+  admin_note: string | null
+  last_seen_at: string | null
+  total_rides: number
+  active_rides: number
+  total_requests: number
+  pending_requests: number
+  received_reviews_count: number
+  avg_rating: number
+}
+
+type UserReport = {
+  id: number
+  target_user_id: number | null
+  ride_id: string | null
+  request_id: number | null
+  conversation_id: number | null
+  message_id: number | null
+  reporter_id: number
+  reason: string
+  details: string | null
+  status: ReportStatus
+  admin_note: string | null
+  created_at: string
+  updated_at: string
+}
+
+type AdminAuditLog = {
+  id: number
+  admin_user_id: number
+  action_type: string
+  entity_type: string
+  entity_id: string
+  old_data: Record<string, unknown> | null
+  new_data: Record<string, unknown> | null
+  note: string | null
+  created_at: string
+}
+
+const TEST_USERS: Record<
+  TestProfileKey,
+  {
+    driverId: number
+    username: string
+    fullName: string
+    appRole: AppRole
+  }
+> = {
   '1': {
     driverId: 111111001,
     username: 'test_driver_1',
     fullName: 'Test Driver 1',
+    appRole: 'driver',
   },
   '2': {
     driverId: 111111002,
     username: 'test_passenger_2',
     fullName: 'Test Passenger 2',
+    appRole: 'passenger',
   },
-} as const
+  '3': {
+    driverId: 111111003,
+    username: 'test_admin_3',
+    fullName: 'Test Admin 3',
+    appRole: 'admin',
+  },
+}
 
-const styles = {
+const LIMITS = {
+  messageMax: 1000,
+  rideRequestMessageMax: 1000,
+  reviewCommentMax: 1000,
+  notesMax: 2000,
+  adminNoteMax: 2000,
+  reportReasonMax: 300,
+  reportDetailsMax: 2000,
+}
+
+const styles: Record<string, React.CSSProperties> = {
   page: {
-    maxWidth: 1080,
+    maxWidth: 1280,
     margin: '0 auto',
     padding: '20px 16px 48px',
     fontFamily: 'Arial, sans-serif',
     background: '#f8fafc',
     minHeight: '100vh',
     color: '#0f172a',
-  } as React.CSSProperties,
-
+  },
   headerCard: {
     background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)',
     border: '1px solid #e2e8f0',
@@ -102,30 +247,26 @@ const styles = {
     padding: 22,
     marginBottom: 18,
     boxShadow: '0 6px 20px rgba(15, 23, 42, 0.06)',
-  } as React.CSSProperties,
-
+  },
   title: {
     margin: 0,
     fontSize: 30,
     fontWeight: 800,
     color: '#0f172a',
-  } as React.CSSProperties,
-
+  },
   subtitle: {
     marginTop: 8,
     marginBottom: 0,
     color: '#475569',
     fontSize: 15,
     lineHeight: 1.5,
-  } as React.CSSProperties,
-
+  },
   topTabs: {
     display: 'flex',
     gap: 10,
-    flexWrap: 'wrap' as const,
+    flexWrap: 'wrap',
     marginBottom: 18,
-  } as React.CSSProperties,
-
+  },
   tabButton: {
     padding: '10px 14px',
     borderRadius: 999,
@@ -135,8 +276,7 @@ const styles = {
     cursor: 'pointer',
     fontWeight: 700,
     fontSize: 14,
-  } as React.CSSProperties,
-
+  },
   activeTabButton: {
     padding: '10px 14px',
     borderRadius: 999,
@@ -146,8 +286,27 @@ const styles = {
     cursor: 'pointer',
     fontWeight: 700,
     fontSize: 14,
-  } as React.CSSProperties,
-
+  },
+  adminTabButton: {
+    padding: '10px 14px',
+    borderRadius: 999,
+    border: '1px solid #7c3aed',
+    background: '#faf5ff',
+    color: '#6d28d9',
+    cursor: 'pointer',
+    fontWeight: 800,
+    fontSize: 14,
+  },
+  adminActiveTabButton: {
+    padding: '10px 14px',
+    borderRadius: 999,
+    border: '1px solid #7c3aed',
+    background: '#7c3aed',
+    color: '#ffffff',
+    cursor: 'pointer',
+    fontWeight: 800,
+    fontSize: 14,
+  },
   sectionCard: {
     background: '#ffffff',
     border: '1px solid #e2e8f0',
@@ -155,32 +314,27 @@ const styles = {
     padding: 20,
     marginBottom: 18,
     boxShadow: '0 3px 14px rgba(15, 23, 42, 0.05)',
-  } as React.CSSProperties,
-
+  },
   sectionTitle: {
     marginTop: 0,
     marginBottom: 16,
     fontSize: 22,
     fontWeight: 800,
     color: '#0f172a',
-  } as React.CSSProperties,
-
+  },
   form: {
     display: 'grid',
     gap: 14,
-  } as React.CSSProperties,
-
+  },
   fieldWrap: {
     display: 'grid',
     gap: 6,
-  } as React.CSSProperties,
-
+  },
   label: {
     fontSize: 14,
     fontWeight: 700,
     color: '#334155',
-  } as React.CSSProperties,
-
+  },
   input: {
     width: '100%',
     padding: '12px 14px',
@@ -190,9 +344,8 @@ const styles = {
     color: '#0f172a',
     fontSize: 15,
     outline: 'none',
-    boxSizing: 'border-box' as const,
-  } as React.CSSProperties,
-
+    boxSizing: 'border-box',
+  },
   select: {
     width: '100%',
     padding: '12px 14px',
@@ -202,9 +355,8 @@ const styles = {
     color: '#0f172a',
     fontSize: 15,
     outline: 'none',
-    boxSizing: 'border-box' as const,
-  } as React.CSSProperties,
-
+    boxSizing: 'border-box',
+  },
   textarea: {
     width: '100%',
     padding: '12px 14px',
@@ -214,10 +366,9 @@ const styles = {
     color: '#0f172a',
     fontSize: 15,
     outline: 'none',
-    boxSizing: 'border-box' as const,
-    resize: 'vertical' as const,
-  } as React.CSSProperties,
-
+    boxSizing: 'border-box',
+    resize: 'vertical',
+  },
   primaryButton: {
     padding: '12px 16px',
     background: '#2563eb',
@@ -228,8 +379,7 @@ const styles = {
     fontSize: 15,
     fontWeight: 800,
     boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
-  } as React.CSSProperties,
-
+  },
   secondaryButton: {
     padding: '10px 14px',
     background: '#e2e8f0',
@@ -239,8 +389,7 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 700,
-  } as React.CSSProperties,
-
+  },
   ghostButton: {
     padding: '10px 14px',
     background: '#ffffff',
@@ -250,8 +399,7 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 700,
-  } as React.CSSProperties,
-
+  },
   successButton: {
     padding: '10px 14px',
     background: '#16a34a',
@@ -261,8 +409,7 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 800,
-  } as React.CSSProperties,
-
+  },
   dangerButton: {
     padding: '10px 14px',
     background: '#dc2626',
@@ -272,8 +419,7 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 800,
-  } as React.CSSProperties,
-
+  },
   warningButton: {
     padding: '10px 14px',
     background: '#f59e0b',
@@ -283,8 +429,7 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 800,
-  } as React.CSSProperties,
-
+  },
   closeButton: {
     padding: '10px 14px',
     background: '#7c3aed',
@@ -294,8 +439,7 @@ const styles = {
     cursor: 'pointer',
     fontSize: 14,
     fontWeight: 800,
-  } as React.CSSProperties,
-
+  },
   cancelButton: {
     padding: '12px 16px',
     background: '#94a3b8',
@@ -305,8 +449,7 @@ const styles = {
     cursor: 'pointer',
     fontSize: 15,
     fontWeight: 800,
-  } as React.CSSProperties,
-
+  },
   message: {
     marginTop: 8,
     marginBottom: 18,
@@ -316,55 +459,60 @@ const styles = {
     color: '#1e3a8a',
     border: '1px solid #bfdbfe',
     fontSize: 14,
-  } as React.CSSProperties,
-
+  },
+  adminMessage: {
+    marginTop: 8,
+    marginBottom: 18,
+    padding: '12px 14px',
+    borderRadius: 12,
+    background: '#f3e8ff',
+    color: '#6b21a8',
+    border: '1px solid #d8b4fe',
+    fontSize: 14,
+  },
   ridesGrid: {
     display: 'grid',
     gap: 16,
-  } as React.CSSProperties,
-
+  },
   statsGrid: {
     display: 'grid',
     gap: 14,
     gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-  } as React.CSSProperties,
-
+  },
   twoColumnGrid: {
     display: 'grid',
     gap: 16,
     gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-  } as React.CSSProperties,
-
+  },
+  adminGrid: {
+    display: 'grid',
+    gap: 16,
+    gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+  },
   statsCard: {
     border: '1px solid #dbe3ee',
     borderRadius: 16,
     padding: 16,
     background: '#f8fafc',
-  } as React.CSSProperties,
-
+  },
+  adminStatsCard: {
+    border: '1px solid #e9d5ff',
+    borderRadius: 16,
+    padding: 16,
+    background: '#faf5ff',
+  },
   statLabel: {
     margin: 0,
     fontSize: 13,
     color: '#64748b',
     fontWeight: 700,
-  } as React.CSSProperties,
-
+  },
   statValue: {
     margin: '8px 0 0',
     fontSize: 28,
     color: '#0f172a',
     fontWeight: 800,
-  } as React.CSSProperties,
-
-  rideCard: {
-    border: '1px solid #dbe3ee',
-    borderRadius: 16,
-    padding: 16,
-    background: '#ffffff',
-    color: '#0f172a',
-    boxShadow: '0 1px 6px rgba(15, 23, 42, 0.04)',
-  } as React.CSSProperties,
-
+  },
   myRideCard: {
     border: '1px solid #bfdbfe',
     borderRadius: 16,
@@ -372,8 +520,7 @@ const styles = {
     background: '#eff6ff',
     color: '#0f172a',
     boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)',
-  } as React.CSSProperties,
-
+  },
   resultCard: {
     border: '1px solid #cbd5e1',
     borderRadius: 16,
@@ -381,27 +528,32 @@ const styles = {
     background: '#f8fafc',
     color: '#0f172a',
     boxShadow: '0 1px 6px rgba(15, 23, 42, 0.04)',
-  } as React.CSSProperties,
-
+  },
+  adminCard: {
+    border: '1px solid #e9d5ff',
+    borderRadius: 16,
+    padding: 16,
+    background: '#fcfaff',
+    color: '#0f172a',
+    boxShadow: '0 1px 6px rgba(124, 58, 237, 0.06)',
+  },
   infoRow: {
     margin: '6px 0',
     color: '#1e293b',
     lineHeight: 1.5,
-  } as React.CSSProperties,
-
+  },
   mutedText: {
     color: '#64748b',
     fontSize: 14,
     lineHeight: 1.5,
-  } as React.CSSProperties,
-
+  },
   chipRow: {
     display: 'flex',
-    flexWrap: 'wrap' as const,
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 10,
-  } as React.CSSProperties,
-
+    marginBottom: 10,
+  },
   chip: {
     padding: '8px 12px',
     borderRadius: 999,
@@ -411,8 +563,7 @@ const styles = {
     cursor: 'pointer',
     fontSize: 13,
     fontWeight: 700,
-  } as React.CSSProperties,
-
+  },
   chipActive: {
     padding: '8px 12px',
     borderRadius: 999,
@@ -422,22 +573,29 @@ const styles = {
     cursor: 'pointer',
     fontSize: 13,
     fontWeight: 800,
-  } as React.CSSProperties,
-
+  },
+  chipAdmin: {
+    padding: '8px 12px',
+    borderRadius: 999,
+    border: '1px solid #7c3aed',
+    background: '#faf5ff',
+    color: '#6d28d9',
+    cursor: 'pointer',
+    fontSize: 13,
+    fontWeight: 800,
+  },
   buttonRow: {
     display: 'flex',
     gap: 10,
-    flexWrap: 'wrap' as const,
+    flexWrap: 'wrap',
     marginBottom: 4,
-  } as React.CSSProperties,
-
+  },
   actionRow: {
     display: 'flex',
     gap: 10,
-    flexWrap: 'wrap' as const,
+    flexWrap: 'wrap',
     marginTop: 10,
-  } as React.CSSProperties,
-
+  },
   badge: {
     display: 'inline-block',
     padding: '4px 10px',
@@ -447,8 +605,17 @@ const styles = {
     marginBottom: 8,
     background: '#e2e8f0',
     color: '#0f172a',
-  } as React.CSSProperties,
-
+  },
+  adminBadge: {
+    display: 'inline-block',
+    padding: '4px 10px',
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 800,
+    marginBottom: 8,
+    background: '#f3e8ff',
+    color: '#6b21a8',
+  },
   pendingBadge: {
     display: 'inline-block',
     padding: '4px 10px',
@@ -458,8 +625,7 @@ const styles = {
     marginBottom: 8,
     background: '#fef3c7',
     color: '#92400e',
-  } as React.CSSProperties,
-
+  },
   approvedBadge: {
     display: 'inline-block',
     padding: '4px 10px',
@@ -469,8 +635,7 @@ const styles = {
     marginBottom: 8,
     background: '#dcfce7',
     color: '#166534',
-  } as React.CSSProperties,
-
+  },
   rejectedBadge: {
     display: 'inline-block',
     padding: '4px 10px',
@@ -480,8 +645,7 @@ const styles = {
     marginBottom: 8,
     background: '#fee2e2',
     color: '#991b1b',
-  } as React.CSSProperties,
-
+  },
   fullBadge: {
     display: 'inline-block',
     padding: '4px 10px',
@@ -491,8 +655,7 @@ const styles = {
     marginBottom: 8,
     background: '#ede9fe',
     color: '#5b21b6',
-  } as React.CSSProperties,
-
+  },
   completedBadge: {
     display: 'inline-block',
     padding: '4px 10px',
@@ -502,51 +665,58 @@ const styles = {
     marginBottom: 8,
     background: '#d1fae5',
     color: '#065f46',
-  } as React.CSSProperties,
-
+  },
+  unreadBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 22,
+    height: 22,
+    padding: '0 8px',
+    borderRadius: 999,
+    background: '#2563eb',
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 800,
+    marginLeft: 8,
+  },
   chatLayout: {
     display: 'grid',
     gap: 16,
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-  } as React.CSSProperties,
-
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+  },
   conversationList: {
     display: 'grid',
     gap: 12,
-  } as React.CSSProperties,
-
+  },
   conversationCard: {
     border: '1px solid #dbe3ee',
     borderRadius: 14,
     padding: 14,
     background: '#ffffff',
     cursor: 'pointer',
-  } as React.CSSProperties,
-
+  },
   conversationCardActive: {
     border: '1px solid #2563eb',
     borderRadius: 14,
     padding: 14,
     background: '#eff6ff',
     cursor: 'pointer',
-  } as React.CSSProperties,
-
+  },
   chatPanel: {
     border: '1px solid #dbe3ee',
     borderRadius: 16,
     background: '#ffffff',
     padding: 16,
-  } as React.CSSProperties,
-
+  },
   messageList: {
     display: 'grid',
     gap: 10,
     maxHeight: 420,
-    overflowY: 'auto' as const,
+    overflowY: 'auto',
     paddingBottom: 8,
     marginBottom: 14,
-  } as React.CSSProperties,
-
+  },
   myMessage: {
     justifySelf: 'end',
     maxWidth: '80%',
@@ -554,8 +724,7 @@ const styles = {
     color: '#ffffff',
     padding: '10px 12px',
     borderRadius: 14,
-  } as React.CSSProperties,
-
+  },
   otherMessage: {
     justifySelf: 'start',
     maxWidth: '80%',
@@ -563,7 +732,27 @@ const styles = {
     color: '#0f172a',
     padding: '10px 12px',
     borderRadius: 14,
-  } as React.CSSProperties,
+  },
+  tableWrap: {
+    overflowX: 'auto',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: 14,
+  },
+  th: {
+    textAlign: 'left',
+    padding: '10px 8px',
+    borderBottom: '1px solid #e2e8f0',
+    color: '#475569',
+    whiteSpace: 'nowrap',
+  },
+  td: {
+    padding: '10px 8px',
+    borderBottom: '1px solid #eef2f7',
+    verticalAlign: 'top',
+  },
 }
 
 function pad(value: number) {
@@ -615,7 +804,12 @@ function getRoleLabel(role: UserRole | null) {
   return role === 'passenger' ? 'Sərnişin' : 'Sürücü'
 }
 
-function getRequestStatusLabel(status: RideRequest['status']) {
+function getAppRoleLabel(role: AppRole) {
+  if (role === 'admin') return 'Admin'
+  return role === 'passenger' ? 'Sərnişin' : 'Sürücü'
+}
+
+function getRequestStatusLabel(status: RideRequestStatus) {
   if (status === 'accepted') return 'Qəbul edildi'
   if (status === 'rejected') return 'Rədd edildi'
   if (status === 'cancelled') return 'Ləğv edildi'
@@ -623,33 +817,57 @@ function getRequestStatusLabel(status: RideRequest['status']) {
 }
 
 function getRideStatusLabel(status: RideStatus) {
-  if (status === 'full') return 'Doldu / Bağlandı'
+  if (status === 'full') return 'Bağlı'
   if (status === 'cancelled') return 'Ləğv edildi'
   if (status === 'completed') return 'Tamamlandı'
   return 'Aktiv'
 }
 
+function getReportStatusLabel(status: ReportStatus) {
+  if (status === 'in_review') return 'Baxılır'
+  if (status === 'resolved') return 'Həll edildi'
+  if (status === 'dismissed') return 'Dismiss'
+  return 'Açıq'
+}
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
+  const [adminSection, setAdminSection] = useState<AdminSection>('overview')
 
   const [useLocalTestMode, setUseLocalTestMode] = useState(true)
   const [activeTestProfile, setActiveTestProfile] = useState<TestProfileKey>('1')
 
   const [rides, setRides] = useState<Ride[]>([])
+  const [allRidesAdmin, setAllRidesAdmin] = useState<Ride[]>([])
   const [allMyRides, setAllMyRides] = useState<Ride[]>([])
   const [myRides, setMyRides] = useState<Ride[]>([])
   const [historyRides, setHistoryRides] = useState<Ride[]>([])
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [rideRequests, setRideRequests] = useState<RideRequest[]>([])
-  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [savedPlaces, setSavedPlaces] = useState<SavedPlace[]>([])
+  const [savedPlacesLoading, setSavedPlacesLoading] = useState(false)
+  const [rideRequests, setRideRequests] = useState<RideRequestWithRide[]>([])
+  const [allRideRequestsAdmin, setAllRideRequestsAdmin] = useState<RideRequestWithRide[]>([])
+  const [conversations, setConversations] = useState<ConversationWithMeta[]>([])
+  const [allConversationsAdmin, setAllConversationsAdmin] = useState<ConversationWithMeta[]>([])
   const [messages, setMessages] = useState<Message[]>([])
+  const [allMessagesAdmin, setAllMessagesAdmin] = useState<Message[]>([])
+  const [reviews, setReviews] = useState<ReviewWithMeta[]>([])
+  const [allReviewsAdmin, setAllReviewsAdmin] = useState<ReviewWithMeta[]>([])
+  const [adminUsers, setAdminUsers] = useState<UserOverview[]>([])
+  const [adminReports, setAdminReports] = useState<UserReport[]>([])
+  const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([])
+
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
+  const [unreadTotal, setUnreadTotal] = useState(0)
+
+  const selectedConversationIdRef = useRef<number | null>(null)
 
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
   const [rideRequestLoading, setRideRequestLoading] = useState<string | number | null>(null)
   const [rideActionLoading, setRideActionLoading] = useState<string | null>(null)
+  const [adminLoadingId, setAdminLoadingId] = useState<string | number | null>(null)
   const [messageSending, setMessageSending] = useState(false)
   const [message, setMessage] = useState('')
   const [editingRideId, setEditingRideId] = useState<string | null>(null)
@@ -678,6 +896,42 @@ export default function Home() {
   const [requestSeatsMap, setRequestSeatsMap] = useState<Record<string, string>>({})
   const [chatInput, setChatInput] = useState('')
 
+  const [reviewTargetRequestId, setReviewTargetRequestId] = useState<number | null>(null)
+  const [reviewRating, setReviewRating] = useState('5')
+  const [reviewComment, setReviewComment] = useState('')
+
+  const [reportTargetUserId, setReportTargetUserId] = useState('')
+  const [reportReason, setReportReason] = useState('')
+  const [reportDetails, setReportDetails] = useState('')
+
+  const [adminUserBlockedMap, setAdminUserBlockedMap] = useState<Record<number, boolean>>({})
+  const [adminUserNoteMap, setAdminUserNoteMap] = useState<Record<number, string>>({})
+  const [adminReportStatusMap, setAdminReportStatusMap] = useState<Record<number, ReportStatus>>({})
+  const [adminReportNoteMap, setAdminReportNoteMap] = useState<Record<number, string>>({})
+  const [adminGlobalSearch, setAdminGlobalSearch] = useState('')
+
+  const [adminEditingRideId, setAdminEditingRideId] = useState<string | null>(null)
+  const [adminRideOrigin, setAdminRideOrigin] = useState('')
+  const [adminRideDestination, setAdminRideDestination] = useState('')
+  const [adminRideDate, setAdminRideDate] = useState('')
+  const [adminRideTime, setAdminRideTime] = useState('')
+  const [adminRideSeats, setAdminRideSeats] = useState('1')
+  const [adminRidePrice, setAdminRidePrice] = useState('0')
+  const [adminRideNotes, setAdminRideNotes] = useState('')
+  const [adminRideStatus, setAdminRideStatus] = useState<RideStatus>('active')
+
+  const [adminEditingRequestId, setAdminEditingRequestId] = useState<number | null>(null)
+  const [adminRequestStatus, setAdminRequestStatus] = useState<RideRequestStatus>('pending')
+  const [adminRequestSeats, setAdminRequestSeats] = useState('1')
+  const [adminRequestMessage, setAdminRequestMessage] = useState('')
+
+  const [adminEditingMessageId, setAdminEditingMessageId] = useState<number | null>(null)
+  const [adminMessageText, setAdminMessageText] = useState('')
+
+  const [adminEditingReviewId, setAdminEditingReviewId] = useState<number | null>(null)
+  const [adminReviewRating, setAdminReviewRating] = useState('5')
+  const [adminReviewComment, setAdminReviewComment] = useState('')
+
   function getActiveUser() {
     if (useLocalTestMode) {
       return TEST_USERS[activeTestProfile]
@@ -687,8 +941,11 @@ export default function Home() {
     const driverId = tgUser?.id ?? 123456789
     const username = tgUser?.username ?? `user_${driverId}`
     const fullName = tgUser?.first_name ?? 'Telegram User'
-    return { driverId, username, fullName }
+    return { driverId, username, fullName, appRole: 'driver' as AppRole }
   }
+
+  const currentUser = getActiveUser()
+  const isAdmin = currentUser.appRole === 'admin'
 
   function resetRideForm() {
     setEditingRideId(null)
@@ -734,9 +991,9 @@ export default function Home() {
     setDepartureTime(value)
   }
 
-  function getRequestBadgeStyle(status: RideRequest['status']) {
+  function getRequestBadgeStyle(status: RideRequestStatus) {
     if (status === 'accepted') return styles.approvedBadge
-    if (status === 'rejected') return styles.rejectedBadge
+    if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge
     return styles.pendingBadge
   }
 
@@ -747,64 +1004,139 @@ export default function Home() {
     return styles.approvedBadge
   }
 
+  function getReportBadgeStyle(status: ReportStatus) {
+    if (status === 'resolved') return styles.approvedBadge
+    if (status === 'dismissed') return styles.rejectedBadge
+    if (status === 'in_review') return styles.fullBadge
+    return styles.pendingBadge
+  }
+
   useEffect(() => {
-    initializeData()
+    selectedConversationIdRef.current = selectedConversationId
+  }, [selectedConversationId])
+
+  useEffect(() => {
+    void initializeData()
   }, [useLocalTestMode, activeTestProfile])
 
   useEffect(() => {
     const activeUserId = getActiveUser().driverId
 
-    const messageChannel = supabase
-      .channel(`messages-live-${activeUserId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async () => {
-        if (selectedConversationId) {
-          await getMessages(selectedConversationId)
-        }
-        await getConversations()
-      })
-      .subscribe()
+    const channels = [
+      supabase
+        .channel(`messages-live-${activeUserId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async () => {
+          const currentSelectedId = selectedConversationIdRef.current
+          if (currentSelectedId && !isAdmin) {
+            await getMessages(currentSelectedId, false)
+          }
+          await getConversations(false)
+          if (isAdmin) await getAdminData()
+        })
+        .subscribe(),
 
-    const requestChannel = supabase
-      .channel(`ride-requests-live-${activeUserId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, async () => {
-        await getRideRequests()
-        await getAllMyRides()
-      })
-      .subscribe()
+      supabase
+        .channel(`ride-requests-live-${activeUserId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, async () => {
+          await getRideRequests()
+          await getAllMyRides()
+          if (isAdmin) await getAdminData()
+        })
+        .subscribe(),
 
-    const conversationChannel = supabase
-      .channel(`conversations-live-${activeUserId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, async () => {
-        await getConversations()
-      })
-      .subscribe()
+      supabase
+        .channel(`conversations-live-${activeUserId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, async () => {
+          await getConversations(false)
+          if (isAdmin) await getAdminData()
+        })
+        .subscribe(),
 
-    const rideChannel = supabase
-      .channel(`ride-listings-live-${activeUserId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_listings' }, async () => {
-        await getRides()
-        await getAllMyRides()
-      })
-      .subscribe()
+      supabase
+        .channel(`ride-listings-live-${activeUserId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_listings' }, async () => {
+          await getRides()
+          await getAllMyRides()
+          if (isAdmin) await getAdminData()
+        })
+        .subscribe(),
+
+      supabase
+        .channel(`reviews-live-${activeUserId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, async () => {
+          await getReviews()
+          if (isAdmin) await getAdminData()
+        })
+        .subscribe(),
+
+      supabase
+        .channel(`reports-live-${activeUserId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_reports' }, async () => {
+          if (isAdmin) await getAdminData()
+        })
+        .subscribe(),
+
+      supabase
+        .channel(`profiles-live-${activeUserId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, async () => {
+          await getProfile()
+          if (isAdmin) await getAdminData()
+        })
+        .subscribe(),
+
+      supabase
+        .channel(`audit-live-${activeUserId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_audit_logs' }, async () => {
+          if (isAdmin) await getAdminData()
+        })
+        .subscribe(),
+    ]
 
     return () => {
-      void supabase.removeChannel(messageChannel)
-      void supabase.removeChannel(requestChannel)
-      void supabase.removeChannel(conversationChannel)
-      void supabase.removeChannel(rideChannel)
+      channels.forEach((channel) => {
+        void supabase.removeChannel(channel)
+      })
     }
-  }, [selectedConversationId, useLocalTestMode, activeTestProfile])
+  }, [useLocalTestMode, activeTestProfile, isAdmin])
+
+  useEffect(() => {
+    if (isAdmin) return
+
+    if (conversations.length === 0) {
+      if (selectedConversationId !== null) {
+        setSelectedConversationId(null)
+        setMessages([])
+      }
+      return
+    }
+
+    const selectedStillExists = conversations.some((item) => item.id === selectedConversationId)
+
+    if (selectedConversationId === null || !selectedStillExists) {
+      setSelectedConversationId(conversations[0].id)
+    }
+  }, [conversations, selectedConversationId, isAdmin])
+
+  useEffect(() => {
+    if (isAdmin) return
+    if (!selectedConversationId) return
+    void getMessages(selectedConversationId)
+  }, [selectedConversationId, isAdmin])
 
   async function initializeData() {
     setMessage('')
     setSelectedConversationId(null)
+    setMessages([])
+
     await Promise.all([
       ensureLocalTestUserRecords(),
       getProfile(),
       getRides(),
       getAllMyRides(),
       getRideRequests(),
-      getConversations(),
+      getConversations(false),
+      getReviews(),
+      isAdmin ? getAdminData() : Promise.resolve(),
     ])
   }
 
@@ -817,11 +1149,9 @@ export default function Home() {
       full_name: current.fullName,
     })
 
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', current.driverId)
-      .maybeSingle()
+    if (current.appRole === 'admin') return
+
+    const { data } = await supabase.from('profiles').select('*').eq('id', current.driverId).maybeSingle()
 
     if (!data && useLocalTestMode) {
       const defaultRole: UserRole = activeTestProfile === '1' ? 'driver' : 'passenger'
@@ -834,18 +1164,61 @@ export default function Home() {
         role: defaultRole,
         car_brand: defaultRole === 'driver' ? 'Kia Rio' : null,
         license_plate: defaultRole === 'driver' ? '10-TR-101' : null,
+        is_blocked: false,
+        admin_note: null,
+        last_seen_at: new Date().toISOString(),
       })
     }
+
+    await supabase
+      .from('profiles')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', current.driverId)
   }
 
   async function getProfile() {
     const current = getActiveUser()
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', current.driverId)
-      .maybeSingle()
+    if (current.appRole === 'admin') {
+      setProfile(null)
+      setProfileFullName(current.fullName)
+      setProfileUsername(current.username)
+      setProfilePhone('')
+      setProfileBio('Admin test panel')
+      setCarBrand('')
+      setLicensePlate('')
+      setInitialRole('passenger')
+      return
+    }
+async function getSavedPlaces() {
+  const current = getActiveUser()
+
+  if (current.appRole === 'admin') {
+    setSavedPlaces([])
+    setSavedPlacesLoading(false)
+    return
+  }
+
+  setSavedPlacesLoading(true)
+
+  const { data, error } = await supabase
+    .from('saved_places')
+    .select('*')
+    .eq('user_id', current.driverId)
+    .order('use_count', { ascending: false })
+    .order('updated_at', { ascending: false })
+
+  if (error) {
+    console.error('Saved places read error:', JSON.stringify(error, null, 2))
+    setSavedPlaces([])
+    setSavedPlacesLoading(false)
+    return
+  }
+
+  setSavedPlaces((data as SavedPlace[]) || [])
+  setSavedPlacesLoading(false)
+}
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', current.driverId).maybeSingle()
 
     if (error) {
       console.error('Profile read error:', JSON.stringify(error, null, 2))
@@ -896,6 +1269,13 @@ export default function Home() {
   async function getAllMyRides() {
     const current = getActiveUser()
 
+    if (current.appRole === 'admin') {
+      setAllMyRides([])
+      setMyRides([])
+      setHistoryRides([])
+      return
+    }
+
     const { data, error } = await supabase
       .from('ride_listings')
       .select('*')
@@ -916,6 +1296,11 @@ export default function Home() {
   async function getRideRequests() {
     const current = getActiveUser()
 
+    if (current.appRole === 'admin') {
+      setRideRequests([])
+      return
+    }
+
     const { data, error } = await supabase
       .from('ride_requests')
       .select('*')
@@ -924,13 +1309,154 @@ export default function Home() {
 
     if (error) {
       console.error('Ride requests error:', JSON.stringify(error, null, 2))
-    } else {
-      setRideRequests((data as RideRequest[]) || [])
+      return
     }
+
+    const rows = (data as RideRequest[]) || []
+    const rideIds = [...new Set(rows.map((x) => x.ride_id).filter(Boolean))]
+    let rideMap = new Map<string, Ride>()
+
+    if (rideIds.length > 0) {
+      const { data: ridesData } = await supabase.from('ride_listings').select('*').in('id', rideIds)
+      rideMap = new Map(((ridesData as Ride[]) || []).map((ride) => [ride.id, ride]))
+    }
+
+    setRideRequests(
+      rows.map((item) => ({
+        ...item,
+        ride: rideMap.get(item.ride_id) || null,
+      }))
+    )
   }
 
-  async function getConversations() {
+  async function getReviews() {
     const current = getActiveUser()
+
+    if (current.appRole === 'admin') {
+      setReviews([])
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .or(`reviewer_id.eq.${current.driverId},reviewee_id.eq.${current.driverId}`)
+      .order('id', { ascending: false })
+
+    if (error) {
+      console.error('Reviews error:', JSON.stringify(error, null, 2))
+      return
+    }
+
+    const rows = (data as Review[]) || []
+    const rideIds = [...new Set(rows.map((x) => x.ride_id).filter(Boolean))] as string[]
+    let rideMap = new Map<string, Ride>()
+
+    if (rideIds.length > 0) {
+      const { data: ridesData } = await supabase.from('ride_listings').select('*').in('id', rideIds)
+      rideMap = new Map(((ridesData as Ride[]) || []).map((ride) => [ride.id, ride]))
+    }
+
+    setReviews(
+      rows.map((item) => ({
+        ...item,
+        ride: item.ride_id ? rideMap.get(item.ride_id) || null : null,
+      }))
+    )
+  }
+
+  async function getAdminData() {
+    if (!isAdmin) return
+
+    const [ridesRes, requestsRes, conversationsRes, messagesRes, reviewsRes, usersRes, reportsRes, auditRes] =
+      await Promise.all([
+        supabase.from('ride_listings').select('*').order('created_at', { ascending: false }),
+        supabase.from('ride_requests').select('*').order('id', { ascending: false }),
+        supabase.from('conversations').select('*').order('updated_at', { ascending: false }),
+        supabase.from('messages').select('*').order('created_at', { ascending: false }),
+        supabase.from('reviews').select('*').order('id', { ascending: false }),
+        supabase.from('admin_user_overview').select('*').order('id', { ascending: false }),
+        supabase.from('user_reports').select('*').order('created_at', { ascending: false }),
+        supabase.from('admin_audit_logs').select('*').order('created_at', { ascending: false }).limit(200),
+      ])
+
+    const ridesRows = (ridesRes.data as Ride[]) || []
+    const requestRows = (requestsRes.data as RideRequest[]) || []
+    const conversationRows = (conversationsRes.data as Conversation[]) || []
+    const messageRows = (messagesRes.data as Message[]) || []
+    const reviewRows = (reviewsRes.data as Review[]) || []
+    const userRows = (usersRes.data as UserOverview[]) || []
+    const reportRows = (reportsRes.data as UserReport[]) || []
+    const auditRows = (auditRes.data as AdminAuditLog[]) || []
+
+    const rideMap = new Map(ridesRows.map((ride) => [ride.id, ride]))
+
+    setAllRidesAdmin(ridesRows)
+    setAllRideRequestsAdmin(
+      requestRows.map((item) => ({
+        ...item,
+        ride: rideMap.get(item.ride_id) || null,
+      }))
+    )
+    setAllConversationsAdmin(
+      conversationRows.map((item) => ({
+        ...item,
+        ride: rideMap.get(item.ride_id) || null,
+        unread_count: 0,
+      }))
+    )
+    setAllMessagesAdmin(messageRows)
+    setAllReviewsAdmin(
+      reviewRows.map((item) => ({
+        ...item,
+        ride: item.ride_id ? rideMap.get(item.ride_id) || null : null,
+      }))
+    )
+    setAdminUsers(userRows)
+    setAdminReports(reportRows)
+    setAdminAuditLogs(auditRows)
+
+    const userBlockedMap: Record<number, boolean> = {}
+    const userNoteMap: Record<number, string> = {}
+    const reportStatusMap: Record<number, ReportStatus> = {}
+    const reportNoteMap: Record<number, string> = {}
+
+    userRows.forEach((user) => {
+      userBlockedMap[user.id] = user.is_blocked
+      userNoteMap[user.id] = user.admin_note || ''
+    })
+
+    reportRows.forEach((report) => {
+      reportStatusMap[report.id] = report.status
+      reportNoteMap[report.id] = report.admin_note || ''
+    })
+
+    setAdminUserBlockedMap(userBlockedMap)
+    setAdminUserNoteMap(userNoteMap)
+    setAdminReportStatusMap(reportStatusMap)
+    setAdminReportNoteMap(reportNoteMap)
+  }
+
+  async function markConversationMessagesAsRead(conversationId: number) {
+    const current = getActiveUser()
+    if (current.appRole === 'admin') return
+
+    await supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('conversation_id', conversationId)
+      .eq('is_read', false)
+      .neq('sender_id', current.driverId)
+  }
+
+  async function getConversations(preserveSelection = true) {
+    const current = getActiveUser()
+
+    if (current.appRole === 'admin') {
+      setConversations([])
+      setUnreadTotal(0)
+      return
+    }
 
     const { data, error } = await supabase
       .from('conversations')
@@ -944,23 +1470,57 @@ export default function Home() {
     }
 
     const rows = (data as Conversation[]) || []
-    setConversations(rows)
+    const rideIds = [...new Set(rows.map((x) => x.ride_id).filter(Boolean))]
+    let rideMap = new Map<string, Ride>()
+
+    if (rideIds.length > 0) {
+      const { data: ridesData } = await supabase.from('ride_listings').select('*').in('id', rideIds)
+      rideMap = new Map(((ridesData as Ride[]) || []).map((ride) => [ride.id, ride]))
+    }
+
+    const unreadMap = new Map<number, number>()
 
     if (rows.length > 0) {
-      const targetId =
-        selectedConversationId && rows.some((x) => x.id === selectedConversationId)
-          ? selectedConversationId
-          : rows[0].id
+      const conversationIds = rows.map((x) => x.id)
+      const { data: unreadRows } = await supabase
+        .from('messages')
+        .select('conversation_id')
+        .in('conversation_id', conversationIds)
+        .eq('is_read', false)
+        .neq('sender_id', current.driverId)
 
-      setSelectedConversationId(targetId)
-      await getMessages(targetId)
-    } else {
+      for (const row of unreadRows || []) {
+        const conversationId = (row as { conversation_id: number }).conversation_id
+        unreadMap.set(conversationId, (unreadMap.get(conversationId) || 0) + 1)
+      }
+    }
+
+    const enriched = rows.map((item) => ({
+      ...item,
+      ride: rideMap.get(item.ride_id) || null,
+      unread_count: unreadMap.get(item.id) || 0,
+    }))
+
+    setConversations(enriched)
+    setUnreadTotal(enriched.reduce((sum, item) => sum + (item.unread_count || 0), 0))
+
+    if (enriched.length === 0) {
       setSelectedConversationId(null)
       setMessages([])
+      return
+    }
+
+    if (!preserveSelection) return
+
+    const currentSelectedId = selectedConversationIdRef.current
+    const selectedStillExists = enriched.some((item) => item.id === currentSelectedId)
+
+    if (currentSelectedId === null || !selectedStillExists) {
+      setSelectedConversationId(enriched[0].id)
     }
   }
 
-  async function getMessages(conversationId: number) {
+  async function getMessages(conversationId: number, markRead = true) {
     const { data, error } = await supabase
       .from('messages')
       .select('*')
@@ -969,13 +1529,46 @@ export default function Home() {
 
     if (error) {
       console.error('Messages error:', JSON.stringify(error, null, 2))
-    } else {
-      setMessages((data as Message[]) || [])
+      return
     }
+
+    setMessages((data as Message[]) || [])
+
+    if (markRead) {
+      await markConversationMessagesAsRead(conversationId)
+      await getConversations(false)
+    }
+  }
+
+  async function logAdminAction(
+    actionType: string,
+    entityType: string,
+    entityId: string,
+    oldData: Record<string, unknown> | null = null,
+    newData: Record<string, unknown> | null = null,
+    note: string | null = null
+  ) {
+    if (!isAdmin) return
+
+    await supabase.from('admin_audit_logs').insert({
+      admin_user_id: currentUser.driverId,
+      action_type: actionType,
+      entity_type: entityType,
+      entity_id: entityId,
+      old_data: oldData,
+      new_data: newData,
+      note,
+    })
   }
 
   async function handleCreateOrUpdateProfile(e: React.FormEvent) {
     e.preventDefault()
+
+    if (isAdmin) {
+      setMessage('Admin profil redaktəsi bu formdan açıq deyil.')
+      return
+    }
+
     setProfileSaving(true)
     setMessage('')
 
@@ -997,14 +1590,15 @@ export default function Home() {
 
     const payload = {
       id: current.driverId,
-      full_name: profileFullName,
-      username: profileUsername,
-      phone: profilePhone,
-      bio: profileBio,
+      full_name: profileFullName.trim(),
+      username: profileUsername.trim(),
+      phone: profilePhone.trim(),
+      bio: profileBio.trim(),
       role: effectiveRole,
-      car_brand: effectiveRole === 'driver' ? carBrand : null,
-      license_plate: effectiveRole === 'driver' ? licensePlate : null,
+      car_brand: effectiveRole === 'driver' ? carBrand.trim() : null,
+      license_plate: effectiveRole === 'driver' ? licensePlate.trim() : null,
       updated_at: new Date().toISOString(),
+      last_seen_at: new Date().toISOString(),
     }
 
     const { error } = await supabase.from('profiles').upsert(payload)
@@ -1027,14 +1621,51 @@ export default function Home() {
 
     const current = getActiveUser()
 
-    await supabase.from('users').upsert({
-      id: current.driverId,
-      username: current.username,
-      full_name: current.fullName,
-    })
+    if (isAdmin) {
+      setMessage('Admin test profili ilə elan yaradılmır.')
+      setSubmitting(false)
+      return
+    }
 
     if (!profile) {
       setMessage('Əvvəl profil yaratmaq lazımdır.')
+      setSubmitting(false)
+      return
+    }
+
+    if (profile.is_blocked) {
+      setMessage('Profil bloklandığı üçün elan yarada bilməzsən.')
+      setSubmitting(false)
+      return
+    }
+
+    const cleanOrigin = origin.trim()
+    const cleanDestination = destination.trim()
+    const cleanNotes = notes.trim()
+
+    if (!cleanOrigin || !cleanDestination) {
+      setMessage('Haradan və hara məcburidir.')
+      setSubmitting(false)
+      return
+    }
+
+    if (cleanNotes.length > LIMITS.notesMax) {
+      setMessage(`Qeyd maksimum ${LIMITS.notesMax} simvol ola bilər.`)
+      setSubmitting(false)
+      return
+    }
+
+    const seatsNumber = Number(seats)
+    const priceNumber = Number(pricePerSeat)
+
+    if (!Number.isFinite(seatsNumber) || seatsNumber < 1 || seatsNumber > 20) {
+      setMessage('Yer sayı 1-20 arası olmalıdır.')
+      setSubmitting(false)
+      return
+    }
+
+    if (!Number.isFinite(priceNumber) || priceNumber < 0) {
+      setMessage('Qiymət düzgün daxil edilməlidir.')
       setSubmitting(false)
       return
     }
@@ -1043,8 +1674,8 @@ export default function Home() {
       if (editingRideId && ride.id === editingRideId) return false
 
       return (
-        normalizeText(ride.origin) === normalizeText(origin) &&
-        normalizeText(ride.destination) === normalizeText(destination) &&
+        normalizeText(ride.origin) === normalizeText(cleanOrigin) &&
+        normalizeText(ride.destination) === normalizeText(cleanDestination) &&
         (ride.ride_date || '') === rideDate &&
         ride.departure_time === departureTime &&
         ride.status === 'active'
@@ -1062,13 +1693,13 @@ export default function Home() {
         .from('ride_listings')
         .update({
           role: profile.role,
-          origin,
-          destination,
+          origin: cleanOrigin,
+          destination: cleanDestination,
           ride_date: rideDate,
           departure_time: departureTime,
-          seats: Number(seats),
-          price_per_seat: Number(pricePerSeat),
-          notes,
+          seats: seatsNumber,
+          price_per_seat: priceNumber,
+          notes: cleanNotes || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', editingRideId)
@@ -1083,22 +1714,20 @@ export default function Home() {
         setActiveTab('dashboard')
       }
     } else {
-      const { error } = await supabase
-        .from('ride_listings')
-        .insert({
-          driver_id: current.driverId,
-          role: profile.role,
-          origin,
-          destination,
-          ride_date: rideDate,
-          departure_time: departureTime,
-          seats: Number(seats),
-          price_per_seat: Number(pricePerSeat),
-          is_recurring: false,
-          women_only: false,
-          notes,
-          status: 'active',
-        })
+      const { error } = await supabase.from('ride_listings').insert({
+        driver_id: current.driverId,
+        role: profile.role,
+        origin: cleanOrigin,
+        destination: cleanDestination,
+        ride_date: rideDate,
+        departure_time: departureTime,
+        seats: seatsNumber,
+        price_per_seat: priceNumber,
+        is_recurring: false,
+        women_only: false,
+        notes: cleanNotes || null,
+        status: 'active',
+      })
 
       if (error) {
         console.error('Insert ride error:', JSON.stringify(error, null, 2))
@@ -1143,7 +1772,6 @@ export default function Home() {
       .eq('id', rideId)
 
     if (error) {
-      console.error('Delete ride error:', JSON.stringify(error, null, 2))
       setMessage('Elan ləğv edilmədi.')
     } else {
       setMessage('Elan ləğv edildi.')
@@ -1155,7 +1783,7 @@ export default function Home() {
   }
 
   async function handleCloseRide(rideId: string) {
-    const confirmed = window.confirm('Bu elanı bağlamaq istəyirsən? Sonra axtarışda görünməyəcək.')
+    const confirmed = window.confirm('Bu elanı bağlamaq istəyirsən?')
     if (!confirmed) return
 
     setRideActionLoading(rideId)
@@ -1170,7 +1798,6 @@ export default function Home() {
       .eq('id', rideId)
 
     if (error) {
-      console.error('Close ride error:', JSON.stringify(error, null, 2))
       setMessage('Elan bağlanmadı.')
     } else {
       setMessage('Elan bağlandı.')
@@ -1197,8 +1824,7 @@ export default function Home() {
       .eq('id', rideId)
 
     if (error) {
-      console.error('Complete ride error:', JSON.stringify(error, null, 2))
-      setMessage('Elan tamamlanmış kimi işarələnmədi.')
+      setMessage('Elan tamamlanmadı.')
     } else {
       setMessage('Elan tamamlandı.')
       await initializeData()
@@ -1210,8 +1836,18 @@ export default function Home() {
   async function handleCreateRideRequest(ride: Ride) {
     const current = getActiveUser()
 
+    if (isAdmin) {
+      setMessage('Admin müraciət göndərmir.')
+      return
+    }
+
     if (!profile) {
       setMessage('Əvvəl profil yaratmaq lazımdır.')
+      return
+    }
+
+    if (profile.is_blocked) {
+      setMessage('Profil bloklandığı üçün müraciət göndərə bilməzsən.')
       return
     }
 
@@ -1225,7 +1861,18 @@ export default function Home() {
       return
     }
 
+    const requestMessage = (requestMessageMap[ride.id] || '').trim()
     const requestedSeats = Number(requestSeatsMap[ride.id] || '1')
+
+    if (requestMessage.length > LIMITS.rideRequestMessageMax) {
+      setMessage(`Müraciət mesajı maksimum ${LIMITS.rideRequestMessageMax} simvol ola bilər.`)
+      return
+    }
+
+    if (!Number.isFinite(requestedSeats) || requestedSeats < 1 || requestedSeats > 20) {
+      setMessage('Yer sayı 1-20 arası olmalıdır.')
+      return
+    }
 
     if (requestedSeats > ride.seats) {
       setMessage(`Maksimum ${ride.seats} yer qalıb.`)
@@ -1240,31 +1887,27 @@ export default function Home() {
     )
 
     if (existingPending) {
-      setMessage('Bu elana artıq müraciət göndərmisən.')
+      setMessage('Bu elana artıq aktiv müraciətin var.')
       return
     }
 
     setRideRequestLoading(ride.id)
 
-    const requestMessage = requestMessageMap[ride.id] || ''
     const requesterRole = profile.role
     const ownerRole = ride.role === 'driver' ? 'driver' : 'passenger'
 
-    const { error } = await supabase
-      .from('ride_requests')
-      .insert({
-        ride_id: ride.id,
-        requester_id: current.driverId,
-        owner_id: ride.driver_id,
-        requester_role: requesterRole,
-        owner_role: ownerRole,
-        message_text: requestMessage,
-        seats_requested: requestedSeats > 0 ? requestedSeats : 1,
-        status: 'pending',
-      })
+    const { error } = await supabase.from('ride_requests').insert({
+      ride_id: ride.id,
+      requester_id: current.driverId,
+      owner_id: ride.driver_id,
+      requester_role: requesterRole,
+      owner_role: ownerRole,
+      message_text: requestMessage || null,
+      seats_requested: requestedSeats,
+      status: 'pending',
+    })
 
     if (error) {
-      console.error('Ride request insert error:', JSON.stringify(error, null, 2))
       setMessage('Müraciət göndərilmədi.')
     } else {
       setMessage('Müraciət göndərildi.')
@@ -1277,30 +1920,37 @@ export default function Home() {
     setRideRequestLoading(null)
   }
 
-  async function handleRideRequestDecision(request: RideRequest, decision: 'accepted' | 'rejected') {
+  async function ensureConversationForRequest(request: RideRequestWithRide) {
+    const { data: existingConversation } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('request_id', request.id)
+      .maybeSingle()
+
+    if (existingConversation) return (existingConversation as Conversation).id
+
+    const driverUserId = request.owner_role === 'driver' ? request.owner_id : request.requester_id
+    const passengerUserId = request.owner_role === 'passenger' ? request.owner_id : request.requester_id
+
+    const { data: newConversation, error: conversationError } = await supabase
+      .from('conversations')
+      .insert({
+        ride_id: request.ride_id,
+        request_id: request.id,
+        driver_user_id: driverUserId,
+        passenger_user_id: passengerUserId,
+        status: 'active',
+        updated_at: new Date().toISOString(),
+      })
+      .select('*')
+      .single()
+
+    if (conversationError) return null
+    return (newConversation as Conversation).id
+  }
+
+  async function handleRideRequestDecision(request: RideRequestWithRide, decision: 'accepted' | 'rejected') {
     setRideRequestLoading(request.id)
-
-    const currentRide = allMyRides.find((ride) => ride.id === request.ride_id)
-
-    if (decision === 'accepted') {
-      if (!currentRide) {
-        setMessage('Elan tapılmadı.')
-        setRideRequestLoading(null)
-        return
-      }
-
-      if (currentRide.status !== 'active') {
-        setMessage('Bu elan artıq aktiv deyil.')
-        setRideRequestLoading(null)
-        return
-      }
-
-      if (request.seats_requested > currentRide.seats) {
-        setMessage(`Bu müraciət üçün kifayət qədər yer yoxdur. Qalan yer: ${currentRide.seats}`)
-        setRideRequestLoading(null)
-        return
-      }
-    }
 
     const { error } = await supabase
       .from('ride_requests')
@@ -1311,77 +1961,30 @@ export default function Home() {
       .eq('id', request.id)
 
     if (error) {
-      console.error('Ride request decision error:', JSON.stringify(error, null, 2))
       setMessage('Müraciət statusu yenilənmədi.')
       setRideRequestLoading(null)
       return
     }
 
     if (decision === 'accepted') {
-      const currentRide = allMyRides.find((ride) => ride.id === request.ride_id)
+      const finalConversationId = await ensureConversationForRequest(request)
 
-      if (!currentRide) {
-        setMessage('Elan tapılmadı.')
+      if (!finalConversationId) {
+        setMessage('Chat açıla bilmədi.')
         setRideRequestLoading(null)
         return
       }
 
-      const remainingSeats = Math.max(0, currentRide.seats - request.seats_requested)
-      const nextStatus: RideStatus = remainingSeats <= 0 ? 'full' : 'active'
-
-      const { error: rideError } = await supabase
-        .from('ride_listings')
+      await supabase
+        .from('conversations')
         .update({
-          seats: remainingSeats,
-          status: nextStatus,
-          closed_reason: nextStatus === 'full' ? 'matched' : currentRide.closed_reason || null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', request.ride_id)
+        .eq('id', finalConversationId)
 
-      if (rideError) {
-        console.error('Ride seat update error:', JSON.stringify(rideError, null, 2))
-        setMessage('Yer sayı yenilənmədi.')
-        setRideRequestLoading(null)
-        return
-      }
-
-      const driverUserId = request.owner_role === 'driver' ? request.owner_id : request.requester_id
-      const passengerUserId = request.owner_role === 'passenger' ? request.owner_id : request.requester_id
-
-      const { data: existingConversation } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('request_id', request.id)
-        .maybeSingle()
-
-      if (!existingConversation) {
-        const { error: conversationError } = await supabase
-          .from('conversations')
-          .insert({
-            ride_id: request.ride_id,
-            request_id: request.id,
-            driver_user_id: driverUserId,
-            passenger_user_id: passengerUserId,
-            status: 'active',
-            updated_at: new Date().toISOString(),
-          })
-
-        if (conversationError) {
-          console.error('Conversation create error:', JSON.stringify(conversationError, null, 2))
-          setMessage('Chat açıla bilmədi.')
-          setRideRequestLoading(null)
-          return
-        }
-      }
-
-      setMessage(
-        remainingSeats <= 0
-          ? 'Müraciət qəbul edildi, yer qalmadı və elan bağlandı.'
-          : `Müraciət qəbul edildi. Qalan yer: ${remainingSeats}`
-      )
-
-      await Promise.all([getRideRequests(), getConversations(), getRides(), getAllMyRides()])
+      setSelectedConversationId(finalConversationId)
+      setMessage('Müraciət qəbul edildi. Chat açıldı.')
+      await Promise.all([getRideRequests(), getConversations(true), getRides(), getAllMyRides()])
       setActiveTab('chat')
     } else {
       setMessage('Müraciət rədd edildi.')
@@ -1391,53 +1994,565 @@ export default function Home() {
     setRideRequestLoading(null)
   }
 
+  async function handleConfirmDeal(request: RideRequestWithRide) {
+    const ride = allMyRides.find((item) => item.id === request.ride_id)
+
+    if (!ride) {
+      setMessage('Elan tapılmadı.')
+      return
+    }
+
+    if (ride.status !== 'active') {
+      setMessage('Elan artıq aktiv deyil.')
+      return
+    }
+
+    if (request.status !== 'accepted') {
+      setMessage('Əvvəlcə müraciət qəbul edilməlidir.')
+      return
+    }
+
+    if (request.seats_requested > ride.seats) {
+      setMessage(`Kifayət qədər yer yoxdur. Qalan yer: ${ride.seats}`)
+      return
+    }
+
+    setRideRequestLoading(request.id)
+
+    const remainingSeats = Math.max(0, ride.seats - request.seats_requested)
+    const nextStatus: RideStatus = remainingSeats === 0 ? 'full' : 'active'
+
+    const { error: rideError } = await supabase
+      .from('ride_listings')
+      .update({
+        seats: remainingSeats,
+        status: nextStatus,
+        closed_reason: remainingSeats === 0 ? 'matched' : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', request.ride_id)
+
+    if (rideError) {
+      setMessage('Deal təsdiqlənmədi.')
+      setRideRequestLoading(null)
+      return
+    }
+
+    setMessage(remainingSeats === 0 ? 'Deal təsdiqləndi, elan bağlandı.' : `Deal təsdiqləndi. Qalan yer: ${remainingSeats}`)
+    await Promise.all([getRideRequests(), getRides(), getAllMyRides()])
+    setRideRequestLoading(null)
+  }
+
   async function handleOpenConversation(conversationId: number) {
     setSelectedConversationId(conversationId)
     await getMessages(conversationId)
+    await getConversations(false)
     setActiveTab('chat')
   }
 
   async function handleSendMessage() {
-    const current = getActiveUser()
-
     if (!selectedConversationId) {
       setMessage('Əvvəl chat seç.')
       return
     }
 
-    if (!chatInput.trim()) {
+    if (!chatInput.trim()) return
+    if (chatInput.trim().length > LIMITS.messageMax) {
+      setMessage(`Mesaj maksimum ${LIMITS.messageMax} simvol ola bilər.`)
       return
     }
 
     setMessageSending(true)
 
-    const { error } = await supabase
-      .from('messages')
-      .insert({
-        conversation_id: selectedConversationId,
-        sender_id: current.driverId,
-        message_text: chatInput.trim(),
-        is_read: false,
-      })
+    const { error } = await supabase.from('messages').insert({
+      conversation_id: selectedConversationId,
+      sender_id: currentUser.driverId,
+      message_text: chatInput.trim(),
+      is_read: false,
+    })
 
     if (error) {
-      console.error('Message send error:', JSON.stringify(error, null, 2))
       setMessage('Mesaj göndərilmədi.')
     } else {
       setChatInput('')
-      await getMessages(selectedConversationId)
       await supabase
         .from('conversations')
         .update({
           updated_at: new Date().toISOString(),
         })
         .eq('id', selectedConversationId)
+
+      await getMessages(selectedConversationId, false)
+      await getConversations(false)
     }
 
     setMessageSending(false)
   }
 
+  async function handleCreateReview() {
+    if (isAdmin) {
+      setMessage('Admin review yaratmır.')
+      return
+    }
+
+    if (!reviewTargetRequestId) {
+      setMessage('Əvvəl request seç.')
+      return
+    }
+
+    const req = rideRequests.find((item) => item.id === reviewTargetRequestId)
+
+    if (!req) {
+      setMessage('Request tapılmadı.')
+      return
+    }
+
+    const rating = Number(reviewRating)
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      setMessage('Reytinq 1-5 arası olmalıdır.')
+      return
+    }
+
+    const comment = reviewComment.trim()
+    if (comment.length > LIMITS.reviewCommentMax) {
+      setMessage(`Review mətni maksimum ${LIMITS.reviewCommentMax} simvol ola bilər.`)
+      return
+    }
+
+    const revieweeId = req.owner_id === currentUser.driverId ? req.requester_id : req.owner_id
+
+    const existing = reviews.find(
+      (item) =>
+        item.request_id === req.id &&
+        item.reviewer_id === currentUser.driverId &&
+        item.reviewee_id === revieweeId
+    )
+
+    if (existing) {
+      setMessage('Bu request üçün artıq review yazmısan.')
+      return
+    }
+
+    const { error } = await supabase.from('reviews').insert({
+      ride_id: req.ride_id,
+      conversation_id: null,
+      request_id: req.id,
+      reviewer_id: currentUser.driverId,
+      reviewee_id: revieweeId,
+      rating,
+      comment_text: comment || null,
+    })
+
+    if (error) {
+      setMessage('Review göndərilmədi.')
+    } else {
+      setMessage('Review göndərildi.')
+      setReviewTargetRequestId(null)
+      setReviewRating('5')
+      setReviewComment('')
+      await getReviews()
+    }
+  }
+
+  async function handleCreateReport() {
+    if (!reportTargetUserId.trim() || !reportReason.trim()) {
+      setMessage('Target user və reason məcburidir.')
+      return
+    }
+
+    const targetUserIdNum = Number(reportTargetUserId)
+    if (!Number.isFinite(targetUserIdNum)) {
+      setMessage('Target user ID düzgün deyil.')
+      return
+    }
+
+    if (reportReason.trim().length > LIMITS.reportReasonMax) {
+      setMessage(`Reason maksimum ${LIMITS.reportReasonMax} simvol ola bilər.`)
+      return
+    }
+
+    if (reportDetails.trim().length > LIMITS.reportDetailsMax) {
+      setMessage(`Details maksimum ${LIMITS.reportDetailsMax} simvol ola bilər.`)
+      return
+    }
+
+    const { error } = await supabase.from('user_reports').insert({
+      target_user_id: targetUserIdNum,
+      reporter_id: currentUser.driverId,
+      reason: reportReason.trim(),
+      details: reportDetails.trim() || null,
+      status: 'open',
+    })
+
+    if (error) {
+      setMessage('Report göndərilmədi.')
+    } else {
+      setMessage('Report göndərildi.')
+      setReportTargetUserId('')
+      setReportReason('')
+      setReportDetails('')
+      if (isAdmin) await getAdminData()
+    }
+  }
+
+  async function handleAdminToggleUser(user: UserOverview) {
+    setAdminLoadingId(user.id)
+
+    const nextBlocked = !adminUserBlockedMap[user.id]
+    const nextNote = (adminUserNoteMap[user.id] || '').trim()
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        is_blocked: nextBlocked,
+        admin_note: nextNote || null,
+      })
+      .eq('id', user.id)
+
+    if (error) {
+      setMessage('User update olmadı.')
+    } else {
+      await logAdminAction(
+        nextBlocked ? 'block_user' : 'unblock_user',
+        'profile',
+        String(user.id),
+        { is_blocked: user.is_blocked, admin_note: user.admin_note },
+        { is_blocked: nextBlocked, admin_note: nextNote || null },
+        nextNote || null
+      )
+      setMessage(nextBlocked ? 'User bloklandı.' : 'User blokdan çıxarıldı.')
+      await getAdminData()
+    }
+
+    setAdminLoadingId(null)
+  }
+
+  async function handleAdminUpdateReport(report: UserReport) {
+    setAdminLoadingId(report.id)
+
+    const nextStatus = adminReportStatusMap[report.id]
+    const nextNote = (adminReportNoteMap[report.id] || '').trim()
+
+    const { error } = await supabase
+      .from('user_reports')
+      .update({
+        status: nextStatus,
+        admin_note: nextNote || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', report.id)
+
+    if (error) {
+      setMessage('Report update olmadı.')
+    } else {
+      await logAdminAction(
+        'update_report',
+        'user_report',
+        String(report.id),
+        { status: report.status, admin_note: report.admin_note },
+        { status: nextStatus, admin_note: nextNote || null },
+        nextNote || null
+      )
+      setMessage('Report yeniləndi.')
+      await getAdminData()
+    }
+
+    setAdminLoadingId(null)
+  }
+
+  function handleAdminStartEditRide(ride: Ride) {
+    setAdminEditingRideId(ride.id)
+    setAdminRideOrigin(ride.origin || '')
+    setAdminRideDestination(ride.destination || '')
+    setAdminRideDate(ride.ride_date || '')
+    setAdminRideTime(ride.departure_time || '')
+    setAdminRideSeats(String(ride.seats ?? 1))
+    setAdminRidePrice(String(ride.price_per_seat ?? 0))
+    setAdminRideNotes(ride.notes || '')
+    setAdminRideStatus(ride.status)
+  }
+
+  async function handleAdminSaveRide() {
+    if (!adminEditingRideId) return
+
+    setAdminLoadingId(adminEditingRideId)
+
+    const payload = {
+      origin: adminRideOrigin.trim(),
+      destination: adminRideDestination.trim(),
+      ride_date: adminRideDate || null,
+      departure_time: adminRideTime,
+      seats: Number(adminRideSeats),
+      price_per_seat: Number(adminRidePrice),
+      notes: adminRideNotes.trim() || null,
+      status: adminRideStatus,
+      updated_at: new Date().toISOString(),
+    }
+
+    const original = allRidesAdmin.find((r) => r.id === adminEditingRideId)
+
+    const { error } = await supabase.from('ride_listings').update(payload).eq('id', adminEditingRideId)
+
+    if (error) {
+      setMessage('Admin: ride update alınmadı.')
+    } else {
+      await logAdminAction(
+        'update_ride',
+        'ride_listing',
+        adminEditingRideId,
+        original ? (original as unknown as Record<string, unknown>) : null,
+        payload as unknown as Record<string, unknown>,
+        'Admin ride edit'
+      )
+      setMessage('Ride yeniləndi.')
+      setAdminEditingRideId(null)
+      await getAdminData()
+      await getRides()
+      await getAllMyRides()
+    }
+
+    setAdminLoadingId(null)
+  }
+
+  async function handleAdminDeleteRide(ride: Ride) {
+    const confirmed = window.confirm(`Ride ${ride.id} ləğv edilsin?`)
+    if (!confirmed) return
+
+    setAdminLoadingId(ride.id)
+
+    const payload = {
+      status: 'cancelled' as RideStatus,
+      closed_reason: 'admin_cancelled',
+      updated_at: new Date().toISOString(),
+    }
+
+    const { error } = await supabase.from('ride_listings').update(payload).eq('id', ride.id)
+
+    if (error) {
+      setMessage('Admin: ride delete olmadı.')
+    } else {
+      await logAdminAction(
+        'delete_ride',
+        'ride_listing',
+        ride.id,
+        ride as unknown as Record<string, unknown>,
+        payload as unknown as Record<string, unknown>,
+        'Admin cancelled ride'
+      )
+      setMessage('Ride ləğv edildi.')
+      await getAdminData()
+      await getRides()
+      await getAllMyRides()
+    }
+
+    setAdminLoadingId(null)
+  }
+
+  function handleAdminStartEditRequest(item: RideRequestWithRide) {
+    setAdminEditingRequestId(item.id)
+    setAdminRequestStatus(item.status)
+    setAdminRequestSeats(String(item.seats_requested))
+    setAdminRequestMessage(item.message_text || '')
+  }
+
+  async function handleAdminSaveRequest() {
+    if (!adminEditingRequestId) return
+
+    setAdminLoadingId(adminEditingRequestId)
+
+    const original = allRideRequestsAdmin.find((r) => r.id === adminEditingRequestId)
+
+    const payload = {
+      status: adminRequestStatus,
+      seats_requested: Number(adminRequestSeats),
+      message_text: adminRequestMessage.trim() || null,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { error } = await supabase.from('ride_requests').update(payload).eq('id', adminEditingRequestId)
+
+    if (error) {
+      setMessage('Admin: request update olmadı.')
+    } else {
+      await logAdminAction(
+        'update_request',
+        'ride_request',
+        String(adminEditingRequestId),
+        original ? (original as unknown as Record<string, unknown>) : null,
+        payload as unknown as Record<string, unknown>,
+        'Admin request edit'
+      )
+      setMessage('Request yeniləndi.')
+      setAdminEditingRequestId(null)
+      await getAdminData()
+      await getRideRequests()
+    }
+
+    setAdminLoadingId(null)
+  }
+
+  async function handleAdminDeleteRequest(item: RideRequestWithRide) {
+    const confirmed = window.confirm(`Request ${item.id} ləğv edilsin?`)
+    if (!confirmed) return
+
+    setAdminLoadingId(item.id)
+
+    const payload = {
+      status: 'cancelled' as RideRequestStatus,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { error } = await supabase.from('ride_requests').update(payload).eq('id', item.id)
+
+    if (error) {
+      setMessage('Admin: request delete olmadı.')
+    } else {
+      await logAdminAction(
+        'delete_request',
+        'ride_request',
+        String(item.id),
+        item as unknown as Record<string, unknown>,
+        payload as unknown as Record<string, unknown>,
+        'Admin cancelled request'
+      )
+      setMessage('Request ləğv edildi.')
+      await getAdminData()
+      await getRideRequests()
+    }
+
+    setAdminLoadingId(null)
+  }
+
+  function handleAdminStartEditMessage(item: Message) {
+    setAdminEditingMessageId(item.id)
+    setAdminMessageText(item.message_text || '')
+  }
+
+  async function handleAdminSaveMessage() {
+    if (!adminEditingMessageId) return
+
+    setAdminLoadingId(adminEditingMessageId)
+
+    const original = allMessagesAdmin.find((m) => m.id === adminEditingMessageId)
+
+    const payload = {
+      message_text: adminMessageText.trim(),
+    }
+
+    const { error } = await supabase.from('messages').update(payload).eq('id', adminEditingMessageId)
+
+    if (error) {
+      setMessage('Admin: message update olmadı.')
+    } else {
+      await logAdminAction(
+        'update_message',
+        'message',
+        String(adminEditingMessageId),
+        original ? (original as unknown as Record<string, unknown>) : null,
+        payload as unknown as Record<string, unknown>,
+        'Admin message edit'
+      )
+      setMessage('Message yeniləndi.')
+      setAdminEditingMessageId(null)
+      await getAdminData()
+    }
+
+    setAdminLoadingId(null)
+  }
+
+  async function handleAdminDeleteMessage(item: Message) {
+    const confirmed = window.confirm(`Message ${item.id} silinsin?`)
+    if (!confirmed) return
+
+    setAdminLoadingId(item.id)
+
+    const { error } = await supabase.from('messages').delete().eq('id', item.id)
+
+    if (error) {
+      setMessage('Admin: message delete olmadı.')
+    } else {
+      await logAdminAction(
+        'delete_message',
+        'message',
+        String(item.id),
+        item as unknown as Record<string, unknown>,
+        null,
+        'Admin deleted message'
+      )
+      setMessage('Message silindi.')
+      await getAdminData()
+    }
+
+    setAdminLoadingId(null)
+  }
+
+  function handleAdminStartEditReview(item: ReviewWithMeta) {
+    setAdminEditingReviewId(item.id)
+    setAdminReviewRating(String(item.rating))
+    setAdminReviewComment(item.comment_text || '')
+  }
+
+  async function handleAdminSaveReview() {
+    if (!adminEditingReviewId) return
+
+    setAdminLoadingId(adminEditingReviewId)
+
+    const original = allReviewsAdmin.find((r) => r.id === adminEditingReviewId)
+
+    const payload = {
+      rating: Number(adminReviewRating),
+      comment_text: adminReviewComment.trim() || null,
+    }
+
+    const { error } = await supabase.from('reviews').update(payload).eq('id', adminEditingReviewId)
+
+    if (error) {
+      setMessage('Admin: review update olmadı.')
+    } else {
+      await logAdminAction(
+        'update_review',
+        'review',
+        String(adminEditingReviewId),
+        original ? (original as unknown as Record<string, unknown>) : null,
+        payload as unknown as Record<string, unknown>,
+        'Admin review edit'
+      )
+      setMessage('Review yeniləndi.')
+      setAdminEditingReviewId(null)
+      await getAdminData()
+    }
+
+    setAdminLoadingId(null)
+  }
+
+  async function handleAdminDeleteReview(item: ReviewWithMeta) {
+    const confirmed = window.confirm(`Review ${item.id} silinsin?`)
+    if (!confirmed) return
+
+    setAdminLoadingId(item.id)
+
+    const { error } = await supabase.from('reviews').delete().eq('id', item.id)
+
+    if (error) {
+      setMessage('Admin: review delete olmadı.')
+    } else {
+      await logAdminAction(
+        'delete_review',
+        'review',
+        String(item.id),
+        item as unknown as Record<string, unknown>,
+        null,
+        'Admin deleted review'
+      )
+      setMessage('Review silindi.')
+      await getAdminData()
+    }
+
+    setAdminLoadingId(null)
+  }
+
   const filteredRides = useMemo(() => {
+    if (isAdmin) return []
     const current = getActiveUser()
     const text = searchText.toLowerCase().trim()
 
@@ -1447,48 +2562,70 @@ export default function Home() {
       const rideNotes = (ride.notes || '').toLowerCase()
 
       const matchesText =
-        !text ||
-        rideOrigin.includes(text) ||
-        rideDestination.includes(text) ||
-        rideNotes.includes(text)
+        !text || rideOrigin.includes(text) || rideDestination.includes(text) || rideNotes.includes(text)
 
-      const matchesRole =
-        filterRole === 'all' || (ride.role || 'driver') === filterRole
-
-      const matchesDate =
-        !filterDate || (ride.ride_date || '') === filterDate
-
+      const matchesRole = filterRole === 'all' || (ride.role || 'driver') === filterRole
+      const matchesDate = !filterDate || (ride.ride_date || '') === filterDate
       const notMine = ride.driver_id !== current.driverId
 
       return matchesText && matchesRole && matchesDate && notMine && ride.status === 'active'
     })
-  }, [rides, searchText, filterRole, filterDate, useLocalTestMode, activeTestProfile])
+  }, [rides, searchText, filterRole, filterDate, isAdmin, useLocalTestMode, activeTestProfile])
 
   const incomingRideRequests = useMemo(() => {
-    const current = getActiveUser()
-    return rideRequests.filter((item) => item.owner_id === current.driverId)
-  }, [rideRequests, useLocalTestMode, activeTestProfile])
+    if (isAdmin) return []
+    return rideRequests.filter((item) => item.owner_id === currentUser.driverId)
+  }, [rideRequests, currentUser.driverId, isAdmin])
 
   const outgoingRideRequests = useMemo(() => {
-    const current = getActiveUser()
-    return rideRequests.filter((item) => item.requester_id === current.driverId)
-  }, [rideRequests, useLocalTestMode, activeTestProfile])
+    if (isAdmin) return []
+    return rideRequests.filter((item) => item.requester_id === currentUser.driverId)
+  }, [rideRequests, currentUser.driverId, isAdmin])
 
-  const selectedConversation = conversations.find((item) => item.id === selectedConversationId) || null
+  const selectedConversation =
+    conversations.find((item) => item.id === selectedConversationId) || null
+
+  const selectedConversationRide = selectedConversation?.ride || null
 
   const currentMessages = useMemo(() => {
     if (!selectedConversationId) return []
     return messages.filter((item) => item.conversation_id === selectedConversationId)
   }, [messages, selectedConversationId])
 
-  const currentUser = getActiveUser()
+  const adminUsersFiltered = useMemo(() => {
+    const q = adminGlobalSearch.toLowerCase().trim()
+    if (!q) return adminUsers
+    return adminUsers.filter((user) =>
+      [String(user.id), user.full_name || '', user.username || '', user.phone || '', user.bio || '']
+        .join(' ')
+        .toLowerCase()
+        .includes(q)
+    )
+  }, [adminUsers, adminGlobalSearch])
+
+  const adminReportsFiltered = useMemo(() => {
+    const q = adminGlobalSearch.toLowerCase().trim()
+    if (!q) return adminReports
+    return adminReports.filter((report) =>
+      [
+        String(report.id),
+        String(report.target_user_id || ''),
+        String(report.reporter_id),
+        report.reason || '',
+        report.details || '',
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(q)
+    )
+  }, [adminReports, adminGlobalSearch])
 
   return (
     <main style={styles.page}>
       <div style={styles.headerCard}>
         <h1 style={styles.title}>Yolüstü</h1>
         <p style={styles.subtitle}>
-          Local test mode, request qəbulunda yer azalması, elan bağlama və tamamlanma məntiqi ilə yenilənmiş versiya.
+          Compile-ready son versiya: profil, elan, request, chat, review və admin CRUD panel.
         </p>
       </div>
 
@@ -1530,11 +2667,23 @@ export default function Home() {
             >
               Profil 2
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTestProfile('3')}
+              style={activeTestProfile === '3' ? styles.chipAdmin : styles.chip}
+            >
+              Profil 3 (Admin)
+            </button>
           </div>
         )}
 
         <p style={styles.infoRow}>
           <strong>Aktiv user:</strong> {currentUser.fullName} ({currentUser.driverId})
+        </p>
+
+        <p style={styles.infoRow}>
+          <strong>Rol:</strong> {getAppRoleLabel(currentUser.appRole)}
         </p>
       </section>
 
@@ -1543,23 +2692,33 @@ export default function Home() {
           { key: 'dashboard', label: 'Dashboard' },
           { key: 'create', label: 'Elan ver' },
           { key: 'search', label: 'Axtarış' },
-          { key: 'requests', label: `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending').length})` },
-          { key: 'chat', label: `Chat (${conversations.length})` },
+          { key: 'requests', label: isAdmin ? 'Requests' : `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending').length})` },
+          { key: 'chat', label: isAdmin ? 'Chat' : unreadTotal > 0 ? `Chat (${unreadTotal})` : `Chat (${conversations.length})` },
           { key: 'history', label: 'Tarixçə' },
+          { key: 'reviews', label: 'Reviews' },
           { key: 'profile', label: 'Profil' },
+          ...(isAdmin ? [{ key: 'admin', label: 'Admin' }] : []),
         ].map((item) => (
           <button
             key={item.key}
             type="button"
             onClick={() => setActiveTab(item.key as TabType)}
-            style={activeTab === item.key ? styles.activeTabButton : styles.tabButton}
+            style={
+              activeTab === item.key
+                ? item.key === 'admin'
+                  ? styles.adminActiveTabButton
+                  : styles.activeTabButton
+                : item.key === 'admin'
+                ? styles.adminTabButton
+                : styles.tabButton
+            }
           >
             {item.label}
           </button>
         ))}
       </div>
 
-      {message && <div style={styles.message}>{message}</div>}
+      {message && <div style={isAdmin ? styles.adminMessage : styles.message}>{message}</div>}
 
       {activeTab === 'dashboard' && (
         <>
@@ -1571,99 +2730,98 @@ export default function Home() {
                 <p style={styles.statLabel}>Aktiv elanlarım</p>
                 <p style={styles.statValue}>{myRides.length}</p>
               </div>
+
               <div style={styles.statsCard}>
                 <p style={styles.statLabel}>Tarixçədəki elanlar</p>
                 <p style={styles.statValue}>{historyRides.length}</p>
               </div>
+
               <div style={styles.statsCard}>
                 <p style={styles.statLabel}>Gələn müraciətlər</p>
                 <p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending').length}</p>
               </div>
+
               <div style={styles.statsCard}>
-                <p style={styles.statLabel}>Chat-lər</p>
-                <p style={styles.statValue}>{conversations.length}</p>
+                <p style={styles.statLabel}>Oxunmamış mesajlar</p>
+                <p style={styles.statValue}>{unreadTotal}</p>
               </div>
             </div>
           </section>
 
-          <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Mənim aktiv elanlarım</h2>
+          {!isAdmin && (
+            <section style={styles.sectionCard}>
+              <h2 style={styles.sectionTitle}>Mənim aktiv elanlarım</h2>
 
-            {myRides.length === 0 ? (
-              <p style={styles.mutedText}>Aktiv elanın yoxdur.</p>
-            ) : (
-              <div style={styles.ridesGrid}>
-                {myRides.map((ride) => (
-                  <div key={ride.id} style={styles.myRideCard}>
-                    <div style={getRideBadgeStyle(ride.status)}>{getRideStatusLabel(ride.status)}</div>
-                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
-                    <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
-                    <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
-                    <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
-                    <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
-                    <p style={styles.infoRow}><strong>Qalan yer:</strong> {ride.seats}</p>
-                    <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
-                    {ride.notes && <p style={styles.infoRow}><strong>Qeyd:</strong> {ride.notes}</p>}
+              {myRides.length === 0 ? (
+                <p style={styles.mutedText}>Aktiv elanın yoxdur.</p>
+              ) : (
+                <div style={styles.ridesGrid}>
+                  {myRides.map((ride) => (
+                    <div key={ride.id} style={styles.myRideCard}>
+                      <div style={getRideBadgeStyle(ride.status)}>{getRideStatusLabel(ride.status)}</div>
+                      <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
+                      <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
+                      <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
+                      <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
+                      <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
+                      <p style={styles.infoRow}><strong>Qalan yer:</strong> {ride.seats}</p>
+                      <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
+                      {ride.notes && <p style={styles.infoRow}><strong>Qeyd:</strong> {ride.notes}</p>}
 
-                    <div style={styles.actionRow}>
-                      <button type="button" onClick={() => handleEditRide(ride)} style={styles.warningButton}>
-                        Redaktə et
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleCloseRide(ride.id)}
-                        style={styles.closeButton}
-                        disabled={rideActionLoading === ride.id}
-                      >
-                        Elanı bağla
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleCompleteRide(ride.id)}
-                        style={styles.successButton}
-                        disabled={rideActionLoading === ride.id}
-                      >
-                        Tamamlandı
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteRide(ride.id)}
-                        style={styles.dangerButton}
-                        disabled={rideActionLoading === ride.id}
-                      >
-                        Ləğv et
-                      </button>
+                      <div style={styles.actionRow}>
+                        <button type="button" onClick={() => handleEditRide(ride)} style={styles.warningButton}>
+                          Redaktə et
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleCloseRide(ride.id)}
+                          style={styles.closeButton}
+                          disabled={rideActionLoading === ride.id}
+                        >
+                          Elanı bağla
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleCompleteRide(ride.id)}
+                          style={styles.successButton}
+                          disabled={rideActionLoading === ride.id}
+                        >
+                          Tamamlandı
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteRide(ride.id)}
+                          style={styles.dangerButton}
+                          disabled={rideActionLoading === ride.id}
+                        >
+                          Ləğv et
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </>
       )}
 
       {activeTab === 'create' && (
         <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>
-            {editingRideId ? 'Elanı redaktə et' : 'Yeni elan yarat'}
-          </h2>
+          <h2 style={styles.sectionTitle}>{editingRideId ? 'Elanı redaktə et' : 'Yeni elan yarat'}</h2>
 
-          {!profile ? (
+          {isAdmin ? (
+            <p style={styles.mutedText}>Admin üçün elan yaratma formu deaktivdir.</p>
+          ) : !profile ? (
             <p style={styles.mutedText}>Əvvəl profil yaratmaq lazımdır.</p>
           ) : (
             <form onSubmit={handleSubmitRide} style={styles.form}>
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Aktiv rol</label>
-                <input value={getRoleLabel(profile.role)} readOnly style={styles.input} />
-              </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Haradan</label>
-                <input value={origin} onChange={(e) => setOrigin(e.target.value)} required style={styles.input} />
-              </div>
+              <LocationPicker 
+  origin={origin} 
+  setOrigin={setOrigin} 
+  destination={destination} 
+  setDestination={setDestination} 
+/>
 
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Hara</label>
@@ -1674,7 +2832,6 @@ export default function Home() {
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Tarix</label>
                   <input type="date" value={rideDate} onChange={(e) => setRideDate(e.target.value)} required style={styles.input} />
-
                   <div style={styles.chipRow}>
                     <button type="button" onClick={setToday} style={styles.chip}>Bugün</button>
                     <button type="button" onClick={setTomorrow} style={styles.chip}>Sabah</button>
@@ -1685,7 +2842,6 @@ export default function Home() {
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Saat</label>
                   <input type="time" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} required style={styles.input} />
-
                   <div style={styles.chipRow}>
                     <button type="button" onClick={setNowTime} style={styles.chip}>İndi</button>
                     <button type="button" onClick={setPlus30Min} style={styles.chip}>+30 dəq</button>
@@ -1727,7 +2883,7 @@ export default function Home() {
         </section>
       )}
 
-      {activeTab === 'search' && (
+      {activeTab === 'search' && !isAdmin && (
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Axtarış</h2>
@@ -1772,7 +2928,7 @@ export default function Home() {
                   Filteri sıfırla
                 </button>
 
-                <button type="button" onClick={initializeData} style={styles.ghostButton}>
+                <button type="button" onClick={() => void initializeData()} style={styles.ghostButton}>
                   Yenilə
                 </button>
               </div>
@@ -1836,7 +2992,7 @@ export default function Home() {
                     <div style={styles.actionRow}>
                       <button
                         type="button"
-                        onClick={() => handleCreateRideRequest(ride)}
+                        onClick={() => void handleCreateRideRequest(ride)}
                         style={styles.primaryButton}
                         disabled={rideRequestLoading === ride.id}
                       >
@@ -1851,7 +3007,7 @@ export default function Home() {
         </>
       )}
 
-      {activeTab === 'requests' && (
+      {activeTab === 'requests' && !isAdmin && (
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Gələn müraciətlər</h2>
@@ -1861,7 +3017,7 @@ export default function Home() {
             ) : (
               <div style={styles.ridesGrid}>
                 {incomingRideRequests.map((item) => {
-                  const ride = allMyRides.find((r) => r.id === item.ride_id)
+                  const ride = item.ride
 
                   return (
                     <div key={item.id} style={styles.resultCard}>
@@ -1873,8 +3029,9 @@ export default function Home() {
 
                       {ride && (
                         <>
-                          <p style={styles.infoRow}><strong>Elan:</strong> {ride.origin} → {ride.destination}</p>
+                          <p style={styles.infoRow}><strong>Marşrut:</strong> {ride.origin} → {ride.destination}</p>
                           <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {ride.ride_date || '-'} / {ride.departure_time}</p>
+                          <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
                           <p style={styles.infoRow}><strong>Qalan yer:</strong> {ride.seats}</p>
                           <p style={styles.infoRow}><strong>Elan statusu:</strong> {getRideStatusLabel(ride.status)}</p>
                         </>
@@ -1888,7 +3045,7 @@ export default function Home() {
                             type="button"
                             style={styles.successButton}
                             disabled={rideRequestLoading === item.id}
-                            onClick={() => handleRideRequestDecision(item, 'accepted')}
+                            onClick={() => void handleRideRequestDecision(item, 'accepted')}
                           >
                             Qəbul et
                           </button>
@@ -1897,9 +3054,22 @@ export default function Home() {
                             type="button"
                             style={styles.dangerButton}
                             disabled={rideRequestLoading === item.id}
-                            onClick={() => handleRideRequestDecision(item, 'rejected')}
+                            onClick={() => void handleRideRequestDecision(item, 'rejected')}
                           >
                             Rədd et
+                          </button>
+                        </div>
+                      )}
+
+                      {item.status === 'accepted' && ride?.status === 'active' && (
+                        <div style={styles.actionRow}>
+                          <button
+                            type="button"
+                            style={styles.closeButton}
+                            disabled={rideRequestLoading === item.id}
+                            onClick={() => void handleConfirmDeal(item)}
+                          >
+                            Deal təsdiqlə
                           </button>
                         </div>
                       )}
@@ -1917,46 +3087,76 @@ export default function Home() {
               <p style={styles.mutedText}>Göndərilmiş müraciət yoxdur.</p>
             ) : (
               <div style={styles.ridesGrid}>
-                {outgoingRideRequests.map((item) => (
-                  <div key={item.id} style={styles.resultCard}>
-                    <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
-                    <p style={styles.infoRow}><strong>Sahib ID:</strong> {item.owner_id}</p>
-                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(item.owner_role)}</p>
-                    <p style={styles.infoRow}><strong>Yer sayı:</strong> {item.seats_requested}</p>
-                    <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
-                    <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
-                  </div>
-                ))}
+                {outgoingRideRequests.map((item) => {
+                  const ride = item.ride
+
+                  return (
+                    <div key={item.id} style={styles.resultCard}>
+                      <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
+                      <p style={styles.infoRow}><strong>Sahib ID:</strong> {item.owner_id}</p>
+                      <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(item.owner_role)}</p>
+                      <p style={styles.infoRow}><strong>Yer sayı:</strong> {item.seats_requested}</p>
+                      <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
+
+                      {ride && (
+                        <>
+                          <p style={styles.infoRow}><strong>Marşrut:</strong> {ride.origin} → {ride.destination}</p>
+                          <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {ride.ride_date || '-'} / {ride.departure_time}</p>
+                          <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
+                          <p style={styles.infoRow}><strong>Elan statusu:</strong> {getRideStatusLabel(ride.status)}</p>
+                        </>
+                      )}
+
+                      <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </section>
         </>
       )}
 
-      {activeTab === 'chat' && (
+      {activeTab === 'chat' && !isAdmin && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Chat</h2>
 
           <div style={styles.chatLayout}>
             <div>
               <p style={styles.mutedText}>Conversation siyahısı</p>
+
               <div style={styles.conversationList}>
                 {conversations.length === 0 ? (
                   <p style={styles.mutedText}>Hələ aktiv chat yoxdur.</p>
                 ) : (
                   conversations.map((conv) => {
-                    const ride = allMyRides.find((r) => r.id === conv.ride_id) || rides.find((r) => r.id === conv.ride_id)
-
+                    const ride = conv.ride
                     return (
                       <div
                         key={conv.id}
                         style={selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard}
-                        onClick={() => handleOpenConversation(conv.id)}
+                        onClick={() => void handleOpenConversation(conv.id)}
                       >
-                        <div style={styles.badge}>Chat #{conv.id}</div>
-                        <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : conv.ride_id}</p>
-                        <p style={styles.infoRow}><strong>Status:</strong> {conv.status}</p>
-                        <p style={styles.infoRow}><strong>Yeniləndi:</strong> {formatDateTime(conv.updated_at)}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={styles.badge}>Chat #{conv.id}</div>
+                          {conv.unread_count ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
+                        </div>
+
+                        <p style={styles.infoRow}>
+                          <strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}
+                        </p>
+
+                        <p style={styles.infoRow}>
+                          <strong>Tarix/Saat:</strong> {ride ? `${ride.ride_date || '-'} / ${ride.departure_time}` : '-'}
+                        </p>
+
+                        <p style={styles.infoRow}>
+                          <strong>Qiymət:</strong> {ride ? `${ride.price_per_seat} AZN` : '-'}
+                        </p>
+
+                        <p style={styles.infoRow}>
+                          <strong>Status:</strong> {conv.status}
+                        </p>
                       </div>
                     )
                   })
@@ -1971,11 +3171,33 @@ export default function Home() {
                 <>
                   <div style={styles.resultCard}>
                     <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
-                    <p style={styles.infoRow}><strong>Ride ID:</strong> {selectedConversation.ride_id}</p>
+                    <p style={styles.infoRow}>
+                      <strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}
+                    </p>
+                    <p style={styles.infoRow}>
+                      <strong>Tarix/Saat:</strong> {selectedConversationRide ? `${selectedConversationRide.ride_date || '-'} / ${selectedConversationRide.departure_time}` : '-'}
+                    </p>
+                    <p style={styles.infoRow}>
+                      <strong>Qiymət:</strong> {selectedConversationRide ? `${selectedConversationRide.price_per_seat} AZN` : '-'}
+                    </p>
                     <p style={styles.infoRow}><strong>Status:</strong> {selectedConversation.status}</p>
                   </div>
 
                   <div style={{ height: 12 }} />
+
+                  {/* ── Canlı Xəritə — yalnız aktiv elanda ── */}
+                  {selectedConversationRide?.status === 'active' && (
+                    <LiveMap
+                      conversationId={selectedConversation.id}
+                      currentUserId={currentUser.driverId}
+                      isDriver={profile?.role === 'driver'}
+                      otherUserId={
+                        currentUser.driverId === selectedConversation.driver_user_id
+                          ? selectedConversation.passenger_user_id
+                          : selectedConversation.driver_user_id
+                      }
+                    />
+                  )}
 
                   <div style={styles.messageList}>
                     {currentMessages.length === 0 ? (
@@ -2010,7 +3232,7 @@ export default function Home() {
                   <div style={styles.actionRow}>
                     <button
                       type="button"
-                      onClick={handleSendMessage}
+                      onClick={() => void handleSendMessage()}
                       style={styles.primaryButton}
                       disabled={messageSending}
                     >
@@ -2024,7 +3246,7 @@ export default function Home() {
         </section>
       )}
 
-      {activeTab === 'history' && (
+      {activeTab === 'history' && !isAdmin && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Elan tarixçəsi</h2>
 
@@ -2050,69 +3272,758 @@ export default function Home() {
         </section>
       )}
 
+      {activeTab === 'reviews' && !isAdmin && (
+        <>
+          <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>Review yaz</h2>
+
+            <div style={styles.form}>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Request seç</label>
+                <select
+                  value={reviewTargetRequestId ?? ''}
+                  onChange={(e) => setReviewTargetRequestId(e.target.value ? Number(e.target.value) : null)}
+                  style={styles.select}
+                >
+                  <option value="">Seç</option>
+                  {rideRequests
+                    .filter((item) => item.status === 'accepted')
+                    .map((item) => (
+                      <option key={item.id} value={item.id}>
+                        #{item.id} - {item.ride?.origin || '-'} → {item.ride?.destination || '-'}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Reytinq</label>
+                <select value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} style={styles.select}>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                </select>
+              </div>
+
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Rəy</label>
+                <textarea
+                  rows={3}
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  style={styles.textarea}
+                />
+              </div>
+
+              <div style={styles.actionRow}>
+                <button type="button" onClick={() => void handleCreateReview()} style={styles.primaryButton}>
+                  Review göndər
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>Mənim review-larım</h2>
+
+            {reviews.length === 0 ? (
+              <p style={styles.mutedText}>Review yoxdur.</p>
+            ) : (
+              <div style={styles.ridesGrid}>
+                {reviews.map((item) => (
+                  <div key={item.id} style={styles.resultCard}>
+                    <div style={styles.badge}>Rating: {item.rating}</div>
+                    <p style={styles.infoRow}><strong>Reviewer:</strong> {item.reviewer_id}</p>
+                    <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
+                    <p style={styles.infoRow}>
+                      <strong>Marşrut:</strong> {item.ride ? `${item.ride.origin} → ${item.ride.destination}` : '-'}
+                    </p>
+                    <p style={styles.infoRow}><strong>Rəy:</strong> {item.comment_text || '-'}</p>
+                    <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>Report göndər</h2>
+
+            <div style={styles.form}>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Target user ID</label>
+                <input
+                  value={reportTargetUserId}
+                  onChange={(e) => setReportTargetUserId(e.target.value)}
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Səbəb</label>
+                <input value={reportReason} onChange={(e) => setReportReason(e.target.value)} style={styles.input} />
+              </div>
+
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Detallar</label>
+                <textarea
+                  rows={3}
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  style={styles.textarea}
+                />
+              </div>
+
+              <div style={styles.actionRow}>
+                <button type="button" onClick={() => void handleCreateReport()} style={styles.primaryButton}>
+                  Report göndər
+                </button>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
+
       {activeTab === 'profile' && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>{profile ? 'Profil idarəetməsi' : 'Profil yarat'}</h2>
 
-          <form onSubmit={handleCreateOrUpdateProfile} style={styles.form}>
-            <div style={styles.fieldWrap}>
-              <label style={styles.label}>Ad soyad</label>
-              <input value={profileFullName} onChange={(e) => setProfileFullName(e.target.value)} style={styles.input} />
-            </div>
-
-            <div style={styles.twoColumnGrid}>
+          {isAdmin ? (
+            <p style={styles.mutedText}>Admin user üçün profil formu istifadə edilmir.</p>
+          ) : (
+            <form onSubmit={handleCreateOrUpdateProfile} style={styles.form}>
               <div style={styles.fieldWrap}>
-                <label style={styles.label}>Username</label>
-                <input value={profileUsername} onChange={(e) => setProfileUsername(e.target.value)} style={styles.input} />
+                <label style={styles.label}>Ad soyad</label>
+                <input value={profileFullName} onChange={(e) => setProfileFullName(e.target.value)} style={styles.input} />
               </div>
 
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Telefon</label>
-                <input value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} style={styles.input} required />
-              </div>
-            </div>
-
-            <div style={styles.fieldWrap}>
-              <label style={styles.label}>Bio</label>
-              <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={3} style={styles.textarea} />
-            </div>
-
-            {!profile ? (
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>İlkin rol</label>
-                <select value={initialRole} onChange={(e) => setInitialRole(e.target.value as UserRole)} style={styles.select}>
-                  <option value="driver">Sürücü</option>
-                  <option value="passenger">Sərnişin</option>
-                </select>
-              </div>
-            ) : (
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Aktiv rol</label>
-                <input value={getRoleLabel(profile.role)} readOnly style={styles.input} />
-              </div>
-            )}
-
-            {(profile ? profile.role === 'driver' : initialRole === 'driver') && (
               <div style={styles.twoColumnGrid}>
                 <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Avtomobil markası</label>
-                  <input value={carBrand} onChange={(e) => setCarBrand(e.target.value)} style={styles.input} />
+                  <label style={styles.label}>Username</label>
+                  <input value={profileUsername} onChange={(e) => setProfileUsername(e.target.value)} style={styles.input} />
                 </div>
 
                 <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
-                  <input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} style={styles.input} />
+                  <label style={styles.label}>Telefon</label>
+                  <input value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} style={styles.input} required />
                 </div>
               </div>
-            )}
 
-            <div style={styles.buttonRow}>
-              <button type="submit" disabled={profileSaving} style={styles.primaryButton}>
-                {profileSaving ? 'Yadda saxlanılır...' : profile ? 'Profili yenilə' : 'Profili yarat'}
-              </button>
-            </div>
-          </form>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Bio</label>
+                <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={3} style={styles.textarea} />
+              </div>
+
+              {!profile ? (
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>İlkin rol</label>
+                  <select value={initialRole} onChange={(e) => setInitialRole(e.target.value as UserRole)} style={styles.select}>
+                    <option value="driver">Sürücü</option>
+                    <option value="passenger">Sərnişin</option>
+                  </select>
+                </div>
+              ) : (
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>Aktiv rol</label>
+                  <input value={getRoleLabel(profile.role)} readOnly style={styles.input} />
+                </div>
+              )}
+
+              {(profile ? profile.role === 'driver' : initialRole === 'driver') && (
+                <div style={styles.twoColumnGrid}>
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>Avtomobil markası</label>
+                    <input value={carBrand} onChange={(e) => setCarBrand(e.target.value)} style={styles.input} />
+                  </div>
+
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
+                    <input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} style={styles.input} />
+                  </div>
+                </div>
+              )}
+
+              <div style={styles.buttonRow}>
+                <button type="submit" disabled={profileSaving} style={styles.primaryButton}>
+                  {profileSaving ? 'Yadda saxlanılır...' : profile ? 'Profili yenilə' : 'Profili yarat'}
+                </button>
+              </div>
+            </form>
+          )}
         </section>
+      )}
+
+      {activeTab === 'admin' && isAdmin && (
+        <>
+          <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>Admin panel</h2>
+
+            <div style={styles.chipRow}>
+              {[
+                { key: 'overview', label: 'Overview' },
+                { key: 'users', label: 'Users' },
+                { key: 'rides', label: 'Rides' },
+                { key: 'requests', label: 'Requests' },
+                { key: 'conversations', label: 'Conversations' },
+                { key: 'messages', label: 'Messages' },
+                { key: 'reviews', label: 'Reviews' },
+                { key: 'reports', label: 'Reports' },
+                { key: 'audit', label: 'Audit' },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setAdminSection(item.key as AdminSection)}
+                  style={adminSection === item.key ? styles.chipAdmin : styles.chip}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={styles.fieldWrap}>
+              <label style={styles.label}>Admin search</label>
+              <input
+                value={adminGlobalSearch}
+                onChange={(e) => setAdminGlobalSearch(e.target.value)}
+                style={styles.input}
+                placeholder="User, report, id, səbəb..."
+              />
+            </div>
+          </section>
+
+          {adminSection === 'overview' && (
+            <section style={styles.sectionCard}>
+              <h2 style={styles.sectionTitle}>Overview</h2>
+
+              {/* ── Kritik göstəricilər (rəngli xəbərdarlıqlar) ── */}
+              <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px,1fr))', marginBottom: 20 }}>
+                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #dc2626', background: adminReports.filter(r => r.status === 'open').length > 0 ? '#fff5f5' : '#faf5ff' }}>
+                  <p style={styles.statLabel}>🔴 Açıq reportlar</p>
+                  <p style={{ ...styles.statValue, color: adminReports.filter(r => r.status === 'open').length > 0 ? '#dc2626' : '#0f172a' }}>
+                    {adminReports.filter(r => r.status === 'open').length}
+                  </p>
+                </div>
+                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #f59e0b' }}>
+                  <p style={styles.statLabel}>🔒 Bloklanmış</p>
+                  <p style={{ ...styles.statValue, color: '#f59e0b' }}>
+                    {adminUsers.filter(u => u.is_blocked).length}
+                  </p>
+                </div>
+                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #2563eb' }}>
+                  <p style={styles.statLabel}>🚗 Aktiv elanlar</p>
+                  <p style={{ ...styles.statValue, color: '#2563eb' }}>
+                    {allRidesAdmin.filter(r => r.status === 'active').length}
+                  </p>
+                </div>
+                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #7c3aed' }}>
+                  <p style={styles.statLabel}>⏳ Gözləyən müraciətlər</p>
+                  <p style={{ ...styles.statValue, color: '#7c3aed' }}>
+                    {allRideRequestsAdmin.filter(r => r.status === 'pending').length}
+                  </p>
+                </div>
+              </div>
+
+              {/* ── Ümumi statistika progress bar ilə ── */}
+              <div style={styles.statsGrid}>
+                {[
+                  { label: 'Cəmi İstifadəçi', value: adminUsers.length, color: '#2563eb' },
+                  { label: 'Cəmi Elan', value: allRidesAdmin.length, color: '#0891b2' },
+                  { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' },
+                  { label: 'Cəmi Mesaj', value: allMessagesAdmin.length, color: '#059669' },
+                  { label: 'Cəmi Review', value: allReviewsAdmin.length, color: '#d97706' },
+                  { label: 'Cəmi Report', value: adminReports.length, color: '#dc2626' },
+                ].map(item => (
+                  <div key={item.label} style={styles.adminStatsCard}>
+                    <p style={styles.statLabel}>{item.label}</p>
+                    <p style={{ ...styles.statValue, color: item.color }}>{item.value}</p>
+                    <div style={{ marginTop: 8, height: 5, borderRadius: 4, background: '#e2e8f0' }}>
+                      <div style={{
+                        height: '100%',
+                        borderRadius: 4,
+                        background: item.color,
+                        width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`,
+                        transition: 'width 0.6s ease',
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Sürətli hərəkət düymələri ── */}
+              <div style={{ marginTop: 20, padding: 16, background: '#faf5ff', borderRadius: 14, border: '1px solid #e9d5ff' }}>
+                <p style={{ margin: '0 0 12px', fontWeight: 800, color: '#6d28d9', fontSize: 15 }}>⚡ Sürətli hərəkətlər</p>
+                <div style={styles.buttonRow}>
+                  <button
+                    type="button"
+                    onClick={() => setAdminSection('reports')}
+                    style={{
+                      ...styles.dangerButton,
+                      opacity: adminReports.filter(r => r.status === 'open').length === 0 ? 0.5 : 1,
+                    }}
+                  >
+                    🔴 Açıq reportlar ({adminReports.filter(r => r.status === 'open').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdminSection('users')}
+                    style={styles.warningButton}
+                  >
+                    👥 İstifadəçilər
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdminSection('rides')}
+                    style={styles.closeButton}
+                  >
+                    🚗 Elanlar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdminSection('audit')}
+                    style={styles.ghostButton}
+                  >
+                    📋 Audit log
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void getAdminData()}
+                    style={styles.secondaryButton}
+                  >
+                    🔄 Yenilə
+                  </button>
+                </div>
+              </div>
+
+              {/* ── Son audit fəaliyyəti (son 5) ── */}
+              {adminAuditLogs.length > 0 && (
+                <div style={{ marginTop: 20 }}>
+                  <p style={{ fontWeight: 800, fontSize: 15, marginBottom: 10, color: '#334155' }}>🕐 Son fəaliyyət</p>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {adminAuditLogs.slice(0, 5).map(log => (
+                      <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 13 }}>
+                        <span>
+                          <strong style={{ color: '#7c3aed' }}>{log.action_type}</strong>
+                          {' · '}{log.entity_type}
+                          {log.note ? ` · ${log.note}` : ''}
+                        </span>
+                        <span style={{ color: '#64748b', whiteSpace: 'nowrap', marginLeft: 12 }}>{formatDateTime(log.created_at)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {adminSection === 'users' && (
+            <section style={styles.sectionCard}>
+              <h2 style={styles.sectionTitle}>Users</h2>
+
+              <div style={styles.ridesGrid}>
+                {adminUsersFiltered.map((user) => (
+                  <div key={user.id} style={styles.adminCard}>
+                    <div style={styles.adminBadge}>User #{user.id}</div>
+                    <p style={styles.infoRow}><strong>Ad:</strong> {user.full_name || '-'}</p>
+                    <p style={styles.infoRow}><strong>Username:</strong> {user.username || '-'}</p>
+                    <p style={styles.infoRow}><strong>Telefon:</strong> {user.phone || '-'}</p>
+                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(user.role)}</p>
+                    <p style={styles.infoRow}><strong>Blocked:</strong> {adminUserBlockedMap[user.id] ? 'Bəli' : 'Xeyr'}</p>
+                    <p style={styles.infoRow}><strong>Avg rating:</strong> {user.avg_rating || 0}</p>
+                    <p style={styles.infoRow}><strong>Active rides:</strong> {user.active_rides}</p>
+
+                    <div style={styles.fieldWrap}>
+                      <label style={styles.label}>Admin note</label>
+                      <textarea
+                        rows={3}
+                        value={adminUserNoteMap[user.id] || ''}
+                        onChange={(e) =>
+                          setAdminUserNoteMap((prev) => ({ ...prev, [user.id]: e.target.value }))
+                        }
+                        style={styles.textarea}
+                      />
+                    </div>
+
+                    <div style={styles.actionRow}>
+                      <button
+                        type="button"
+                        style={adminUserBlockedMap[user.id] ? styles.successButton : styles.dangerButton}
+                        disabled={adminLoadingId === user.id}
+                        onClick={() => void handleAdminToggleUser(user)}
+                      >
+                        {adminUserBlockedMap[user.id] ? 'Unblock' : 'Block'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {adminSection === 'rides' && (
+            <>
+              <section style={styles.sectionCard}>
+                <h2 style={styles.sectionTitle}>Rides</h2>
+
+                <div style={styles.ridesGrid}>
+                  {allRidesAdmin.map((ride) => (
+                    <div key={ride.id} style={styles.adminCard}>
+                      <div style={getRideBadgeStyle(ride.status)}>{getRideStatusLabel(ride.status)}</div>
+                      <p style={styles.infoRow}><strong>ID:</strong> {ride.id}</p>
+                      <p style={styles.infoRow}><strong>Driver ID:</strong> {ride.driver_id}</p>
+                      <p style={styles.infoRow}><strong>Marşrut:</strong> {ride.origin} → {ride.destination}</p>
+                      <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {ride.ride_date || '-'} / {ride.departure_time}</p>
+                      <p style={styles.infoRow}><strong>Seats:</strong> {ride.seats}</p>
+                      <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat}</p>
+
+                      <div style={styles.actionRow}>
+                        <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRide(ride)}>
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.dangerButton}
+                          disabled={adminLoadingId === ride.id}
+                          onClick={() => void handleAdminDeleteRide(ride)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {adminEditingRideId && (
+                <section style={styles.sectionCard}>
+                  <h2 style={styles.sectionTitle}>Ride edit</h2>
+
+                  <div style={styles.form}>
+                    <input value={adminRideOrigin} onChange={(e) => setAdminRideOrigin(e.target.value)} style={styles.input} />
+                    <input value={adminRideDestination} onChange={(e) => setAdminRideDestination(e.target.value)} style={styles.input} />
+                    <input type="date" value={adminRideDate} onChange={(e) => setAdminRideDate(e.target.value)} style={styles.input} />
+                    <input type="time" value={adminRideTime} onChange={(e) => setAdminRideTime(e.target.value)} style={styles.input} />
+                    <input type="number" value={adminRideSeats} onChange={(e) => setAdminRideSeats(e.target.value)} style={styles.input} />
+                    <input type="number" value={adminRidePrice} onChange={(e) => setAdminRidePrice(e.target.value)} style={styles.input} />
+                    <select value={adminRideStatus} onChange={(e) => setAdminRideStatus(e.target.value as RideStatus)} style={styles.select}>
+                      <option value="active">active</option>
+                      <option value="full">full</option>
+                      <option value="cancelled">cancelled</option>
+                      <option value="completed">completed</option>
+                    </select>
+                    <textarea value={adminRideNotes} onChange={(e) => setAdminRideNotes(e.target.value)} rows={3} style={styles.textarea} />
+
+                    <div style={styles.actionRow}>
+                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveRide()}>
+                        Save ride
+                      </button>
+                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingRideId(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              )}
+            </>
+          )}
+
+          {adminSection === 'requests' && (
+            <>
+              <section style={styles.sectionCard}>
+                <h2 style={styles.sectionTitle}>Requests</h2>
+
+                <div style={styles.ridesGrid}>
+                  {allRideRequestsAdmin.map((item) => (
+                    <div key={item.id} style={styles.adminCard}>
+                      <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
+                      <p style={styles.infoRow}><strong>ID:</strong> {item.id}</p>
+                      <p style={styles.infoRow}><strong>Ride ID:</strong> {item.ride_id}</p>
+                      <p style={styles.infoRow}><strong>Requester:</strong> {item.requester_id}</p>
+                      <p style={styles.infoRow}><strong>Owner:</strong> {item.owner_id}</p>
+                      <p style={styles.infoRow}><strong>Seats:</strong> {item.seats_requested}</p>
+                      <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
+
+                      <div style={styles.actionRow}>
+                        <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRequest(item)}>
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.dangerButton}
+                          disabled={adminLoadingId === item.id}
+                          onClick={() => void handleAdminDeleteRequest(item)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {adminEditingRequestId && (
+                <section style={styles.sectionCard}>
+                  <h2 style={styles.sectionTitle}>Request edit</h2>
+
+                  <div style={styles.form}>
+                    <select value={adminRequestStatus} onChange={(e) => setAdminRequestStatus(e.target.value as RideRequestStatus)} style={styles.select}>
+                      <option value="pending">pending</option>
+                      <option value="accepted">accepted</option>
+                      <option value="rejected">rejected</option>
+                      <option value="cancelled">cancelled</option>
+                    </select>
+                    <input type="number" value={adminRequestSeats} onChange={(e) => setAdminRequestSeats(e.target.value)} style={styles.input} />
+                    <textarea value={adminRequestMessage} onChange={(e) => setAdminRequestMessage(e.target.value)} rows={3} style={styles.textarea} />
+
+                    <div style={styles.actionRow}>
+                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveRequest()}>
+                        Save request
+                      </button>
+                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingRequestId(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              )}
+            </>
+          )}
+
+          {adminSection === 'conversations' && (
+            <section style={styles.sectionCard}>
+              <h2 style={styles.sectionTitle}>Conversations</h2>
+
+              <div style={styles.ridesGrid}>
+                {allConversationsAdmin.map((conv) => (
+                  <div key={conv.id} style={styles.adminCard}>
+                    <div style={styles.adminBadge}>Conversation #{conv.id}</div>
+                    <p style={styles.infoRow}><strong>Ride ID:</strong> {conv.ride_id}</p>
+                    <p style={styles.infoRow}><strong>Request ID:</strong> {conv.request_id || '-'}</p>
+                    <p style={styles.infoRow}><strong>Driver:</strong> {conv.driver_user_id}</p>
+                    <p style={styles.infoRow}><strong>Passenger:</strong> {conv.passenger_user_id}</p>
+                    <p style={styles.infoRow}><strong>Status:</strong> {conv.status}</p>
+                    <p style={styles.infoRow}><strong>Updated:</strong> {formatDateTime(conv.updated_at)}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {adminSection === 'messages' && (
+            <>
+              <section style={styles.sectionCard}>
+                <h2 style={styles.sectionTitle}>Messages</h2>
+
+                <div style={styles.ridesGrid}>
+                  {allMessagesAdmin.map((item) => (
+                    <div key={item.id} style={styles.adminCard}>
+                      <div style={styles.adminBadge}>Message #{item.id}</div>
+                      <p style={styles.infoRow}><strong>Conversation:</strong> {item.conversation_id}</p>
+                      <p style={styles.infoRow}><strong>Sender:</strong> {item.sender_id}</p>
+                      <p style={styles.infoRow}><strong>Text:</strong> {item.message_text}</p>
+                      <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
+
+                      <div style={styles.actionRow}>
+                        <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditMessage(item)}>
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.dangerButton}
+                          disabled={adminLoadingId === item.id}
+                          onClick={() => void handleAdminDeleteMessage(item)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {adminEditingMessageId && (
+                <section style={styles.sectionCard}>
+                  <h2 style={styles.sectionTitle}>Message edit</h2>
+
+                  <div style={styles.form}>
+                    <textarea value={adminMessageText} onChange={(e) => setAdminMessageText(e.target.value)} rows={4} style={styles.textarea} />
+
+                    <div style={styles.actionRow}>
+                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveMessage()}>
+                        Save message
+                      </button>
+                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingMessageId(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              )}
+            </>
+          )}
+
+          {adminSection === 'reviews' && (
+            <>
+              <section style={styles.sectionCard}>
+                <h2 style={styles.sectionTitle}>Reviews</h2>
+
+                <div style={styles.ridesGrid}>
+                  {allReviewsAdmin.map((item) => (
+                    <div key={item.id} style={styles.adminCard}>
+                      <div style={styles.adminBadge}>Review #{item.id}</div>
+                      <p style={styles.infoRow}><strong>Reviewer:</strong> {item.reviewer_id}</p>
+                      <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
+                      <p style={styles.infoRow}><strong>Rating:</strong> {item.rating}</p>
+                      <p style={styles.infoRow}><strong>Comment:</strong> {item.comment_text || '-'}</p>
+
+                      <div style={styles.actionRow}>
+                        <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          style={styles.dangerButton}
+                          disabled={adminLoadingId === item.id}
+                          onClick={() => void handleAdminDeleteReview(item)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {adminEditingReviewId && (
+                <section style={styles.sectionCard}>
+                  <h2 style={styles.sectionTitle}>Review edit</h2>
+
+                  <div style={styles.form}>
+                    <select value={adminReviewRating} onChange={(e) => setAdminReviewRating(e.target.value)} style={styles.select}>
+                      <option value="5">5</option>
+                      <option value="4">4</option>
+                      <option value="3">3</option>
+                      <option value="2">2</option>
+                      <option value="1">1</option>
+                    </select>
+
+                    <textarea value={adminReviewComment} onChange={(e) => setAdminReviewComment(e.target.value)} rows={4} style={styles.textarea} />
+
+                    <div style={styles.actionRow}>
+                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveReview()}>
+                        Save review
+                      </button>
+                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingReviewId(null)}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              )}
+            </>
+          )}
+
+          {adminSection === 'reports' && (
+            <section style={styles.sectionCard}>
+              <h2 style={styles.sectionTitle}>Reports</h2>
+
+              <div style={styles.ridesGrid}>
+                {adminReportsFiltered.map((report) => (
+                  <div key={report.id} style={styles.adminCard}>
+                    <div style={getReportBadgeStyle(report.status)}>{getReportStatusLabel(report.status)}</div>
+                    <p style={styles.infoRow}><strong>ID:</strong> {report.id}</p>
+                    <p style={styles.infoRow}><strong>Reporter:</strong> {report.reporter_id}</p>
+                    <p style={styles.infoRow}><strong>Target:</strong> {report.target_user_id || '-'}</p>
+                    <p style={styles.infoRow}><strong>Reason:</strong> {report.reason}</p>
+                    <p style={styles.infoRow}><strong>Details:</strong> {report.details || '-'}</p>
+
+                    <div style={styles.fieldWrap}>
+                      <label style={styles.label}>Status</label>
+                      <select
+                        value={adminReportStatusMap[report.id] || report.status}
+                        onChange={(e) =>
+                          setAdminReportStatusMap((prev) => ({
+                            ...prev,
+                            [report.id]: e.target.value as ReportStatus,
+                          }))
+                        }
+                        style={styles.select}
+                      >
+                        <option value="open">open</option>
+                        <option value="in_review">in_review</option>
+                        <option value="resolved">resolved</option>
+                        <option value="dismissed">dismissed</option>
+                      </select>
+                    </div>
+
+                    <div style={styles.fieldWrap}>
+                      <label style={styles.label}>Admin note</label>
+                      <textarea
+                        rows={3}
+                        value={adminReportNoteMap[report.id] || ''}
+                        onChange={(e) =>
+                          setAdminReportNoteMap((prev) => ({
+                            ...prev,
+                            [report.id]: e.target.value,
+                          }))
+                        }
+                        style={styles.textarea}
+                      />
+                    </div>
+
+                    <div style={styles.actionRow}>
+                      <button
+                        type="button"
+                        style={styles.primaryButton}
+                        disabled={adminLoadingId === report.id}
+                        onClick={() => void handleAdminUpdateReport(report)}
+                      >
+                        Update report
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {adminSection === 'audit' && (
+            <section style={styles.sectionCard}>
+              <h2 style={styles.sectionTitle}>Audit log</h2>
+
+              <div style={styles.tableWrap}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>ID</th>
+                      <th style={styles.th}>Admin</th>
+                      <th style={styles.th}>Action</th>
+                      <th style={styles.th}>Entity</th>
+                      <th style={styles.th}>Entity ID</th>
+                      <th style={styles.th}>Note</th>
+                      <th style={styles.th}>Tarix</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adminAuditLogs.map((log) => (
+                      <tr key={log.id}>
+                        <td style={styles.td}>{log.id}</td>
+                        <td style={styles.td}>{log.admin_user_id}</td>
+                        <td style={styles.td}>{log.action_type}</td>
+                        <td style={styles.td}>{log.entity_type}</td>
+                        <td style={styles.td}>{log.entity_id}</td>
+                        <td style={styles.td}>{log.note || '-'}</td>
+                        <td style={styles.td}>{formatDateTime(log.created_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+        </>
       )}
     </main>
   )
