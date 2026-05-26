@@ -70,20 +70,7 @@ type Profile = {
   admin_note?: string | null
   last_seen_at?: string | null
 }
-type SavedPlace = {
-  id: number
-  user_id: number
-  label: string
-  address_text: string
-  lat: number | null
-  lng: number | null
-  place_type: string | null
-  notes: string | null
-  use_count: number
-  last_used_at: string | null
-  created_at: string
-  updated_at: string
-}
+
 type RideRequest = {
   id: number
   ride_id: string
@@ -843,8 +830,6 @@ export default function Home() {
   const [myRides, setMyRides] = useState<Ride[]>([])
   const [historyRides, setHistoryRides] = useState<Ride[]>([])
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [savedPlaces, setSavedPlaces] = useState<SavedPlace[]>([])
-  const [savedPlacesLoading, setSavedPlacesLoading] = useState(false)
   const [rideRequests, setRideRequests] = useState<RideRequestWithRide[]>([])
   const [allRideRequestsAdmin, setAllRideRequestsAdmin] = useState<RideRequestWithRide[]>([])
   const [conversations, setConversations] = useState<ConversationWithMeta[]>([])
@@ -1190,34 +1175,7 @@ export default function Home() {
       setInitialRole('passenger')
       return
     }
-async function getSavedPlaces() {
-  const current = getActiveUser()
 
-  if (current.appRole === 'admin') {
-    setSavedPlaces([])
-    setSavedPlacesLoading(false)
-    return
-  }
-
-  setSavedPlacesLoading(true)
-
-  const { data, error } = await supabase
-    .from('saved_places')
-    .select('*')
-    .eq('user_id', current.driverId)
-    .order('use_count', { ascending: false })
-    .order('updated_at', { ascending: false })
-
-  if (error) {
-    console.error('Saved places read error:', JSON.stringify(error, null, 2))
-    setSavedPlaces([])
-    setSavedPlacesLoading(false)
-    return
-  }
-
-  setSavedPlaces((data as SavedPlace[]) || [])
-  setSavedPlacesLoading(false)
-}
     const { data, error } = await supabase.from('profiles').select('*').eq('id', current.driverId).maybeSingle()
 
     if (error) {
