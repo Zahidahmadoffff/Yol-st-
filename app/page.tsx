@@ -810,6 +810,7 @@ export default function Home() {
   const [adminUsers, setAdminUsers] = useState<UserOverview[]>([])
   const [adminReports, setAdminReports] = useState<UserReport[]>([])
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([])
+  const [driverProfilesMap, setDriverProfilesMap] = useState<Record<number, { name: string, rating: string }>>({})
 
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [unreadTotal, setUnreadTotal] = useState(0)
@@ -1211,9 +1212,35 @@ useEffect(() => {
       console.error('Ride list error:', JSON.stringify(error, null, 2))
       setMessage('Aktiv elanlar yüklənmədi.')
     } else {
-      setRides((data as Ride[]) || [])
-    }
+      const rows = (data as Ride[]) || []
+      setRides(rows)
 
+      // Sürücü adı və reytinqini çəkmək üçün məntiq
+      const driverIds = [...new Set(rows.map((r) => r.driver_id))]
+      if (driverIds.length > 0) {
+        const [profilesRes, reviewsRes] = await Promise.all([
+          supabase.from('profiles').select('id, full_name, username').in('id', driverIds),
+          supabase.from('reviews').select('reviewee_id, rating').in('reviewee_id', driverIds)
+        ])
+
+        const pData = profilesRes.data || []
+        const rData = reviewsRes.data || []
+        const newMap: Record<number, { name: string, rating: string }> = {}
+
+        pData.forEach(p => {
+          const userReviews = rData.filter(r => r.reviewee_id === p.id)
+          const avgRating = userReviews.length > 0
+            ? (userReviews.reduce((sum, r) => sum + r.rating, 0) / userReviews.length).toFixed(1)
+            : '5.0'
+
+          newMap[p.id] = {
+            name: p.full_name || p.username || 'İstifadəçi',
+            rating: avgRating
+          }
+        })
+        setDriverProfilesMap(newMap)
+      }
+    }
     setLoading(false)
   }
 
@@ -1412,12 +1439,12 @@ useEffect(() => {
 
     const unreadMap = new Map<number, number>()
 
-    if (rows.length > 0) {
-      const conversationIds = rows.map((x) => x.id)
+    const activeConversationIds = rows.filter(c => c.status !== 'closed').map((x) => x.id)
+    if (activeConversationIds.length > 0) {
       const { data: unreadRows } = await supabase
         .from('messages')
         .select('conversation_id')
-        .in('conversation_id', conversationIds)
+        .in('conversation_id', activeConversationIds)
         .eq('is_read', false)
         .neq('sender_id', current.driverId)
 
@@ -2664,8 +2691,8 @@ async function handleCloseConversation(conversationId: number) {
           { key: 'dashboard', label: 'Dashboard' },
           { key: 'create', label: 'Elan ver' },
           { key: 'search', label: 'Axtarış' },
-          { key: 'requests', label: `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending').length})` },
-          { key: 'chat', label: conversations.filter(c => c.status !== 'closed').length > 0 ? `Chat (${conversations.filter(c => c.status !== 'closed').length})` : 'Chat' },
+          { key: 'requests', label: isAdmin ? 'Requests' : `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length})` },
+          { key: 'chat', label: isAdmin ? 'Chat' : unreadTotal > 0 ? `Chat (${unreadTotal} yeni)` : `Chat (${conversations.filter(c => c.status !== 'closed').length})` },
           { key: 'history', label: 'Tarixçə' },
           { key: 'reviews', label: 'Reviews' },
           { key: 'profile', label: 'Profil' },
@@ -2708,9 +2735,9 @@ async function handleCloseConversation(conversationId: number) {
                 <p style={styles.statValue}>{historyRides.length}</p>
               </div>
 
-              <div style={styles.statsCard}>
-                <p style={styles.statLabel}>Gələn müraciətlər</p>
-                <p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending').length}</p>
+             <div style={styles.statsCard}>
+                <p style={styles.statLabel}>Gələn aktiv müraciətlər</p>
+                <p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length}</p>
               </div>
 
               <div style={styles.statsCard}>
@@ -2978,7 +3005,15 @@ async function handleCloseConversation(conversationId: number) {
               <div style={styles.ridesGrid}>
                 {filteredRides.map((ride) => (
                   <div key={ride.id} style={styles.resultCard}>
-                    <div style={styles.approvedBadge}>Aktiv</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{...styles.approvedBadge, margin: 0}}>Aktiv</div>
+                      {driverProfilesMap[ride.driver_id] && (
+                        <div style={{ display: 'flex', gap: 10, background: '#f8fafc', padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }}>
+                          <span style={{ fontWeight: 700, color: '#334155' }}>👤 {driverProfilesMap[ride.driver_id].name}</span>
+                          <span style={{ fontWeight: 800, color: '#eab308' }}>⭐ {driverProfilesMap[ride.driver_id].rating}</span>
+                        </div>
+                      )}
+                    </div>
                     <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
                     <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
                     <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
@@ -3039,116 +3074,95 @@ async function handleCloseConversation(conversationId: number) {
         </>
       )}
 
-      {activeTab === 'requests' && (
+      {activeTab === 'requests' && !isAdmin && (
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Gələn müraciətlər</h2>
-
-            {incomingRideRequests.length === 0 ? (
-              <p style={styles.mutedText}>Gələn müraciət yoxdur.</p>
+            
+            <p style={{ margin: '0 0 12px', fontWeight: 800, color: '#0f172a' }}>Aktiv müraciətlər</p>
+            {incomingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length === 0 ? (
+              <p style={styles.mutedText}>Aktiv gələn müraciət yoxdur.</p>
             ) : (
               <div style={styles.ridesGrid}>
-                {incomingRideRequests.map((item) => {
-                  const ride = item.ride
+                {incomingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).map((item) => (
+                  <div key={item.id} style={styles.resultCard}>
+                    <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
+                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(item.requester_role)}</p>
+                    <p style={styles.infoRow}><strong>İstənən yer:</strong> {item.seats_requested}</p>
+                    <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
+                    {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
+                    <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
+                    
+                    {item.status === 'pending' && item.ride?.status === 'active' && (
+                      <div style={styles.actionRow}>
+                        <button type="button" style={styles.successButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'accepted')}>Qəbul et</button>
+                        <button type="button" style={styles.dangerButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'rejected')}>Rədd et</button>
+                      </div>
+                    )}
+                    {item.status === 'accepted' && item.ride?.status === 'active' && (
+                      <div style={styles.actionRow}>
+                        <button type="button" style={styles.closeButton} disabled={rideRequestLoading === item.id} onClick={() => void handleConfirmDeal(item)}>Deal təsdiqlə</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
-                  return (
-                    <div key={item.id} style={styles.resultCard}>
-                      <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
-                      <p style={styles.infoRow}><strong>Göndərən ID:</strong> {item.requester_id}</p>
-                      <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(item.requester_role)}</p>
-                      <p style={styles.infoRow}><strong>İstənən yer sayı:</strong> {item.seats_requested}</p>
-                      <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
-
-                      {ride && (
-                        <>
-                          <p style={styles.infoRow}><strong>Marşrut:</strong> {ride.origin} → {ride.destination}</p>
-                          <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {ride.ride_date || '-'} / {ride.departure_time}</p>
-                          <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
-                          <p style={styles.infoRow}><strong>Qalan yer:</strong> {ride.seats}</p>
-                          <p style={styles.infoRow}><strong>Elan statusu:</strong> {getRideStatusLabel(ride.status)}</p>
-                        </>
-                      )}
-
-                      <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
-
-                      {item.status === 'pending' && ride?.status === 'active' && (
-                        <div style={styles.actionRow}>
-                          <button
-                            type="button"
-                            style={styles.successButton}
-                            disabled={rideRequestLoading === item.id}
-                            onClick={() => void handleRideRequestDecision(item, 'accepted')}
-                          >
-                            Qəbul et
-                          </button>
-
-                          <button
-                            type="button"
-                            style={styles.dangerButton}
-                            disabled={rideRequestLoading === item.id}
-                            onClick={() => void handleRideRequestDecision(item, 'rejected')}
-                          >
-                            Rədd et
-                          </button>
-                        </div>
-                      )}
-
-                      {item.status === 'accepted' && ride?.status === 'active' && (
-                        <div style={styles.actionRow}>
-                          <button
-                            type="button"
-                            style={styles.closeButton}
-                            disabled={rideRequestLoading === item.id}
-                            onClick={() => void handleConfirmDeal(item)}
-                          >
-                            Deal təsdiqlə
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+            <p style={{ margin: '24px 0 12px', fontWeight: 800, color: '#64748b' }}>Arxiv (Rədd edilmiş / Elanı bağlanmış)</p>
+            {incomingRideRequests.filter(req => !(req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active'))).length === 0 ? (
+              <p style={styles.mutedText}>Arxiv boşdur.</p>
+            ) : (
+              <div style={styles.ridesGrid}>
+                {incomingRideRequests.filter(req => !(req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active'))).map((item) => (
+                  <div key={item.id} style={{...styles.resultCard, opacity: 0.65}}>
+                    <div style={{...styles.badge, background: '#e2e8f0'}}>{getRequestStatusLabel(item.status)}</div>
+                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(item.requester_role)}</p>
+                    <p style={styles.infoRow}><strong>İstənən yer:</strong> {item.seats_requested}</p>
+                    {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
+                  </div>
+                ))}
               </div>
             )}
           </section>
 
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Göndərdiyim müraciətlər</h2>
-
-            {outgoingRideRequests.length === 0 ? (
-              <p style={styles.mutedText}>Göndərilmiş müraciət yoxdur.</p>
+            
+            <p style={{ margin: '0 0 12px', fontWeight: 800, color: '#0f172a' }}>Aktiv</p>
+            {outgoingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length === 0 ? (
+              <p style={styles.mutedText}>Aktiv göndərilmiş müraciət yoxdur.</p>
             ) : (
               <div style={styles.ridesGrid}>
-                {outgoingRideRequests.map((item) => {
-                  const ride = item.ride
+                {outgoingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).map((item) => (
+                  <div key={item.id} style={styles.resultCard}>
+                    <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
+                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(item.owner_role)}</p>
+                    <p style={styles.infoRow}><strong>Yer sayı:</strong> {item.seats_requested}</p>
+                    {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
+                    <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
-                  return (
-                    <div key={item.id} style={styles.resultCard}>
-                      <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
-                      <p style={styles.infoRow}><strong>Sahib ID:</strong> {item.owner_id}</p>
-                      <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(item.owner_role)}</p>
-                      <p style={styles.infoRow}><strong>Yer sayı:</strong> {item.seats_requested}</p>
-                      <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
-
-                      {ride && (
-                        <>
-                          <p style={styles.infoRow}><strong>Marşrut:</strong> {ride.origin} → {ride.destination}</p>
-                          <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {ride.ride_date || '-'} / {ride.departure_time}</p>
-                          <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
-                          <p style={styles.infoRow}><strong>Elan statusu:</strong> {getRideStatusLabel(ride.status)}</p>
-                        </>
-                      )}
-
-                      <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
-                    </div>
-                  )
-                })}
+            <p style={{ margin: '24px 0 12px', fontWeight: 800, color: '#64748b' }}>Arxiv</p>
+            {outgoingRideRequests.filter(req => !(req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active'))).length === 0 ? (
+              <p style={styles.mutedText}>Arxiv boşdur.</p>
+            ) : (
+              <div style={styles.ridesGrid}>
+                {outgoingRideRequests.filter(req => !(req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active'))).map((item) => (
+                  <div key={item.id} style={{...styles.resultCard, opacity: 0.65}}>
+                    <div style={{...styles.badge, background: '#e2e8f0'}}>{getRequestStatusLabel(item.status)}</div>
+                    <p style={styles.infoRow}><strong>Yer sayı:</strong> {item.seats_requested}</p>
+                    {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
+                  </div>
+                ))}
               </div>
             )}
           </section>
         </>
       )}
-
       {activeTab === 'chat' && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Chat</h2>
@@ -3333,13 +3347,47 @@ async function handleCloseConversation(conversationId: number) {
         </section>
       )}
 
-    {activeTab === 'reviews' && (
+    {activeTab === 'reviews' && !isAdmin && (
         <>
           <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>Reytinq və Rəylər</h2>
-          
-          {!isAdmin ? (
-            /* Adi istifadəçilər üçün məxfiləşdirilmiş görünüş */
+            <h2 style={styles.sectionTitle}>Review yaz</h2>
+            <div style={styles.form}>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Request seç</label>
+                <select
+                  value={reviewTargetRequestId ?? ''}
+                  onChange={(e) => setReviewTargetRequestId(e.target.value ? Number(e.target.value) : null)}
+                  style={styles.select}
+                >
+                  <option value="">Seç</option>
+                  {rideRequests.filter((item) => item.status === 'accepted').map((item) => (
+                    <option key={item.id} value={item.id}>
+                      #{item.id} - {item.ride?.origin || '-'} → {item.ride?.destination || '-'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Reytinq</label>
+                <select value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} style={styles.select}>
+                  <option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+                </select>
+              </div>
+
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Rəy (Gizli qalacaq)</label>
+                <textarea rows={3} value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={styles.textarea} placeholder="Təcrübənizi bölüşün..." />
+              </div>
+
+              <div style={styles.actionRow}>
+                <button type="button" onClick={() => void handleCreateReview()} style={styles.primaryButton}>Review göndər</button>
+              </div>
+            </div>
+          </section>
+
+          <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>Reytinq və Rəylər</h2>
             <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>
               <h3 style={{ fontSize: 56, margin: 0, color: '#eab308' }}>
                 ⭐ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0'}
@@ -3347,68 +3395,8 @@ async function handleCloseConversation(conversationId: number) {
               <p style={{ fontWeight: 700, color: '#334155', marginTop: 12, fontSize: 18 }}>Sizin Ümumi Reytinqiniz</p>
               <div style={{ background: '#e0e7ff', padding: '12px 16px', borderRadius: 8, marginTop: 24, display: 'inline-block' }}>
                 <p style={{ fontSize: 13, color: '#4338ca', margin: 0, fontWeight: 600 }}>
-                  🛡️ Məxfilik və təhlükəsizlik qaydalarına əsasən fərdi rəylər və kimin xal verdiyi gizlədilmişdir.
+                  🛡️ Məxfilik qaydalarına əsasən fərdi rəylər və kimin xal verdiyi gizlədilmişdir.
                 </p>
-              </div>
-            </div>
-          ) : (
-            /* Admin üçün detallı rəy siyahısı */
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
-              {reviews.length === 0 ? (
-                <p style={styles.mutedText}>Hələ rəy yoxdur.</p>
-              ) : (
-                reviews.map((rev) => (
-                  <div key={rev.id} style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontWeight: 700, color: '#334155' }}>Səfər ID: {rev.ride_id}</span>
-                      <span style={{ color: '#eab308', fontWeight: 800, fontSize: 16 }}>⭐ {rev.rating}</span>
-                    </div>
-                    <p style={{ margin: '0 0 8px', fontSize: 14, color: '#475569' }}>
-                      {rev.comment_text || 'Şərh yazılmayıb.'}
-                    </p>
-                    <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'right' }}>
-                      {formatDateTime(rev.created_at)}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          </section>
-
-      <section style={styles.sectionCard}>
-        <h2 style={styles.sectionTitle}>Report göndər</h2>
-
-            <div style={styles.form}>
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Target user ID</label>
-                <input
-                  value={reportTargetUserId}
-                  onChange={(e) => setReportTargetUserId(e.target.value)}
-                  style={styles.input}
-                />
-              </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Səbəb</label>
-                <input value={reportReason} onChange={(e) => setReportReason(e.target.value)} style={styles.input} />
-              </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Detallar</label>
-                <textarea
-                  rows={3}
-                  value={reportDetails}
-                  onChange={(e) => setReportDetails(e.target.value)}
-                  style={styles.textarea}
-                />
-              </div>
-
-              <div style={styles.actionRow}>
-                <button type="button" onClick={() => void handleCreateReport()} style={styles.primaryButton}>
-                  Report göndər
-                </button>
               </div>
             </div>
           </section>
