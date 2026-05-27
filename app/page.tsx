@@ -3375,8 +3375,11 @@ async function handleCloseConversation(conversationId: number) {
           )}
         </section>
 
-          <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Report göndər</h2>
+          </section>
+      )}
+
+      <section style={styles.sectionCard}>
+        <h2 style={styles.sectionTitle}>Report göndər</h2>
 
             <div style={styles.form}>
               <div style={styles.fieldWrap}>
