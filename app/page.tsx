@@ -3715,7 +3715,7 @@ async function handleCloseConversation(conversationId: number) {
               <h2 style={styles.sectionTitle}>Users</h2>
 
               <div style={styles.ridesGrid}>
-                {adm{adminUsersFiltered.map((user) => (
+                {adminUsersFiltered.map((user) => (
                   <div key={user.id} style={styles.adminCard}>
                     <div style={styles.adminBadge}>User #{user.id}</div>
                     <p style={styles.infoRow}><strong>Ad:</strong> {user.full_name || '-'}</p>
