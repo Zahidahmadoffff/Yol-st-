@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic'
 
 // LiveMap SSR olmadan yüklənir (Leaflet browser API tələb edir)
 const LiveMap = dynamic(() => import('./components/LiveMap'), { ssr: false })
+const LocationPicker = dynamic(() => import('./components/LocationPicker'), { ssr: false })
 
 type RideStatus = 'active' | 'full' | 'cancelled' | 'completed'
 type UserRole = 'driver' | 'passenger'
@@ -823,6 +824,12 @@ export default function Home() {
   const [adminLoadingId, setAdminLoadingId] = useState<string | number | null>(null)
   const [messageSending, setMessageSending] = useState(false)
   const [message, setMessage] = useState('')
+  const [locationPickerOpen, setLocationPickerOpen] = useState(false)
+  const [locationPickerTarget, setLocationPickerTarget] = useState<'origin' | 'destination'>('origin')
+  const [originLat, setOriginLat] = useState<number | null>(null)
+  const [originLng, setOriginLng] = useState<number | null>(null)
+  const [destLat, setDestLat] = useState<number | null>(null)
+  const [destLng, setDestLng] = useState<number | null>(null)
   const [editingRideId, setEditingRideId] = useState<string | null>(null)
 
   const [initialRole, setInitialRole] = useState<UserRole>('passenger')
@@ -895,12 +902,14 @@ export default function Home() {
       return { driverId: 0, username: 'guest', fullName: 'Guest', appRole: 'passenger' as AppRole }
     }
     const adminIds = (process.env.NEXT_PUBLIC_ADMIN_IDS ?? '')
-      .split(',').map((s: string) => Number(s.trim())).filter(Boolean)
+      .split(',').map((s: string) => s.trim()).filter(Boolean)
+    const userIdStr = String(user.id)
+    const isAdminUser = adminIds.includes(userIdStr) || adminIds.includes(String(Number(userIdStr)))
     return {
       driverId: user.id as number,
       username: (user.username as string) || `tg${user.id}`,
       fullName: [user.first_name, user.last_name].filter(Boolean).join(' ') || 'User',
-      appRole: adminIds.includes(user.id) ? ('admin' as AppRole) : ('driver' as AppRole),
+      appRole: isAdminUser ? ('admin' as AppRole) : ('driver' as AppRole),
     }
   }
 
@@ -916,6 +925,8 @@ export default function Home() {
     setSeats('1')
     setPricePerSeat('')
     setNotes('')
+    setOriginLat(null); setOriginLng(null)
+    setDestLat(null); setDestLng(null)
   }
 
   function setToday() {
@@ -1530,7 +1541,6 @@ export default function Home() {
       role: effectiveRole,
       car_brand: effectiveRole === 'driver' ? carBrand.trim() : null,
       license_plate: effectiveRole === 'driver' ? licensePlate.trim() : null,
-      updated_at: new Date().toISOString(),
       last_seen_at: new Date().toISOString(),
     }
 
@@ -1652,6 +1662,10 @@ export default function Home() {
         role: profile.role,
         origin: cleanOrigin,
         destination: cleanDestination,
+        origin_lat: originLat,
+        origin_lng: originLng,
+        destination_lat: destLat,
+        destination_lng: destLng,
         ride_date: rideDate,
         departure_time: departureTime,
         seats: seatsNumber,
@@ -1843,9 +1857,21 @@ export default function Home() {
     if (error) {
       setMessage('Müraciət göndərilmədi.')
     } else {
-      setMessage('Müraciət göndərildi.')
+      setMessage('Müraciət göndərildi. ✅')
       setRequestMessageMap((prev) => ({ ...prev, [ride.id]: '' }))
       setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: '1' }))
+      // Elan sahibinə Telegram bot bildirişi göndər
+      try {
+        await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: ride.driver_id,
+            text: `🚗 YolDash: Yeni müraciət!\n\nMarşrut: ${ride.origin} → ${ride.destination}\nTarix: ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yoldash_az_bot`,
+            parse_mode: 'HTML',
+          }),
+        })
+      } catch (_) { /* Bot bildirişi ixtiyaridir */ }
       await getRideRequests()
       setActiveTab('requests')
     }
@@ -2096,13 +2122,14 @@ export default function Home() {
     const newRole: UserRole = profile.role === 'driver' ? 'passenger' : 'driver'
     const { error } = await supabase
       .from('profiles')
-      .update({ role: newRole, updated_at: new Date().toISOString() })
+      .update({ role: newRole })
       .eq('id', currentUser.driverId)
     if (error) {
-      setMessage('Rol dəyişdirilmədi.')
+      setMessage(`Rol dəyişdirilmədi: ${error.message}`)
     } else {
       setMessage(newRole === 'driver' ? '🚗 Sürücü rejiminə keçildi!' : '🧑‍✈️ Sərnişin rejiminə keçildi!')
       await getProfile()
+      await getRides()
       await getAllMyRides()
     }
   }
@@ -2751,13 +2778,73 @@ export default function Home() {
 
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Haradan</label>
-                <input value={origin} onChange={(e) => setOrigin(e.target.value)} required style={styles.input} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    value={origin}
+                    onChange={(e) => setOrigin(e.target.value)}
+                    required
+                    style={{ ...styles.input, flex: 1 }}
+                    placeholder="Məkan adı yazın və ya xəritədən seçin"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setLocationPickerTarget('origin'); setLocationPickerOpen(true) }}
+                    style={{ ...styles.secondaryButton, padding: '12px 14px', whiteSpace: 'nowrap' }}
+                  >
+                    🗺️ Xəritə
+                  </button>
+                </div>
+                {originLat && (
+                  <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>
+                    📍 {originLat.toFixed(5)}, {originLng?.toFixed(5)}
+                  </p>
+                )}
               </div>
 
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Hara</label>
-                <input value={destination} onChange={(e) => setDestination(e.target.value)} required style={styles.input} />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    required
+                    style={{ ...styles.input, flex: 1 }}
+                    placeholder="Məkan adı yazın və ya xəritədən seçin"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setLocationPickerTarget('destination'); setLocationPickerOpen(true) }}
+                    style={{ ...styles.secondaryButton, padding: '12px 14px', whiteSpace: 'nowrap' }}
+                  >
+                    🗺️ Xəritə
+                  </button>
+                </div>
+                {destLat && (
+                  <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>
+                    📍 {destLat.toFixed(5)}, {destLng?.toFixed(5)}
+                  </p>
+                )}
               </div>
+
+              {/* ── LocationPicker Modal ── */}
+              {locationPickerOpen && (
+                <LocationPicker
+                  title={locationPickerTarget === 'origin' ? 'Haradan — başlanğıc nöqtəsi' : 'Hara — son nöqtə'}
+                  onClose={() => setLocationPickerOpen(false)}
+                  onSelect={(lat, lng, address) => {
+                    if (locationPickerTarget === 'origin') {
+                      setOrigin(address)
+                      setOriginLat(lat)
+                      setOriginLng(lng)
+                    } else {
+                      setDestination(address)
+                      setDestLat(lat)
+                      setDestLng(lng)
+                    }
+                    setLocationPickerOpen(false)
+                  }}
+                />
+              )}
 
               <div style={styles.twoColumnGrid}>
                 <div style={styles.fieldWrap}>
