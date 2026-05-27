@@ -1212,13 +1212,7 @@ useEffect(() => {
   async function getAllMyRides() {
     const current = getActiveUser()
 
-    if (current.appRole === 'admin') {
-      setAllMyRides([])
-      setMyRides([])
-      setHistoryRides([])
-      return
-    }
-
+    
     const { data, error } = await supabase
       .from('ride_listings')
       .select('*')
@@ -1239,11 +1233,7 @@ useEffect(() => {
   async function getRideRequests() {
     const current = getActiveUser()
 
-    if (current.appRole === 'admin') {
-      setRideRequests([])
-      return
-    }
-
+    
     const { data, error } = await supabase
       .from('ride_requests')
       .select('*')
@@ -1275,11 +1265,7 @@ useEffect(() => {
   async function getReviews() {
     const current = getActiveUser()
 
-    if (current.appRole === 'admin') {
-      setReviews([])
-      return
-    }
-
+    
     const { data, error } = await supabase
       .from('reviews')
       .select('*')
@@ -1395,12 +1381,7 @@ useEffect(() => {
   async function getConversations(preserveSelection = true) {
     const current = getActiveUser()
 
-    if (current.appRole === 'admin') {
-      setConversations([])
-      setUnreadTotal(0)
-      return
-    }
-
+    
     const { data, error } = await supabase
       .from('conversations')
       .select('*')
