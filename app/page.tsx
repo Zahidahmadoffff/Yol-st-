@@ -2691,10 +2691,9 @@ async function handleCloseConversation(conversationId: number) {
           { key: 'dashboard', label: 'Dashboard' },
           { key: 'create', label: 'Elan ver' },
           { key: 'search', label: 'Axtarış' },
-          { key: 'requests', label: isAdmin ? 'Requests' : `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length})` },
-          { key: 'chat', label: isAdmin ? 'Chat' : unreadTotal > 0 ? `Chat (${unreadTotal} yeni)` : `Chat (${conversations.filter(c => c.status !== 'closed').length})` },
+          { key: 'requests', label: `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length})` },
+          { key: 'chat', label: unreadTotal > 0 ? `Chat (${unreadTotal} yeni)` : `Chat (${conversations.filter(c => c.status !== 'closed').length})` },
           { key: 'history', label: 'Tarixçə' },
-          { key: 'reviews', label: 'Reviews' },
           { key: 'profile', label: 'Profil' },
           ...(isAdmin ? [{ key: 'admin', label: 'Admin' }] : []),
         ].map((item) => (
@@ -2740,9 +2739,16 @@ async function handleCloseConversation(conversationId: number) {
                 <p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length}</p>
               </div>
 
-              <div style={styles.statsCard}>
+             <div style={styles.statsCard}>
                 <p style={styles.statLabel}>Oxunmamış mesajlar</p>
                 <p style={styles.statValue}>{unreadTotal}</p>
+              </div>
+
+              <div style={styles.statsCard}>
+                <p style={styles.statLabel}>Reytinqim</p>
+                <p style={{ ...styles.statValue, color: '#eab308' }}>
+                  ⭐ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0'}
+                </p>
               </div>
             </div>
           </section>
@@ -3074,7 +3080,7 @@ async function handleCloseConversation(conversationId: number) {
         </>
       )}
 
-      {activeTab === 'requests' && !isAdmin && (
+      {activeTab === 'requests' && (
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Gələn müraciətlər</h2>
@@ -3322,38 +3328,12 @@ async function handleCloseConversation(conversationId: number) {
       )}
 
       {activeTab === 'history' && (
-        <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>Elan tarixçəsi</h2>
-
-          {historyRides.length === 0 ? (
-            <p style={styles.mutedText}>Tarixçədə elan yoxdur.</p>
-          ) : (
-            <div style={styles.ridesGrid}>
-              {historyRides.map((ride) => (
-                <div key={ride.id} style={styles.resultCard}>
-                  <div style={getRideBadgeStyle(ride.status)}>{getRideStatusLabel(ride.status)}</div>
-                  <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
-                  <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
-                  <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
-                  <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
-                  <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
-                  <p style={styles.infoRow}><strong>Yer:</strong> {ride.seats}</p>
-                  <p style={styles.infoRow}><strong>Səbəb:</strong> {ride.closed_reason || '-'}</p>
-                  <p style={styles.infoRow}><strong>Completed at:</strong> {formatDateTime(ride.completed_at)}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
-    {activeTab === 'reviews' && !isAdmin && (
         <>
           <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Review yaz</h2>
+            <h2 style={styles.sectionTitle}>Səfəri qiymətləndir (Review yaz)</h2>
             <div style={styles.form}>
               <div style={styles.fieldWrap}>
-                <label style={styles.label}>Request seç</label>
+                <label style={styles.label}>Təsdiqlənmiş müraciət seç</label>
                 <select
                   value={reviewTargetRequestId ?? ''}
                   onChange={(e) => setReviewTargetRequestId(e.target.value ? Number(e.target.value) : null)}
@@ -3369,7 +3349,7 @@ async function handleCloseConversation(conversationId: number) {
               </div>
 
               <div style={styles.fieldWrap}>
-                <label style={styles.label}>Reytinq</label>
+                <label style={styles.label}>Reytinq (1-5)</label>
                 <select value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} style={styles.select}>
                   <option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
                 </select>
@@ -3377,7 +3357,7 @@ async function handleCloseConversation(conversationId: number) {
 
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Rəy (Gizli qalacaq)</label>
-                <textarea rows={3} value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={styles.textarea} placeholder="Təcrübənizi bölüşün..." />
+                <textarea rows={3} value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={styles.textarea} placeholder="Səfər barədə fikirlərini yaz..." />
               </div>
 
               <div style={styles.actionRow}>
@@ -3387,18 +3367,27 @@ async function handleCloseConversation(conversationId: number) {
           </section>
 
           <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Reytinq və Rəylər</h2>
-            <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>
-              <h3 style={{ fontSize: 56, margin: 0, color: '#eab308' }}>
-                ⭐ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0'}
-              </h3>
-              <p style={{ fontWeight: 700, color: '#334155', marginTop: 12, fontSize: 18 }}>Sizin Ümumi Reytinqiniz</p>
-              <div style={{ background: '#e0e7ff', padding: '12px 16px', borderRadius: 8, marginTop: 24, display: 'inline-block' }}>
-                <p style={{ fontSize: 13, color: '#4338ca', margin: 0, fontWeight: 600 }}>
-                  🛡️ Məxfilik qaydalarına əsasən fərdi rəylər və kimin xal verdiyi gizlədilmişdir.
-                </p>
+            <h2 style={styles.sectionTitle}>Elan tarixçəsi</h2>
+
+            {historyRides.length === 0 ? (
+              <p style={styles.mutedText}>Tarixçədə elan yoxdur.</p>
+            ) : (
+              <div style={styles.ridesGrid}>
+                {historyRides.map((ride) => (
+                  <div key={ride.id} style={styles.resultCard}>
+                    <div style={getRideBadgeStyle(ride.status)}>{getRideStatusLabel(ride.status)}</div>
+                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
+                    <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
+                    <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
+                    <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
+                    <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
+                    <p style={styles.infoRow}><strong>Yer:</strong> {ride.seats}</p>
+                    <p style={styles.infoRow}><strong>Səbəb:</strong> {ride.closed_reason || '-'}</p>
+                    <p style={styles.infoRow}><strong>Bitmə tarixi:</strong> {formatDateTime(ride.completed_at)}</p>
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </section>
         </>
       )}
