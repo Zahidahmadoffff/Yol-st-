@@ -3715,12 +3715,14 @@ async function handleCloseConversation(conversationId: number) {
               <h2 style={styles.sectionTitle}>Users</h2>
 
               <div style={styles.ridesGrid}>
-                {adminUsersFiltered.map((user) => (
+                {adm{adminUsersFiltered.map((user) => (
                   <div key={user.id} style={styles.adminCard}>
                     <div style={styles.adminBadge}>User #{user.id}</div>
                     <p style={styles.infoRow}><strong>Ad:</strong> {user.full_name || '-'}</p>
                     <p style={styles.infoRow}><strong>Username:</strong> {user.username || '-'}</p>
                     <p style={styles.infoRow}><strong>Telefon:</strong> {user.phone || '-'}</p>
+                    <p style={styles.infoRow}><strong>Bio:</strong> {user.bio || '-'}</p>
+                    <p style={styles.infoRow}><strong>Avtomobil:</strong> {user.car_brand ? `${user.car_brand} (${user.license_plate})` : '-'}</p>
                     <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(user.role)}</p>
                     <p style={styles.infoRow}><strong>Blocked:</strong> {adminUserBlockedMap[user.id] ? 'Bəli' : 'Xeyr'}</p>
                     <p style={styles.infoRow}><strong>Avg rating:</strong> {user.avg_rating || 0}</p>
@@ -3741,11 +3743,19 @@ async function handleCloseConversation(conversationId: number) {
                     <div style={styles.actionRow}>
                       <button
                         type="button"
-                        style={adminUserBlockedMap[user.id] ? styles.successButton : styles.dangerButton}
+                        style={adminUserBlockedMap[user.id] ? styles.successButton : styles.warningButton}
                         disabled={adminLoadingId === user.id}
                         onClick={() => void handleAdminToggleUser(user)}
                       >
-                        {adminUserBlockedMap[user.id] ? 'Unblock' : 'Block'}
+                        {adminUserBlockedMap[user.id] ? 'Blokdan çıxar' : 'Blokla'}
+                      </button>
+                      <button
+                        type="button"
+                        style={styles.dangerButton}
+                        disabled={adminLoadingId === user.id}
+                        onClick={() => void handleAdminDeleteUser(user)}
+                      >
+                        Tamamilə Sil
                       </button>
                     </div>
                   </div>
@@ -3963,50 +3973,28 @@ async function handleCloseConversation(conversationId: number) {
 
                 <div style={styles.ridesGrid}>
                   {allReviewsAdmin.map((item) => (
-                    <div key={user.id} style={styles.adminCard}>
-                    <div style={styles.adminBadge}>User #{user.id}</div>
-                    <p style={styles.infoRow}><strong>Ad:</strong> {user.full_name || '-'}</p>
-                    <p style={styles.infoRow}><strong>Username:</strong> {user.username || '-'}</p>
-                    <p style={styles.infoRow}><strong>Telefon:</strong> {user.phone || '-'}</p>
-                    <p style={styles.infoRow}><strong>Bio:</strong> {user.bio || '-'}</p>
-                    <p style={styles.infoRow}><strong>Avtomobil:</strong> {user.car_brand ? `${user.car_brand} (${user.license_plate})` : '-'}</p>
-                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(user.role)}</p>
-                    <p style={styles.infoRow}><strong>Blocked:</strong> {adminUserBlockedMap[user.id] ? 'Bəli' : 'Xeyr'}</p>
-                    <p style={styles.infoRow}><strong>Avg rating:</strong> {user.avg_rating || 0}</p>
-                    <p style={styles.infoRow}><strong>Active rides:</strong> {user.active_rides}</p>
-
-                    <div style={styles.fieldWrap}>
-                      <label style={styles.label}>Admin note</label>
-                      <textarea
-                        rows={3}
-                        value={adminUserNoteMap[user.id] || ''}
-                        onChange={(e) =>
-                          setAdminUserNoteMap((prev) => ({ ...prev, [user.id]: e.target.value }))
-                        }
-                        style={styles.textarea}
-                      />
-                    </div>
+                  <div key={item.id} style={styles.adminCard}>
+                    <div style={styles.adminBadge}>Review #{item.id}</div>
+                    <p style={styles.infoRow}><strong>Reviewer:</strong> {item.reviewer_id}</p>
+                    <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
+                    <p style={styles.infoRow}><strong>Rating:</strong> {item.rating}</p>
+                    <p style={styles.infoRow}><strong>Comment:</strong> {item.comment_text || '-'}</p>
 
                     <div style={styles.actionRow}>
-                      <button
-                        type="button"
-                        style={adminUserBlockedMap[user.id] ? styles.successButton : styles.warningButton}
-                        disabled={adminLoadingId === user.id}
-                        onClick={() => void handleAdminToggleUser(user)}
-                      >
-                        {adminUserBlockedMap[user.id] ? 'Blokdan çıxar' : 'Blokla'}
+                      <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>
+                        Edit
                       </button>
                       <button
                         type="button"
                         style={styles.dangerButton}
-                        disabled={adminLoadingId === user.id}
-                        onClick={() => void handleAdminDeleteUser(user)}
+                        disabled={adminLoadingId === item.id}
+                        onClick={() => void handleAdminDeleteReview(item)}
                       >
-                        Tamamilə Sil
+                        Delete
                       </button>
                     </div>
                   </div>
-                  ))}
+                ))}
                 </div>
               </section>
 
