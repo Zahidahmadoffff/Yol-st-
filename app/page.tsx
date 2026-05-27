@@ -2227,7 +2227,25 @@ async function handleCloseConversation(conversationId: number) {
 
     setAdminLoadingId(null)
   }
+// YENİ ƏLAVƏ: İstifadəçini tamamilə silmək
+  async function handleAdminDeleteUser(user: UserOverview) {
+    const confirmed = window.confirm(`DİQQƏT! ${user.full_name || user.username} adlı istifadəçini tamamilə silmək istəyirsiniz? Bu əməliyyat geri qaytarıla bilməz!`);
+    if (!confirmed) return;
 
+    setAdminLoadingId(user.id);
+
+    const { error } = await supabase.from('profiles').delete().eq('id', user.id);
+
+    if (error) {
+      setMessage(`Silinmədi: Baza xətası ola bilər (Məsələn: istifadəçinin aktiv elanları varsa). Əvvəlcə istifadəçini bloklayın.`);
+    } else {
+      await logAdminAction('delete_user', 'profile', String(user.id), user as any, null, 'Admin deleted user');
+      setMessage('İstifadəçi tamamilə silindi.');
+      await getAdminData();
+    }
+
+    setAdminLoadingId(null);
+  }
   async function handleAdminUpdateReport(report: UserReport) {
     setAdminLoadingId(report.id)
 
@@ -2553,7 +2571,6 @@ async function handleCloseConversation(conversationId: number) {
   }
 
   const filteredRides = useMemo(() => {
-    if (isAdmin) return []
     const current = getActiveUser()
     const text = searchText.toLowerCase().trim()
 
@@ -2574,12 +2591,10 @@ async function handleCloseConversation(conversationId: number) {
   }, [rides, searchText, filterRole, filterDate, isAdmin])
 
   const incomingRideRequests = useMemo(() => {
-    if (isAdmin) return []
     return rideRequests.filter((item) => item.owner_id === currentUser.driverId)
   }, [rideRequests, currentUser.driverId, isAdmin])
 
   const outgoingRideRequests = useMemo(() => {
-    if (isAdmin) return []
     return rideRequests.filter((item) => item.requester_id === currentUser.driverId)
   }, [rideRequests, currentUser.driverId, isAdmin])
 
@@ -2724,7 +2739,7 @@ async function handleCloseConversation(conversationId: number) {
             </div>
           </section>
 
-          {!isAdmin && (
+          {(true) && (
             <section style={styles.sectionCard}>
               <h2 style={styles.sectionTitle}>Mənim aktiv elanlarım</h2>
 
@@ -2786,9 +2801,9 @@ async function handleCloseConversation(conversationId: number) {
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>{editingRideId ? 'Elanı redaktə et' : 'Yeni elan yarat'}</h2>
 
-          {isAdmin ? (
-            <p style={styles.mutedText}>Admin üçün elan yaratma formu deaktivdir.</p>
-          ) : !profile ? (
+          **Bununla Əvəz et:**
+```javascript
+          {!profile ? (
             <p style={styles.mutedText}>Əvvəl profil yaratmaq lazımdır.</p>
           ) : (
             <form onSubmit={handleSubmitRide} style={styles.form}>
@@ -2922,7 +2937,7 @@ async function handleCloseConversation(conversationId: number) {
         </section>
       )}
 
-      {activeTab === 'search' && !isAdmin && (
+      {activeTab === 'search' && (
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Axtarış</h2>
@@ -3046,7 +3061,7 @@ async function handleCloseConversation(conversationId: number) {
         </>
       )}
 
-      {activeTab === 'requests' && !isAdmin && (
+      {activeTab === 'requests' && (
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Gələn müraciətlər</h2>
@@ -3156,7 +3171,7 @@ async function handleCloseConversation(conversationId: number) {
         </>
       )}
 
-      {activeTab === 'chat' && !isAdmin && (
+      {activeTab === 'chat' && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Chat</h2>
 
@@ -3298,7 +3313,7 @@ async function handleCloseConversation(conversationId: number) {
         </section>
       )}
 
-      {activeTab === 'history' && !isAdmin && (
+      {activeTab === 'history' && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Elan tarixçəsi</h2>
 
@@ -3324,7 +3339,7 @@ async function handleCloseConversation(conversationId: number) {
         </section>
       )}
 
-      {activeTab === 'reviews' && !isAdmin && (
+      {activeTab === 'reviews' && (
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Review yaz</h2>
@@ -3517,19 +3532,21 @@ async function handleCloseConversation(conversationId: number) {
                 </div>
               )}
 
-              {(profile ? profile.role === 'driver' : initialRole === 'driver') && (
+              {/* Avtomobil məlumatları hər kəsə açıqdır ki, sərnişin rahatlıqla maşınını yazıb sürücü ola bilsin */}
+              <div style={{ marginTop: 10, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                <p style={{ margin: '0 0 12px', fontWeight: 700, color: '#334155' }}>🚗 Sürücü Məlumatları (Sürücü roluna keçmək istəyənlər üçün məcburidir)</p>
                 <div style={styles.twoColumnGrid}>
                   <div style={styles.fieldWrap}>
                     <label style={styles.label}>Avtomobil markası</label>
-                    <input value={carBrand} onChange={(e) => setCarBrand(e.target.value)} style={styles.input} />
+                    <input value={carBrand} onChange={(e) => setCarBrand(e.target.value)} style={styles.input} placeholder="Məs: Toyota Prius" />
                   </div>
 
                   <div style={styles.fieldWrap}>
                     <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
-                    <input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} style={styles.input} />
+                    <input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} style={styles.input} placeholder="Məs: 99-XX-999" />
                   </div>
                 </div>
-              )}
+              </div>
 
               <div style={styles.buttonRow}>
                 <button type="submit" disabled={profileSaving} style={styles.primaryButton}>
@@ -3642,43 +3659,32 @@ async function handleCloseConversation(conversationId: number) {
               <div style={{ marginTop: 20, padding: 16, background: '#faf5ff', borderRadius: 14, border: '1px solid #e9d5ff' }}>
                 <p style={{ margin: '0 0 12px', fontWeight: 800, color: '#6d28d9', fontSize: 15 }}>⚡ Sürətli hərəkətlər</p>
                 <div style={styles.buttonRow}>
-                  <button
-                    type="button"
-                    onClick={() => setAdminSection('reports')}
-                    style={{
-                      ...styles.dangerButton,
-                      opacity: adminReports.filter(r => r.status === 'open').length === 0 ? 0.5 : 1,
-                    }}
-                  >
-                    🔴 Açıq reportlar ({adminReports.filter(r => r.status === 'open').length})
+                  <button type="button" onClick={() => setAdminSection('reports')} style={{ ...styles.dangerButton, opacity: adminReports.filter(r => r.status === 'open').length === 0 ? 0.5 : 1 }}>
+                    🔴 Reportlar ({adminReports.filter(r => r.status === 'open').length})
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setAdminSection('users')}
-                    style={styles.warningButton}
-                  >
+                  <button type="button" onClick={() => setAdminSection('users')} style={styles.warningButton}>
                     👥 İstifadəçilər
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setAdminSection('rides')}
-                    style={styles.closeButton}
-                  >
+                  <button type="button" onClick={() => setAdminSection('rides')} style={styles.closeButton}>
                     🚗 Elanlar
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setAdminSection('audit')}
-                    style={styles.ghostButton}
-                  >
+                  <button type="button" onClick={() => setAdminSection('requests')} style={styles.primaryButton}>
+                    ⏳ Müraciətlər
+                  </button>
+                  <button type="button" onClick={() => setAdminSection('conversations')} style={styles.successButton}>
+                    💬 Çatlar
+                  </button>
+                  <button type="button" onClick={() => setAdminSection('messages')} style={{...styles.ghostButton, borderColor: '#3b82f6', color: '#3b82f6'}}>
+                    ✉️ Mesajlar
+                  </button>
+                  <button type="button" onClick={() => setAdminSection('reviews')} style={{...styles.ghostButton, borderColor: '#d97706', color: '#d97706'}}>
+                    ⭐ Rəylər
+                  </button>
+                  <button type="button" onClick={() => setAdminSection('audit')} style={styles.ghostButton}>
                     📋 Audit log
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => void getAdminData()}
-                    style={styles.secondaryButton}
-                  >
-                    🔄 Yenilə
+                  <button type="button" onClick={() => void getAdminData()} style={styles.secondaryButton}>
+                    🔄 Təzələ
                   </button>
                 </div>
               </div>
@@ -3957,27 +3963,49 @@ async function handleCloseConversation(conversationId: number) {
 
                 <div style={styles.ridesGrid}>
                   {allReviewsAdmin.map((item) => (
-                    <div key={item.id} style={styles.adminCard}>
-                      <div style={styles.adminBadge}>Review #{item.id}</div>
-                      <p style={styles.infoRow}><strong>Reviewer:</strong> {item.reviewer_id}</p>
-                      <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
-                      <p style={styles.infoRow}><strong>Rating:</strong> {item.rating}</p>
-                      <p style={styles.infoRow}><strong>Comment:</strong> {item.comment_text || '-'}</p>
+                    <div key={user.id} style={styles.adminCard}>
+                    <div style={styles.adminBadge}>User #{user.id}</div>
+                    <p style={styles.infoRow}><strong>Ad:</strong> {user.full_name || '-'}</p>
+                    <p style={styles.infoRow}><strong>Username:</strong> {user.username || '-'}</p>
+                    <p style={styles.infoRow}><strong>Telefon:</strong> {user.phone || '-'}</p>
+                    <p style={styles.infoRow}><strong>Bio:</strong> {user.bio || '-'}</p>
+                    <p style={styles.infoRow}><strong>Avtomobil:</strong> {user.car_brand ? `${user.car_brand} (${user.license_plate})` : '-'}</p>
+                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(user.role)}</p>
+                    <p style={styles.infoRow}><strong>Blocked:</strong> {adminUserBlockedMap[user.id] ? 'Bəli' : 'Xeyr'}</p>
+                    <p style={styles.infoRow}><strong>Avg rating:</strong> {user.avg_rating || 0}</p>
+                    <p style={styles.infoRow}><strong>Active rides:</strong> {user.active_rides}</p>
 
-                      <div style={styles.actionRow}>
-                        <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          style={styles.dangerButton}
-                          disabled={adminLoadingId === item.id}
-                          onClick={() => void handleAdminDeleteReview(item)}
-                        >
-                          Delete
-                        </button>
-                      </div>
+                    <div style={styles.fieldWrap}>
+                      <label style={styles.label}>Admin note</label>
+                      <textarea
+                        rows={3}
+                        value={adminUserNoteMap[user.id] || ''}
+                        onChange={(e) =>
+                          setAdminUserNoteMap((prev) => ({ ...prev, [user.id]: e.target.value }))
+                        }
+                        style={styles.textarea}
+                      />
                     </div>
+
+                    <div style={styles.actionRow}>
+                      <button
+                        type="button"
+                        style={adminUserBlockedMap[user.id] ? styles.successButton : styles.warningButton}
+                        disabled={adminLoadingId === user.id}
+                        onClick={() => void handleAdminToggleUser(user)}
+                      >
+                        {adminUserBlockedMap[user.id] ? 'Blokdan çıxar' : 'Blokla'}
+                      </button>
+                      <button
+                        type="button"
+                        style={styles.dangerButton}
+                        disabled={adminLoadingId === user.id}
+                        onClick={() => void handleAdminDeleteUser(user)}
+                      >
+                        Tamamilə Sil
+                      </button>
+                    </div>
+                  </div>
                   ))}
                 </div>
               </section>
