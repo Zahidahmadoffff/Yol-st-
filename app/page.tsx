@@ -3278,27 +3278,35 @@ async function handleCloseConversation(conversationId: number) {
                     )}
                   </div>
 
-                  <div style={styles.fieldWrap}>
-                    <label style={styles.label}>Mesaj</label>
-                    <textarea
-                      rows={3}
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      style={styles.textarea}
-                      placeholder="Mesaj yaz..."
-                    />
-                  </div>
+                  {selectedConversation.status !== 'closed' ? (
+                    <>
+                      <div style={styles.fieldWrap}>
+                        <label style={styles.label}>Mesaj</label>
+                        <textarea
+                          rows={3}
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          style={styles.textarea}
+                          placeholder="Mesaj yaz..."
+                        />
+                      </div>
 
-                  <div style={styles.actionRow}>
-                    <button
-                      type="button"
-                      onClick={() => void handleSendMessage()}
-                      style={styles.primaryButton}
-                      disabled={messageSending}
-                    >
-                      {messageSending ? 'Göndərilir...' : 'Göndər'}
-                    </button>
-                  </div>
+                      <div style={styles.actionRow}>
+                        <button
+                          type="button"
+                          onClick={() => void handleSendMessage()}
+                          style={styles.primaryButton}
+                          disabled={messageSending}
+                        >
+                          {messageSending ? 'Göndərilir...' : 'Göndər'}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ marginTop: 16, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                      <p style={{ margin: 0, fontWeight: 700, color: '#64748b' }}>🔒 Bu çat bağlanıb. Artıq mesaj yazmaq mümkün deyil.</p>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -3451,7 +3459,7 @@ async function handleCloseConversation(conversationId: number) {
           <h2 style={styles.sectionTitle}>{profile ? 'Profil idarəetməsi' : 'Profil yarat'}</h2>
 
           {/* ── Rol dəyişdirmə kartı ── */}
-          {profile && !isAdmin && (
+          {profile && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '16px 18px', marginBottom: 18,
@@ -3484,7 +3492,7 @@ async function handleCloseConversation(conversationId: number) {
             </div>
           )}
 
-          {isAdmin ? (
+          {false ? (
             <p style={styles.mutedText}>Admin user üçün profil formu istifadə edilmir.</p>
           ) : (
             <form onSubmit={handleCreateOrUpdateProfile} style={styles.form}>
