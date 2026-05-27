@@ -3333,8 +3333,9 @@ async function handleCloseConversation(conversationId: number) {
         </section>
       )}
 
-      {activeTab === 'reviews' && (
-        <section style={styles.sectionCard}>
+    {activeTab === 'reviews' && (
+        <>
+          <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Reytinq və Rəylər</h2>
           
           {!isAdmin ? (
@@ -3375,7 +3376,6 @@ async function handleCloseConversation(conversationId: number) {
           )}
 
           </section>
-      )}
 
       <section style={styles.sectionCard}>
         <h2 style={styles.sectionTitle}>Report göndər</h2>
