@@ -1096,7 +1096,19 @@ export default function Home() {
     if (!selectedConversationId) return
     void getMessages(selectedConversationId)
   }, [selectedConversationId, isAdmin])
+useEffect(() => {
+    if (isAdmin) return;
 
+    const intervalId = setInterval(() => {
+      getRideRequests();
+      getConversations(true);
+      if (selectedConversationIdRef.current) {
+        getMessages(selectedConversationIdRef.current, false);
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [isAdmin]);
   async function initializeData() {
     setMessage('')
     setSelectedConversationId(null)
@@ -1150,18 +1162,6 @@ export default function Home() {
   async function getProfile() {
     const current = getActiveUser()
 
-    if (current.appRole === 'admin') {
-      setProfile(null)
-      setProfileFullName(current.fullName)
-      setProfileUsername(current.username)
-      setProfilePhone('')
-      setProfileBio('Admin test panel')
-      setCarBrand('')
-      setLicensePlate('')
-      setInitialRole('passenger')
-      return
-    }
-
     const { data, error } = await supabase.from('profiles').select('*').eq('id', current.driverId).maybeSingle()
 
     if (error) {
@@ -1184,7 +1184,7 @@ export default function Home() {
       setProfileFullName(current.fullName)
       setProfileUsername(current.username)
       setProfilePhone('')
-      setProfileBio('')
+      setProfileBio(current.appRole === 'admin' ? 'Admin hesabı' : '')
       setCarBrand('')
       setLicensePlate('')
       setInitialRole('passenger')
@@ -1507,12 +1507,6 @@ export default function Home() {
 
   async function handleCreateOrUpdateProfile(e: React.FormEvent) {
     e.preventDefault()
-
-    if (isAdmin) {
-      setMessage('Admin profil redaktəsi bu formdan açıq deyil.')
-      return
-    }
-
     setProfileSaving(true)
     setMessage('')
 
@@ -1547,13 +1541,11 @@ export default function Home() {
     const { error } = await supabase.from('profiles').upsert(payload)
 
     if (error) {
-      console.error('Profile save error:', JSON.stringify(error, null, 2))
       setMessage('Profil yadda saxlanmadı.')
     } else {
       setMessage('Profil yadda saxlanıldı.')
       await getProfile()
     }
-
     setProfileSaving(false)
   }
 
@@ -1564,11 +1556,27 @@ export default function Home() {
 
     const current = getActiveUser()
 
-    if (isAdmin) {
-      setMessage('Admin test profili ilə elan yaradılmır.')
+    async function handleSubmitRide(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true)
+    setMessage('')
+
+    const current = getActiveUser()
+
+    if (!profile) {
+      setMessage('Əvvəl profil yaratmaq lazımdır.')
       setSubmitting(false)
       return
     }
+
+    if (profile.is_blocked) {
+      setMessage('Profil bloklandığı üçün elan yarada bilməzsən.')
+      setSubmitting(false)
+      return
+    }
+
+    const cleanOrigin = origin.trim()
+// Buradan aşağısı (cleanDestination və s.) sənin öz kodundakı kimi davam edəcək. Sadəcə "if (isAdmin)" olan hissəni sildik.
 
     if (!profile) {
       setMessage('Əvvəl profil yaratmaq lazımdır.')
@@ -1867,7 +1875,7 @@ export default function Home() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: ride.driver_id,
-            text: `🚗 YolDash: Yeni müraciət!\n\nMarşrut: ${ride.origin} → ${ride.destination}\nTarix: ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yoldash_az_bot`,
+            text: `🚗 YolDash: Yeni müraciət!\n\nMarşrut: ${ride.origin} → ${ride.destination}\nTarix: ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`,
             parse_mode: 'HTML',
           }),
         })
@@ -2008,7 +2016,28 @@ export default function Home() {
     await getConversations(false)
     setActiveTab('chat')
   }
+async function handleCloseConversation(conversationId: number) {
+    const confirmed = window.confirm('Bu çatı bağlamaq və arxivə atmaq istədiyinizə əminsiniz?');
+    if (!confirmed) return;
 
+    const { error } = await supabase
+      .from('conversations')
+      .update({ 
+        status: 'closed', 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', conversationId);
+
+    if (error) {
+      setMessage('Çat bağlanmadı.');
+    } else {
+      setMessage('Çat bağlandı və arxivləndi.');
+      await getConversations(true);
+      if (selectedConversationId === conversationId) {
+        setSelectedConversationId(null);
+      }
+    }
+  }
   async function handleSendMessage() {
     if (!selectedConversationId) {
       setMessage('Əvvəl chat seç.')
@@ -2114,16 +2143,28 @@ export default function Home() {
   }
 
   // ── Rol dəyişdirmə (sürücü ↔ sərnişin) ───────────────────────────────
+  // ── Rol dəyişdirmə (sürücü ↔ sərnişin) ───────────────────────────────
   async function handleSwitchRole() {
     if (!profile) {
       setMessage('Əvvəl profil yaratmaq lazımdır.')
       return
     }
+
     const newRole: UserRole = profile.role === 'driver' ? 'passenger' : 'driver'
+
+    // YENİ ƏLAVƏ: Sürücüyə keçirsə və maşın məlumatı yoxdursa, profilə yönləndir
+    if (newRole === 'driver' && (!profile.car_brand || !profile.license_plate)) {
+      setMessage('Sürücü olmaq üçün əvvəlcə profil bölməsində avtomobilinizin markasını və nömrəsini daxil edin.')
+      setActiveTab('profile')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update({ role: newRole })
       .eq('id', currentUser.driverId)
+
     if (error) {
       setMessage(`Rol dəyişdirilmədi: ${error.message}`)
     } else {
@@ -2624,7 +2665,7 @@ export default function Home() {
             Bu tətbiq yalnız Telegram Mini App kimi işləyir.
           </p>
           <p style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>
-            Botdan açın: @yoldash_az_bot
+            Botdan açın: @yolustubot
           </p>
         </div>
       </main>
@@ -3198,7 +3239,20 @@ export default function Home() {
                     <p style={styles.infoRow}>
                       <strong>Qiymət:</strong> {selectedConversationRide ? `${selectedConversationRide.price_per_seat} AZN` : '-'}
                     </p>
-                    <p style={styles.infoRow}><strong>Status:</strong> {selectedConversation.status}</p>
+                    <p style={styles.infoRow}>
+                      <strong>Status:</strong> {selectedConversation.status === 'closed' ? 'Arxivlənib (Bağlı)' : selectedConversation.status}
+                    </p>
+                    {selectedConversation.status !== 'closed' && (
+                      <div style={{ marginTop: 10 }}>
+                        <button 
+                          type="button" 
+                          onClick={() => void handleCloseConversation(selectedConversation.id)} 
+                          style={styles.dangerButton}
+                        >
+                          Çatı Bağla
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ height: 12 }} />
