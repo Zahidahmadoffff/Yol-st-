@@ -3198,38 +3198,6 @@ async function handleCloseConversation(conversationId: number) {
                   })
                 )}
               </div>
-                    const ride = conv.ride
-                    return (
-                      <div
-                        key={conv.id}
-                        style={selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard}
-                        onClick={() => void handleOpenConversation(conv.id)}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                          <div style={styles.badge}>Chat #{conv.id}</div>
-                          {conv.unread_count ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
-                        </div>
-
-                        <p style={styles.infoRow}>
-                          <strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}
-                        </p>
-
-                        <p style={styles.infoRow}>
-                          <strong>Tarix/Saat:</strong> {ride ? `${ride.ride_date || '-'} / ${ride.departure_time}` : '-'}
-                        </p>
-
-                        <p style={styles.infoRow}>
-                          <strong>Qiymət:</strong> {ride ? `${ride.price_per_seat} AZN` : '-'}
-                        </p>
-
-                        <p style={styles.infoRow}>
-                          <strong>Status:</strong> {conv.status}
-                        </p>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
             </div>
 
             <div style={styles.chatPanel}>
@@ -3258,7 +3226,7 @@ async function handleCloseConversation(conversationId: number) {
                           onClick={() => void handleCloseConversation(selectedConversation.id)} 
                           style={styles.dangerButton}
                         >
-                          Çatı Bağla
+                          🔒 Çatı Bağla
                         </button>
                       </div>
                     )}
@@ -3325,7 +3293,7 @@ async function handleCloseConversation(conversationId: number) {
                     </>
                   ) : (
                     <div style={{ marginTop: 16, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                      <p style={{ margin: 0, fontWeight: 700, color: '#64748b' }}>🔒 Bu çat bağlanıb. Artıq mesaj yazmaq mümkün deyil.</p>
+                      <p style={{ margin: 0, fontWeight: 700, color: '#64748b' }}>🔒 Bu çat bağlanıb. Artıq mesaj yazmaq və məkan paylaşmaq mümkün deyil.</p>
                     </div>
                   )}
                 </>
