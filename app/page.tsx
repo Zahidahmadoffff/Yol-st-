@@ -1556,27 +1556,7 @@ useEffect(() => {
 
     const current = getActiveUser()
 
-    async function handleSubmitRide(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitting(true)
-    setMessage('')
-
-    const current = getActiveUser()
-
-    if (!profile) {
-      setMessage('Əvvəl profil yaratmaq lazımdır.')
-      setSubmitting(false)
-      return
-    }
-
-    if (profile.is_blocked) {
-      setMessage('Profil bloklandığı üçün elan yarada bilməzsən.')
-      setSubmitting(false)
-      return
-    }
-
-    const cleanOrigin = origin.trim()
-// Buradan aşağısı (cleanDestination və s.) sənin öz kodundakı kimi davam edəcək. Sadəcə "if (isAdmin)" olan hissəni sildik.
+    // Admin bloku silinib, admin də elan verə bilər
 
     if (!profile) {
       setMessage('Əvvəl profil yaratmaq lazımdır.')
