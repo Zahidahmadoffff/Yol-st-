@@ -1136,7 +1136,6 @@ useEffect(() => {
       full_name: current.fullName,
     })
 
-    if (current.appRole === 'admin') return
 
     const { data } = await supabase
       .from('profiles').select('id,role').eq('id', current.driverId).maybeSingle()
@@ -1533,8 +1532,9 @@ useEffect(() => {
       phone: profilePhone.trim(),
       bio: profileBio.trim(),
       role: effectiveRole,
-      car_brand: effectiveRole === 'driver' ? carBrand.trim() : null,
-      license_plate: effectiveRole === 'driver' ? licensePlate.trim() : null,
+      // DƏYİŞİKLİK BURADADIR: Artıq rolundan asılı olmayaraq maşın məlumatı yadda saxlanılacaq
+      car_brand: carBrand.trim() || null,
+      license_plate: licensePlate.trim() || null,
       last_seen_at: new Date().toISOString(),
     }
 
@@ -1771,11 +1771,7 @@ useEffect(() => {
   async function handleCreateRideRequest(ride: Ride) {
     const current = getActiveUser()
 
-    if (isAdmin) {
-      setMessage('Admin müraciət göndərmir.')
-      return
-    }
-
+    
     if (!profile) {
       setMessage('Əvvəl profil yaratmaq lazımdır.')
       return
@@ -2800,9 +2796,6 @@ async function handleCloseConversation(conversationId: number) {
       {activeTab === 'create' && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>{editingRideId ? 'Elanı redaktə et' : 'Yeni elan yarat'}</h2>
-
-          **Bununla Əvəz et:**
-```javascript
           {!profile ? (
             <p style={styles.mutedText}>Əvvəl profil yaratmaq lazımdır.</p>
           ) : (
