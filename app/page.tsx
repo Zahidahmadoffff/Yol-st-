@@ -3373,7 +3373,6 @@ async function handleCloseConversation(conversationId: number) {
               )}
             </div>
           )}
-        </section>
 
           </section>
       )}
