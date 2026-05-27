@@ -3711,7 +3711,7 @@ async function handleCloseConversation(conversationId: number) {
                 <h2 style={styles.sectionTitle}>Rides</h2>
 
                 {['active', 'full', 'completed', 'cancelled'].map((status) => {
-                  const group = allRidesAdmin.filter(r => r.status === status)
+                  const group = allRidesAdmin.filter((r) => r.status === status)
                   if (group.length === 0) return null
                   const title = status === 'active' ? '🟢 Aktiv' : status === 'full' ? '🔒 Bağlı (Full)' : status === 'completed' ? '✅ Tamamlanmış' : '❌ Ləğv edilmiş'
                   return (
@@ -3731,8 +3731,17 @@ async function handleCloseConversation(conversationId: number) {
                             <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat}</p>
 
                             <div style={styles.actionRow}>
-                              <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRide(ride)}>Edit</button>
-                              <button type="button" style={styles.dangerButton} disabled={adminLoadingId === ride.id} onClick={() => void handleAdminDeleteRide(ride)}>Delete</button>
+                              <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRide(ride)}>
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                style={styles.dangerButton}
+                                disabled={adminLoadingId === ride.id}
+                                onClick={() => void handleAdminDeleteRide(ride)}
+                              >
+                                Delete
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -3781,7 +3790,7 @@ async function handleCloseConversation(conversationId: number) {
                 <h2 style={styles.sectionTitle}>Requests</h2>
 
                 {['pending', 'accepted', 'rejected', 'cancelled'].map((status) => {
-                  const group = allRideRequestsAdmin.filter(r => r.status === status)
+                  const group = allRideRequestsAdmin.filter((r) => r.status === status)
                   if (group.length === 0) return null
                   const title = status === 'pending' ? '⏳ Gözləyən' : status === 'accepted' ? '✅ Qəbul edilmiş' : status === 'rejected' ? '🚫 Rədd edilmiş' : '❌ Ləğv edilmiş'
                   return (
@@ -3801,8 +3810,17 @@ async function handleCloseConversation(conversationId: number) {
                             <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
 
                             <div style={styles.actionRow}>
-                              <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRequest(item)}>Edit</button>
-                              <button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteRequest(item)}>Delete</button>
+                              <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRequest(item)}>
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                style={styles.dangerButton}
+                                disabled={adminLoadingId === item.id}
+                                onClick={() => void handleAdminDeleteRequest(item)}
+                              >
+                                Delete
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -3810,31 +3828,6 @@ async function handleCloseConversation(conversationId: number) {
                     </div>
                   )
                 })}
-              </section>
-                      <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
-                      <p style={styles.infoRow}><strong>ID:</strong> {item.id}</p>
-                      <p style={styles.infoRow}><strong>Ride ID:</strong> {item.ride_id}</p>
-                      <p style={styles.infoRow}><strong>Requester:</strong> {item.requester_id}</p>
-                      <p style={styles.infoRow}><strong>Owner:</strong> {item.owner_id}</p>
-                      <p style={styles.infoRow}><strong>Seats:</strong> {item.seats_requested}</p>
-                      <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
-
-                      <div style={styles.actionRow}>
-                        <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRequest(item)}>
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          style={styles.dangerButton}
-                          disabled={adminLoadingId === item.id}
-                          onClick={() => void handleAdminDeleteRequest(item)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </section>
 
               {adminEditingRequestId && (
@@ -3870,7 +3863,7 @@ async function handleCloseConversation(conversationId: number) {
               <h2 style={styles.sectionTitle}>Conversations</h2>
 
               {['active', 'closed'].map((status) => {
-                const group = allConversationsAdmin.filter(c => c.status === status)
+                const group = allConversationsAdmin.filter((c) => c.status === status)
                 if (group.length === 0) return null
                 const title = status === 'active' ? '🟢 Aktiv Çatlar' : '🔒 Arxiv (Bağlı)'
                 return (
@@ -3890,9 +3883,9 @@ async function handleCloseConversation(conversationId: number) {
                           <p style={styles.infoRow}><strong>Updated:</strong> {formatDateTime(conv.updated_at)}</p>
 
                           <div style={styles.actionRow}>
-                            <button 
-                              type="button" 
-                              style={styles.primaryButton} 
+                            <button
+                              type="button"
+                              style={styles.primaryButton}
                               onClick={() => void handleOpenConversation(conv.id)}
                             >
                               Çata daxil ol
@@ -3906,19 +3899,6 @@ async function handleCloseConversation(conversationId: number) {
               })}
             </section>
           )}
-                    <div style={styles.adminBadge}>Conversation #{conv.id}</div>
-                    <p style={styles.infoRow}><strong>Ride ID:</strong> {conv.ride_id}</p>
-                    <p style={styles.infoRow}><strong>Request ID:</strong> {conv.request_id || '-'}</p>
-                    <p style={styles.infoRow}><strong>Driver:</strong> {conv.driver_user_id}</p>
-                    <p style={styles.infoRow}><strong>Passenger:</strong> {conv.passenger_user_id}</p>
-                    <p style={styles.infoRow}><strong>Status:</strong> {conv.status}</p>
-                    <p style={styles.infoRow}><strong>Updated:</strong> {formatDateTime(conv.updated_at)}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
           {adminSection === 'messages' && (
             <>
               <section style={styles.sectionCard}>
