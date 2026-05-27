@@ -1097,17 +1097,25 @@ export default function Home() {
     void getMessages(selectedConversationId)
   }, [selectedConversationId, isAdmin])
 useEffect(() => {
-    const intervalId = setInterval(() => {
+    // 1. Sürətli yenilənmə: Çat, Mesajlar və Müraciətlər üçün (4 saniyə)
+    const fastInterval = setInterval(() => {
       getRideRequests();
       getConversations(true);
-      getRides();
       getAllMyRides();
       if (selectedConversationIdRef.current) {
         getMessages(selectedConversationIdRef.current, false);
       }
-    }, 4000); // 4 saniyədə bir məlumatları səssizcə yeniləyir
+    }, 4000);
 
-    return () => clearInterval(intervalId);
+    // 2. Yavaş yenilənmə: Axtarış və Ana Ekran elanları üçün (2 dəqiqə = 120000 ms)
+    const slowInterval = setInterval(() => {
+      getRides();
+    }, 120000);
+
+    return () => {
+      clearInterval(fastInterval);
+      clearInterval(slowInterval);
+    };
   }, []);
   async function initializeData() {
     setMessage('')
@@ -2035,11 +2043,7 @@ async function handleCloseConversation(conversationId: number) {
   }
 
   async function handleCreateReview() {
-    if (isAdmin) {
-      setMessage('Admin review yaratmır.')
-      return
-    }
-
+   
     if (!reviewTargetRequestId) {
       setMessage('Əvvəl request seç.')
       return
@@ -2661,7 +2665,7 @@ async function handleCloseConversation(conversationId: number) {
           { key: 'create', label: 'Elan ver' },
           { key: 'search', label: 'Axtarış' },
           { key: 'requests', label: `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending').length})` },
-          { key: 'chat', label: unreadTotal > 0 ? `Chat (${unreadTotal})` : `Chat (${conversations.filter(c => c.status !== 'closed').length})` },
+          { key: 'chat', label: conversations.filter(c => c.status !== 'closed').length > 0 ? `Chat (${conversations.filter(c => c.status !== 'closed').length})` : 'Chat' },
           { key: 'history', label: 'Tarixçə' },
           { key: 'reviews', label: 'Reviews' },
           { key: 'profile', label: 'Profil' },
@@ -3330,80 +3334,46 @@ async function handleCloseConversation(conversationId: number) {
       )}
 
       {activeTab === 'reviews' && (
-        <>
-          <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Review yaz</h2>
-
-            <div style={styles.form}>
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Request seç</label>
-                <select
-                  value={reviewTargetRequestId ?? ''}
-                  onChange={(e) => setReviewTargetRequestId(e.target.value ? Number(e.target.value) : null)}
-                  style={styles.select}
-                >
-                  <option value="">Seç</option>
-                  {rideRequests
-                    .filter((item) => item.status === 'accepted')
-                    .map((item) => (
-                      <option key={item.id} value={item.id}>
-                        #{item.id} - {item.ride?.origin || '-'} → {item.ride?.destination || '-'}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Reytinq</label>
-                <select value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} style={styles.select}>
-                  <option value="5">5</option>
-                  <option value="4">4</option>
-                  <option value="3">3</option>
-                  <option value="2">2</option>
-                  <option value="1">1</option>
-                </select>
-              </div>
-
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Rəy</label>
-                <textarea
-                  rows={3}
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  style={styles.textarea}
-                />
-              </div>
-
-              <div style={styles.actionRow}>
-                <button type="button" onClick={() => void handleCreateReview()} style={styles.primaryButton}>
-                  Review göndər
-                </button>
+        <section style={styles.sectionCard}>
+          <h2 style={styles.sectionTitle}>Reytinq və Rəylər</h2>
+          
+          {!isAdmin ? (
+            /* Adi istifadəçilər üçün məxfiləşdirilmiş görünüş */
+            <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0' }}>
+              <h3 style={{ fontSize: 56, margin: 0, color: '#eab308' }}>
+                ⭐ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0'}
+              </h3>
+              <p style={{ fontWeight: 700, color: '#334155', marginTop: 12, fontSize: 18 }}>Sizin Ümumi Reytinqiniz</p>
+              <div style={{ background: '#e0e7ff', padding: '12px 16px', borderRadius: 8, marginTop: 24, display: 'inline-block' }}>
+                <p style={{ fontSize: 13, color: '#4338ca', margin: 0, fontWeight: 600 }}>
+                  🛡️ Məxfilik və təhlükəsizlik qaydalarına əsasən fərdi rəylər və kimin xal verdiyi gizlədilmişdir.
+                </p>
               </div>
             </div>
-          </section>
-
-          <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Mənim review-larım</h2>
-
-            {reviews.length === 0 ? (
-              <p style={styles.mutedText}>Review yoxdur.</p>
-            ) : (
-              <div style={styles.ridesGrid}>
-                {reviews.map((item) => (
-                  <div key={item.id} style={styles.resultCard}>
-                    <div style={styles.badge}>Rating: {item.rating}</div>
-                    <p style={styles.infoRow}><strong>Reviewer:</strong> {item.reviewer_id}</p>
-                    <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
-                    <p style={styles.infoRow}>
-                      <strong>Marşrut:</strong> {item.ride ? `${item.ride.origin} → ${item.ride.destination}` : '-'}
+          ) : (
+            /* Admin üçün detallı rəy siyahısı */
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+              {reviews.length === 0 ? (
+                <p style={styles.mutedText}>Hələ rəy yoxdur.</p>
+              ) : (
+                reviews.map((rev) => (
+                  <div key={rev.id} style={{ padding: 16, border: '1px solid #e2e8f0', borderRadius: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontWeight: 700, color: '#334155' }}>Səfər ID: {rev.ride_id}</span>
+                      <span style={{ color: '#eab308', fontWeight: 800, fontSize: 16 }}>⭐ {rev.rating}</span>
+                    </div>
+                    <p style={{ margin: '0 0 8px', fontSize: 14, color: '#475569' }}>
+                      {rev.comment_text || 'Şərh yazılmayıb.'}
                     </p>
-                    <p style={styles.infoRow}><strong>Rəy:</strong> {item.comment_text || '-'}</p>
-                    <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
+                    <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'right' }}>
+                      {formatDateTime(rev.created_at)}
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
+                ))
+              )}
+            </div>
+          )}
+        </section>
 
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Report göndər</h2>
