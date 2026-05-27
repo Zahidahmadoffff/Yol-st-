@@ -1097,18 +1097,18 @@ export default function Home() {
     void getMessages(selectedConversationId)
   }, [selectedConversationId, isAdmin])
 useEffect(() => {
-    if (isAdmin) return;
-
     const intervalId = setInterval(() => {
       getRideRequests();
       getConversations(true);
+      getRides();
+      getAllMyRides();
       if (selectedConversationIdRef.current) {
         getMessages(selectedConversationIdRef.current, false);
       }
-    }, 5000);
+    }, 4000); // 4 saniyədə bir məlumatları səssizcə yeniləyir
 
     return () => clearInterval(intervalId);
-  }, [isAdmin]);
+  }, []);
   async function initializeData() {
     setMessage('')
     setSelectedConversationId(null)
@@ -2660,8 +2660,8 @@ async function handleCloseConversation(conversationId: number) {
           { key: 'dashboard', label: 'Dashboard' },
           { key: 'create', label: 'Elan ver' },
           { key: 'search', label: 'Axtarış' },
-          { key: 'requests', label: isAdmin ? 'Requests' : `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending').length})` },
-          { key: 'chat', label: isAdmin ? 'Chat' : unreadTotal > 0 ? `Chat (${unreadTotal})` : `Chat (${conversations.length})` },
+          { key: 'requests', label: `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending').length})` },
+          { key: 'chat', label: unreadTotal > 0 ? `Chat (${unreadTotal})` : `Chat (${conversations.filter(c => c.status !== 'closed').length})` },
           { key: 'history', label: 'Tarixçə' },
           { key: 'reviews', label: 'Reviews' },
           { key: 'profile', label: 'Profil' },
@@ -3154,10 +3154,50 @@ async function handleCloseConversation(conversationId: number) {
               <p style={styles.mutedText}>Conversation siyahısı</p>
 
               <div style={styles.conversationList}>
-                {conversations.length === 0 ? (
-                  <p style={styles.mutedText}>Hələ aktiv chat yoxdur.</p>
+                <p style={{ margin: '0 0 8px', fontWeight: 800, color: '#0f172a' }}>Aktiv Çatlar</p>
+                {conversations.filter(c => c.status !== 'closed').length === 0 ? (
+                  <p style={styles.mutedText}>Aktiv chat yoxdur.</p>
                 ) : (
-                  conversations.map((conv) => {
+                  conversations.filter(c => c.status !== 'closed').map((conv) => {
+                    const ride = conv.ride
+                    return (
+                      <div
+                        key={conv.id}
+                        style={selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard}
+                        onClick={() => void handleOpenConversation(conv.id)}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={styles.badge}>Chat #{conv.id}</div>
+                          {conv.unread_count ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
+                        </div>
+                        <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}</p>
+                        <p style={styles.infoRow}><strong>Tarix:</strong> {ride ? `${ride.ride_date || '-'} / ${ride.departure_time}` : '-'}</p>
+                      </div>
+                    )
+                  })
+                )}
+
+                <p style={{ margin: '16px 0 8px', fontWeight: 800, color: '#64748b' }}>Arxiv (Bağlı çatlar)</p>
+                {conversations.filter(c => c.status === 'closed').length === 0 ? (
+                  <p style={styles.mutedText}>Arxiv boşdur.</p>
+                ) : (
+                  conversations.filter(c => c.status === 'closed').map((conv) => {
+                    const ride = conv.ride
+                    return (
+                      <div
+                        key={conv.id}
+                        style={{ ...(selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard), opacity: 0.6 }}
+                        onClick={() => void handleOpenConversation(conv.id)}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={{...styles.badge, background: '#e2e8f0', color: '#64748b'}}>Bağlı #{conv.id}</div>
+                        </div>
+                        <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}</p>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
                     const ride = conv.ride
                     return (
                       <div
@@ -3226,8 +3266,8 @@ async function handleCloseConversation(conversationId: number) {
 
                   <div style={{ height: 12 }} />
 
-                  {/* ── Canlı Xəritə — yalnız aktiv elanda ── */}
-                  {selectedConversationRide?.status === 'active' && (
+                  {/* ── Canlı Xəritə — yalnız aktiv elanda VƏ aktiv çatda ── */}
+                  {selectedConversationRide?.status === 'active' && selectedConversation.status !== 'closed' && (
                     <LiveMap
                       conversationId={selectedConversation.id}
                       currentUserId={currentUser.driverId}
