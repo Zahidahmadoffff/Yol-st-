@@ -2607,7 +2607,9 @@ async function handleCloseConversation(conversationId: number) {
   }, [rideRequests, currentUser.driverId, isAdmin])
 
   const selectedConversation =
-    conversations.find((item) => item.id === selectedConversationId) || null
+    conversations.find((item) => item.id === selectedConversationId) || 
+    (isAdmin ? allConversationsAdmin.find((item) => item.id === selectedConversationId) : null) || 
+    null
 
   const selectedConversationRide = selectedConversation?.ride || null
 
@@ -3708,33 +3710,36 @@ async function handleCloseConversation(conversationId: number) {
               <section style={styles.sectionCard}>
                 <h2 style={styles.sectionTitle}>Rides</h2>
 
-                <div style={styles.ridesGrid}>
-                  {allRidesAdmin.map((ride) => (
-                    <div key={ride.id} style={styles.adminCard}>
-                      <div style={getRideBadgeStyle(ride.status)}>{getRideStatusLabel(ride.status)}</div>
-                      <p style={styles.infoRow}><strong>ID:</strong> {ride.id}</p>
-                      <p style={styles.infoRow}><strong>Driver ID:</strong> {ride.driver_id}</p>
-                      <p style={styles.infoRow}><strong>Marşrut:</strong> {ride.origin} → {ride.destination}</p>
-                      <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {ride.ride_date || '-'} / {ride.departure_time}</p>
-                      <p style={styles.infoRow}><strong>Seats:</strong> {ride.seats}</p>
-                      <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat}</p>
+                {['active', 'full', 'completed', 'cancelled'].map((status) => {
+                  const group = allRidesAdmin.filter(r => r.status === status)
+                  if (group.length === 0) return null
+                  const title = status === 'active' ? '🟢 Aktiv' : status === 'full' ? '🔒 Bağlı (Full)' : status === 'completed' ? '✅ Tamamlanmış' : '❌ Ləğv edilmiş'
+                  return (
+                    <div key={status} style={{ marginBottom: 28 }}>
+                      <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>
+                        {title} ({group.length})
+                      </h3>
+                      <div style={styles.ridesGrid}>
+                        {group.map((ride) => (
+                          <div key={ride.id} style={styles.adminCard}>
+                            <div style={getRideBadgeStyle(ride.status)}>{getRideStatusLabel(ride.status)}</div>
+                            <p style={styles.infoRow}><strong>ID:</strong> {ride.id}</p>
+                            <p style={styles.infoRow}><strong>Driver ID:</strong> {ride.driver_id}</p>
+                            <p style={styles.infoRow}><strong>Marşrut:</strong> {ride.origin} → {ride.destination}</p>
+                            <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {ride.ride_date || '-'} / {ride.departure_time}</p>
+                            <p style={styles.infoRow}><strong>Seats:</strong> {ride.seats}</p>
+                            <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat}</p>
 
-                      <div style={styles.actionRow}>
-                        <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRide(ride)}>
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          style={styles.dangerButton}
-                          disabled={adminLoadingId === ride.id}
-                          onClick={() => void handleAdminDeleteRide(ride)}
-                        >
-                          Delete
-                        </button>
+                            <div style={styles.actionRow}>
+                              <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRide(ride)}>Edit</button>
+                              <button type="button" style={styles.dangerButton} disabled={adminLoadingId === ride.id} onClick={() => void handleAdminDeleteRide(ride)}>Delete</button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  )
+                })}
               </section>
 
               {adminEditingRideId && (
@@ -3775,9 +3780,37 @@ async function handleCloseConversation(conversationId: number) {
               <section style={styles.sectionCard}>
                 <h2 style={styles.sectionTitle}>Requests</h2>
 
-                <div style={styles.ridesGrid}>
-                  {allRideRequestsAdmin.map((item) => (
-                    <div key={item.id} style={styles.adminCard}>
+                {['pending', 'accepted', 'rejected', 'cancelled'].map((status) => {
+                  const group = allRideRequestsAdmin.filter(r => r.status === status)
+                  if (group.length === 0) return null
+                  const title = status === 'pending' ? '⏳ Gözləyən' : status === 'accepted' ? '✅ Qəbul edilmiş' : status === 'rejected' ? '🚫 Rədd edilmiş' : '❌ Ləğv edilmiş'
+                  return (
+                    <div key={status} style={{ marginBottom: 28 }}>
+                      <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>
+                        {title} ({group.length})
+                      </h3>
+                      <div style={styles.ridesGrid}>
+                        {group.map((item) => (
+                          <div key={item.id} style={styles.adminCard}>
+                            <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
+                            <p style={styles.infoRow}><strong>ID:</strong> {item.id}</p>
+                            <p style={styles.infoRow}><strong>Ride ID:</strong> {item.ride_id}</p>
+                            <p style={styles.infoRow}><strong>Requester:</strong> {item.requester_id}</p>
+                            <p style={styles.infoRow}><strong>Owner:</strong> {item.owner_id}</p>
+                            <p style={styles.infoRow}><strong>Seats:</strong> {item.seats_requested}</p>
+                            <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
+
+                            <div style={styles.actionRow}>
+                              <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRequest(item)}>Edit</button>
+                              <button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteRequest(item)}>Delete</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </section>
                       <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
                       <p style={styles.infoRow}><strong>ID:</strong> {item.id}</p>
                       <p style={styles.infoRow}><strong>Ride ID:</strong> {item.ride_id}</p>
@@ -3836,9 +3869,43 @@ async function handleCloseConversation(conversationId: number) {
             <section style={styles.sectionCard}>
               <h2 style={styles.sectionTitle}>Conversations</h2>
 
-              <div style={styles.ridesGrid}>
-                {allConversationsAdmin.map((conv) => (
-                  <div key={conv.id} style={styles.adminCard}>
+              {['active', 'closed'].map((status) => {
+                const group = allConversationsAdmin.filter(c => c.status === status)
+                if (group.length === 0) return null
+                const title = status === 'active' ? '🟢 Aktiv Çatlar' : '🔒 Arxiv (Bağlı)'
+                return (
+                  <div key={status} style={{ marginBottom: 28 }}>
+                    <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>
+                      {title} ({group.length})
+                    </h3>
+                    <div style={styles.ridesGrid}>
+                      {group.map((conv) => (
+                        <div key={conv.id} style={styles.adminCard}>
+                          <div style={styles.adminBadge}>Conversation #{conv.id}</div>
+                          <p style={styles.infoRow}><strong>Ride ID:</strong> {conv.ride_id}</p>
+                          <p style={styles.infoRow}><strong>Request ID:</strong> {conv.request_id || '-'}</p>
+                          <p style={styles.infoRow}><strong>Driver:</strong> {conv.driver_user_id}</p>
+                          <p style={styles.infoRow}><strong>Passenger:</strong> {conv.passenger_user_id}</p>
+                          <p style={styles.infoRow}><strong>Status:</strong> {conv.status}</p>
+                          <p style={styles.infoRow}><strong>Updated:</strong> {formatDateTime(conv.updated_at)}</p>
+
+                          <div style={styles.actionRow}>
+                            <button 
+                              type="button" 
+                              style={styles.primaryButton} 
+                              onClick={() => void handleOpenConversation(conv.id)}
+                            >
+                              Çata daxil ol
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </section>
+          )}
                     <div style={styles.adminBadge}>Conversation #{conv.id}</div>
                     <p style={styles.infoRow}><strong>Ride ID:</strong> {conv.ride_id}</p>
                     <p style={styles.infoRow}><strong>Request ID:</strong> {conv.request_id || '-'}</p>
