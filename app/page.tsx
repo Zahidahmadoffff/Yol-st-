@@ -22,7 +22,7 @@ type TabType =
   | 'requests'
   | 'chat'
   | 'history'
-  | 'reviews'
+  | 'support'
   | 'profile'
   | 'admin'
 
@@ -864,6 +864,10 @@ export default function Home() {
   const [reviewTargetRequestId, setReviewTargetRequestId] = useState<number | null>(null)
   const [reviewRating, setReviewRating] = useState('5')
   const [reviewComment, setReviewComment] = useState('')
+
+  const [supportEmail, setSupportEmail] = useState('')
+  const [supportMessage, setSupportMessage] = useState('')
+  const [supportLoading, setSupportLoading] = useState(false)
 
   const [reportTargetUserId, setReportTargetUserId] = useState('')
   const [reportReason, setReportReason] = useState('')
@@ -2142,6 +2146,61 @@ async function handleCloseConversation(conversationId: number) {
 
   // ── Rol dəyişdirmə (sürücü ↔ sərnişin) ───────────────────────────────
   // ── Rol dəyişdirmə (sürücü ↔ sərnişin) ───────────────────────────────
+  async function handleCreateSupport(e: React.FormEvent) {
+    e.preventDefault()
+    setSupportLoading(true)
+    setMessage('')
+
+    const current = getActiveUser()
+    if (!current.driverId) {
+      setMessage('İstifadəçi tapılmadı.')
+      setSupportLoading(false)
+      return
+    }
+
+    if (!supportEmail.trim() || !supportMessage.trim()) {
+      setMessage('Bütün xanaları doldurun.')
+      setSupportLoading(false)
+      return
+    }
+
+    // Spam / Flood yoxlaması (Son 24 saat)
+    const yesterday = new Date()
+    yesterday.setHours(yesterday.getHours() - 24)
+    
+    const { data: existingReports } = await supabase
+      .from('user_reports')
+      .select('id, created_at')
+      .eq('reporter_id', current.driverId)
+      .ilike('reason', 'Dəstək%')
+      .gte('created_at', yesterday.toISOString())
+
+    if (existingReports && existingReports.length > 0) {
+      setMessage('Gün ərzində yalnız 1 dəfə dəstək müraciəti göndərə bilərsiniz.')
+      setSupportLoading(false)
+      return
+    }
+
+    const { error } = await supabase.from('user_reports').insert({
+      reporter_id: current.driverId,
+      reason: `Dəstək: ${supportEmail.trim()}`.slice(0, 300),
+      details: supportMessage.trim().slice(0, 2000),
+      status: 'open',
+    })
+
+    if (error) {
+      setMessage('Müraciət göndərilmədi, yenidən cəhd edin.')
+    } else {
+      setMessage('Müraciətiniz qeydə alındı.')
+      setSupportEmail('')
+      setSupportMessage('')
+      if (isAdmin) await getAdminData()
+    }
+
+    setSupportLoading(false)
+  }
+
+  // ── Rol dəyişdirmə (sürücü ↔ sərnişin) ───────────────────────────────
   async function handleSwitchRole() {
     if (!profile) {
       setMessage('Əvvəl profil yaratmaq lazımdır.')
@@ -2709,6 +2768,7 @@ async function handleCloseConversation(conversationId: number) {
           { key: 'requests', label: `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length})` },
           { key: 'chat', label: unreadTotal > 0 ? `Chat (${unreadTotal} yeni)` : `Chat (${conversations.filter(c => c.status !== 'closed').length})` },
           { key: 'history', label: 'Tarixçə' },
+          { key: 'support', label: 'Dəstək' },
           { key: 'profile', label: 'Profil' },
           ...(isAdmin ? [{ key: 'admin', label: 'Admin' }] : []),
         ].map((item) => (
@@ -3422,6 +3482,45 @@ async function handleCloseConversation(conversationId: number) {
             )}
           </section>
         </>
+      )}
+
+      {activeTab === 'support' && (
+        <section style={styles.sectionCard}>
+          <h2 style={styles.sectionTitle}>Dəstək və Əlaqə</h2>
+          <p style={styles.mutedText}>Təklif, istək və ya şikayətlərinizi bizə göndərin. Müraciətləriniz birbaşa adminə çatdırılacaq.</p>
+          
+          <form onSubmit={handleCreateSupport} style={styles.form}>
+            <div style={styles.fieldWrap}>
+              <label style={styles.label}>E-poçt (Email) ünvanınız</label>
+              <input
+                type="email"
+                required
+                value={supportEmail}
+                onChange={(e) => setSupportEmail(e.target.value)}
+                style={styles.input}
+                placeholder="Məs: adiniz@mail.com"
+              />
+            </div>
+
+            <div style={styles.fieldWrap}>
+              <label style={styles.label}>Müraciətiniz (Təklif, Şikayət və s.)</label>
+              <textarea
+                rows={4}
+                required
+                value={supportMessage}
+                onChange={(e) => setSupportMessage(e.target.value)}
+                style={styles.textarea}
+                placeholder="Mesajınızı buraya yazın..."
+              />
+            </div>
+
+            <div style={styles.actionRow}>
+              <button type="submit" disabled={supportLoading} style={styles.primaryButton}>
+                {supportLoading ? 'Göndərilir...' : 'Göndər'}
+              </button>
+            </div>
+          </form>
+        </section>
       )}
 
       {activeTab === 'profile' && (
