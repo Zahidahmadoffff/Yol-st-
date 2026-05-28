@@ -3506,32 +3506,6 @@ async function handleCloseConversation(conversationId: number) {
                 )}
               </div>
             </div>
-                    )
-                  })
-                )}
-
-                <p style={{ margin: '16px 0 8px', fontWeight: 800, color: '#64748b' }}>Arxiv (Bağlı çatlar)</p>
-                {conversations.filter(c => c.status === 'closed').length === 0 ? (
-                  <p style={styles.mutedText}>Arxiv boşdur.</p>
-                ) : (
-                  conversations.filter(c => c.status === 'closed').map((conv) => {
-                    const ride = conv.ride
-                    return (
-                      <div
-                        key={conv.id}
-                        style={{ ...(selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard), opacity: 0.6 }}
-                        onClick={() => void handleOpenConversation(conv.id)}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                          <div style={{...styles.badge, background: '#e2e8f0', color: '#64748b'}}>Bağlı #{conv.id}</div>
-                        </div>
-                        <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}</p>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-            </div>
 
             <div style={styles.chatPanel}>
               {!selectedConversation ? (
@@ -3598,8 +3572,6 @@ async function handleCloseConversation(conversationId: number) {
                         )
                       })
                     )}
-                  {/* Sürüşmənin dayanacağı gizli hədəf */}
-                    <div ref={messagesEndRef} />
                   </div>
 
                   {selectedConversation.status !== 'closed' ? (
