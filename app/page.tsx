@@ -802,7 +802,8 @@ const triggerVibration = (type: string = 'medium') => {
   }
 };
 
-export default function Home() {
+export default function Home() {export default function Home() {
+  const [isAdminMode, setIsAdminMode] = useState(false) // YENİ: Rejim idarəedici
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
   const [adminSection, setAdminSection] = useState<AdminSection>('overview')
 
@@ -961,7 +962,8 @@ export default function Home() {
   }
 
   const currentUser = getActiveUser()
-  const isAdmin = currentUser.appRole === 'admin'
+  const isRealAdmin = currentUser.appRole === 'admin' // Əslində admindirmi?
+  const isAdmin = isRealAdmin && isAdminMode // Yalnız Admin rejimini açanda yetkili olacaq!
 
   function resetRideForm() {
     setEditingRideId(null)
@@ -1459,7 +1461,8 @@ useEffect(() => {
 
   async function markConversationMessagesAsRead(conversationId: number) {
     const current = getActiveUser()
-    if (current.appRole === 'admin') return
+    // DƏYİŞİKLİK: Əgər sən istifadəçi rejimindəsənsə, sənə adi adam kimi baxıb mesajı "oxundu" edəcək!
+    if (isAdmin) return
 
     await supabase
       .from('messages')
@@ -2841,26 +2844,49 @@ async function handleCloseConversation(conversationId: number) {
             </p>
           </div>
           
-          <button 
-            type="button" 
-            onClick={() => void handleSOS()} 
-            style={{ 
-              background: '#ef4444', color: '#ffffff', border: 'none', 
-              padding: '12px 20px', borderRadius: '12px', fontWeight: 900, 
-              fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', 
-              gap: 8, boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
-              animation: 'pulse 2s infinite'
-            }}
-          >
-            🚨 SOS
-          </button>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {isRealAdmin && (
+              <button 
+                type="button" 
+                onClick={() => {
+                  setIsAdminMode(!isAdminMode)
+                  setActiveTab(!isAdminMode ? 'admin' : 'dashboard')
+                }} 
+                style={{ 
+                  background: isAdminMode ? '#475569' : '#7c3aed', color: '#ffffff', border: 'none', 
+                  padding: '12px 20px', borderRadius: '12px', fontWeight: 900, 
+                  fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', 
+                  boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
+                }}
+              >
+                {isAdminMode ? '👤 İstifadəçi rejimi' : '👨‍💻 Admin rejimi'}
+              </button>
+            )}
+            <button 
+              type="button" 
+              onClick={() => void handleSOS()} 
+              style={{ 
+                background: '#ef4444', color: '#ffffff', border: 'none', 
+                padding: '12px 20px', borderRadius: '12px', fontWeight: 900, 
+                fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', 
+                gap: 8, boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
+                animation: 'pulse 2s infinite'
+              }}
+            >
+              🚨 SOS
+            </button>
+          </div>
         </div>
       </div>
 
 
 
       <div style={styles.topTabs}>
-        {[
+        {(isAdminMode ? [
+          // Yalnız Admin rejimində görünəcək tək tab
+          { key: 'admin', label: '👑 Admin Paneli' }
+        ] : [
+          // İstifadəçi rejimində görünəcək tablar
           { key: 'dashboard', label: 'Dashboard' },
           { key: 'create', label: 'Elan ver' },
           { key: 'search', label: 'Axtarış' },
@@ -2868,9 +2894,8 @@ async function handleCloseConversation(conversationId: number) {
           { key: 'chat', label: unreadTotal > 0 ? `Chat (${unreadTotal} yeni)` : `Chat (${conversations.filter(c => c.status !== 'closed').length})` },
           { key: 'history', label: 'Tarixçə' },
           { key: 'support', label: 'Dəstək' },
-          { key: 'profile', label: 'Profil' },
-          ...(isAdmin ? [{ key: 'admin', label: 'Admin' }] : []),
-        ].map((item) => (
+          { key: 'profile', label: 'Profil' }
+        ]).map((item) => (
           <button
             key={item.key}
             type="button"
