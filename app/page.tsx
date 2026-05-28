@@ -790,6 +790,7 @@ function getReportStatusLabel(status: ReportStatus) {
   if (status === 'dismissed') return 'Dismiss'
   return 'Açıq'
 }
+
 // ── Telegram Haptic Feedback (Titrəmə) Optimizasiyası ──
 const triggerVibration = (type: string = 'medium') => {
   try {
@@ -801,8 +802,10 @@ const triggerVibration = (type: string = 'medium') => {
   }
 };
 
-export default function Page() {  // (Səndə bu sətir artıq var, sadəcə yerini bilmək üçün yazdım)
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard')
+  const [adminSection, setAdminSection] = useState<AdminSection>('overview')
+// ... (kodun davamı)
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
   const [adminSection, setAdminSection] = useState<AdminSection>('overview')
 
@@ -917,6 +920,7 @@ export default function Home() {
   const [adminReviewRating, setAdminReviewRating] = useState('5')
   const [adminReviewComment, setAdminReviewComment] = useState('')
   
+
   function getActiveUser() {
     if (typeof window === 'undefined') {
       return { driverId: 0, username: '', fullName: '', appRole: 'passenger' as AppRole }
