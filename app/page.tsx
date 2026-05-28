@@ -49,6 +49,7 @@ type Ride = {
   notes: string | null
   status: RideStatus
   role: UserRole | null
+  women_only?: boolean
   created_at?: string
   updated_at?: string
   completed_at?: string | null
@@ -62,6 +63,7 @@ type Profile = {
   phone: string | null
   bio: string | null
   role: UserRole
+  gender?: 'male' | 'female'
   car_brand: string | null
   license_plate: string | null
   is_blocked?: boolean
@@ -810,7 +812,7 @@ export default function Home() {
   const [adminUsers, setAdminUsers] = useState<UserOverview[]>([])
   const [adminReports, setAdminReports] = useState<UserReport[]>([])
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([])
-  const [driverProfilesMap, setDriverProfilesMap] = useState<Record<number, { name: string, rating: string }>>({})
+  const [driverProfilesMap, setDriverProfilesMap] = useState<Record<number, { name: string, rating: string, gender: string }>>({})
 
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [unreadTotal, setUnreadTotal] = useState(0)
@@ -846,6 +848,8 @@ export default function Home() {
   const [profileUsername, setProfileUsername] = useState('')
   const [profilePhone, setProfilePhone] = useState('')
   const [profileBio, setProfileBio] = useState('')
+  const [profileGender, setProfileGender] = useState<'male' | 'female'>('male')
+  const [womenOnly, setWomenOnly] = useState(false)
   const [carBrand, setCarBrand] = useState('')
   const [licensePlate, setLicensePlate] = useState('')
 
@@ -1184,6 +1188,7 @@ useEffect(() => {
       setProfileUsername(p.username || current.username)
       setProfilePhone(p.phone || '')
       setProfileBio(p.bio || '')
+      setProfileGender(p.gender || 'male')
       setCarBrand(p.car_brand || '')
       setLicensePlate(p.license_plate || '')
       setInitialRole(p.role || 'passenger')
@@ -1193,6 +1198,7 @@ useEffect(() => {
       setProfileUsername(current.username)
       setProfilePhone('')
       setProfileBio(current.appRole === 'admin' ? 'Admin hesabı' : '')
+      setProfileGender('male')
       setCarBrand('')
       setLicensePlate('')
       setInitialRole('passenger')
@@ -1218,8 +1224,8 @@ useEffect(() => {
       // Sürücü adı və reytinqini çəkmək üçün məntiq
       const driverIds = [...new Set(rows.map((r) => r.driver_id))]
       if (driverIds.length > 0) {
-        const [profilesRes, reviewsRes] = await Promise.all([
-          supabase.from('profiles').select('id, full_name, username').in('id', driverIds),
+          const [profilesRes, reviewsRes] = await Promise.all([
+          supabase.from('profiles').select('id, full_name, username, gender').in('id', driverIds),
           supabase.from('reviews').select('reviewee_id, rating').in('reviewee_id', driverIds)
         ])
 
@@ -1235,7 +1241,8 @@ useEffect(() => {
 
           newMap[p.id] = {
             name: p.full_name || p.username || 'İstifadəçi',
-            rating: avgRating
+            rating: avgRating,
+            gender: p.gender || 'male'
           }
         })
         setDriverProfilesMap(newMap)
@@ -1547,6 +1554,7 @@ useEffect(() => {
       username: profileUsername.trim(),
       phone: profilePhone.trim(),
       bio: profileBio.trim(),
+      gender: profileGender,
       role: effectiveRole,
       // DƏYİŞİKLİK BURADADIR: Artıq rolundan asılı olmayaraq maşın məlumatı yadda saxlanılacaq
       car_brand: carBrand.trim() || null,
@@ -1646,6 +1654,7 @@ useEffect(() => {
           departure_time: departureTime,
           seats: seatsNumber,
           price_per_seat: priceNumber,
+          women_only: womenOnly,
           notes: cleanNotes || null,
           updated_at: new Date().toISOString(),
         })
@@ -1675,7 +1684,7 @@ useEffect(() => {
         seats: seatsNumber,
         price_per_seat: priceNumber,
         is_recurring: false,
-        women_only: false,
+        women_only: womenOnly,
         notes: cleanNotes || null,
         status: 'active',
       })
@@ -1703,6 +1712,7 @@ useEffect(() => {
     setSeats(String(ride.seats ?? 1))
     setPricePerSeat(String(ride.price_per_seat ?? ''))
     setNotes(ride.notes || '')
+    setWomenOnly(ride.women_only || false)
     setActiveTab('create')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -2593,8 +2603,11 @@ async function handleCloseConversation(conversationId: number) {
       const matchesRole = filterRole === 'all' || (ride.role || 'driver') === filterRole
       const matchesDate = !filterDate || (ride.ride_date || '') === filterDate
       const notMine = ride.driver_id !== current.driverId
+      
+      // Qadınlara özəl elanı ancaq profilində "Qadın" seçən istifadəçilər görə bilər
+      const matchesGender = ride.women_only ? profile?.gender === 'female' : true
 
-      return matchesText && matchesRole && matchesDate && notMine && ride.status === 'active'
+      return matchesText && matchesRole && matchesDate && notMine && matchesGender && ride.status === 'active'
     })
   }, [rides, searchText, filterRole, filterDate, isAdmin])
 
@@ -2936,6 +2949,21 @@ async function handleCloseConversation(conversationId: number) {
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} style={styles.textarea} />
               </div>
 
+              {profile?.gender === 'female' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#fdf4ff', border: '1px solid #f0abfc', borderRadius: 12, marginTop: 4, marginBottom: 14 }}>
+                  <input 
+                    type="checkbox" 
+                    id="womenOnly" 
+                    checked={womenOnly} 
+                    onChange={(e) => setWomenOnly(e.target.checked)} 
+                    style={{ width: 18, height: 18, accentColor: '#d946ef', cursor: 'pointer' }} 
+                  />
+                  <label htmlFor="womenOnly" style={{ fontSize: 14, fontWeight: 700, color: '#a21caf', cursor: 'pointer', margin: 0 }}>
+                    🌸 Yalnız qadınlar üçün (Kişilər bu elanı axtarışda görə bilməyəcək)
+                  </label>
+                </div>
+              )}
+
               <div style={styles.buttonRow}>
                 <button type="submit" disabled={submitting} style={styles.primaryButton}>
                   {submitting ? 'Göndərilir...' : editingRideId ? 'Yenilə' : 'Elanı əlavə et'}
@@ -3017,7 +3045,9 @@ async function handleCloseConversation(conversationId: number) {
                       <div style={{...styles.approvedBadge, margin: 0}}>Aktiv</div>
                       {driverProfilesMap[ride.driver_id] && (
                         <div style={{ display: 'flex', gap: 10, background: '#f8fafc', padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }}>
-                          <span style={{ fontWeight: 700, color: '#334155' }}>👤 {driverProfilesMap[ride.driver_id].name}</span>
+                          <span style={{ fontWeight: 700, color: '#334155' }}>
+                            {driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}
+                          </span>
                           <span style={{ fontWeight: 800, color: '#eab308' }}>⭐ {driverProfilesMap[ride.driver_id].rating}</span>
                         </div>
                       )}
@@ -3453,9 +3483,18 @@ async function handleCloseConversation(conversationId: number) {
                 </div>
               </div>
 
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Bio</label>
-                <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={3} style={styles.textarea} />
+              <div style={styles.twoColumnGrid}>
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>Cins</label>
+                  <select value={profileGender} onChange={(e) => setProfileGender(e.target.value as 'male' | 'female')} style={styles.select}>
+                    <option value="male">Kişi</option>
+                    <option value="female">Qadın</option>
+                  </select>
+                </div>
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>Bio</label>
+                  <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={1} style={styles.textarea} />
+                </div>
               </div>
 
               {!profile ? (
