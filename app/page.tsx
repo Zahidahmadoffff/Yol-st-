@@ -832,6 +832,15 @@ const triggerVibration = (type: string = 'medium') => {
   const [unreadTotal, setUnreadTotal] = useState(0)
 
   const selectedConversationIdRef = useRef<number | null>(null)
+  // ── ÇAT AVTOMATİK SÜRÜŞMƏ (AUTO-SCROLL) ──
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    // Əgər Çat tabındayıqsa və yeni mesaj gəlibsə, ən aşağı sürüşdür
+    if (activeTab === 'chat' && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [currentMessages, activeTab]);
 
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -3576,6 +3585,8 @@ async function handleCloseConversation(conversationId: number) {
                         )
                       })
                     )}
+                  {/* Sürüşmənin dayanacağı gizli hədəf */}
+                    <div ref={messagesEndRef} />
                   </div>
 
                   {selectedConversation.status !== 'closed' ? (
