@@ -928,33 +928,7 @@ export default function Home() {
     }
     prevUnreadRef.current = unreadTotal || 0;
   }, [unreadTotal]);
-  // ── YENİ MÜRACİƏT GÖZƏTÇİSİ (SADƏ RƏQƏM MƏNTİQİ) ──
-  const isFirstLoadReq = React.useRef(true);
-  const prevReqRef = React.useRef(0);
-
-  // 1. Array-in içindəki sayı koddan kənarda hesablayıb, adi bir RƏQƏMƏ çeviririk
-  const pendingReqCount = (incomingRideRequests || []).filter(
-    (req) => req?.status === 'pending'
-  ).length;
-
-  React.useEffect(() => {
-    // 2. Proqram ilk açılanda mövcud sayı yaddaşa atır və səs eləmir
-    if (isFirstLoadReq.current) {
-      prevReqRef.current = pendingReqCount;
-      isFirstLoadReq.current = false;
-      return;
-    }
-
-    // 3. Əgər RƏQƏM (say) köhnə rəqəmdən böyükdürsə, dərhal işə düşür!
-    if (pendingReqCount > prevReqRef.current) {
-      if (typeof setMessage === 'function') setMessage('🔔 Yeni müraciət daxil oldu!');
-      try { if (typeof triggerVibration === 'function') triggerVibration('medium'); } catch(e){}
-    }
-    
-    // Yaddaşı yeniləyirik
-    prevReqRef.current = pendingReqCount;
-  }, [pendingReqCount]); // Bu dəfə Array-i yox, sadəcə Rəqəmi izləyirik!
-  // ── Toast Bildirişlərinin Avtomatik Silinməsi (3 saniyə) ──
+   // ── Toast Bildirişlərinin Avtomatik Silinməsi (3 saniyə) ──
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => {
@@ -2827,6 +2801,32 @@ async function handleCloseConversation(conversationId: number) {
   // Telegram yüklənməyibsə loading göstər
   if (!tgReady) {
 
+    // ── YENİ MÜRACİƏT GÖZƏTÇİSİ (SADƏ RƏQƏM MƏNTİQİ) ──
+  const isFirstLoadReq = React.useRef(true);
+  const prevReqRef = React.useRef(0);
+
+  // 1. Array-in içindəki sayı burada, yəni bütün dəyişənlər yaradılandan SONRA hesablayırıq
+  const pendingReqCount = (incomingRideRequests || []).filter(
+    (req) => req?.status === 'pending'
+  ).length;
+
+  React.useEffect(() => {
+    // 2. Proqram ilk açılanda mövcud sayı yaddaşa atır və səs eləmir
+    if (isFirstLoadReq.current) {
+      prevReqRef.current = pendingReqCount;
+      isFirstLoadReq.current = false;
+      return;
+    }
+
+    // 3. Əgər RƏQƏM (say) köhnə rəqəmdən böyükdürsə, dərhal işə düşür!
+    if (pendingReqCount > prevReqRef.current) {
+      if (typeof setMessage === 'function') setMessage('🔔 Yeni müraciət daxil oldu!');
+      try { if (typeof triggerVibration === 'function') triggerVibration('medium'); } catch(e){}
+    }
+    
+    // Yaddaşı yeniləyirik
+    prevReqRef.current = pendingReqCount;
+  }, [pendingReqCount]);
     return (
       <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center', padding: 40 }}>
