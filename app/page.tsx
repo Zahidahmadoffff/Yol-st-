@@ -2949,6 +2949,27 @@ async function handleCloseConversation(conversationId: number) {
                 )}
               </div>
 
+              {/* Yerdəyişmə (Swap) Düyməsi */}
+              <div style={{ display: 'flex', justifyContent: 'center', margin: '-4px 0', position: 'relative', zIndex: 10 }}>
+                <button
+                  type="button"
+                  title="Haradan və Hara yerlərini dəyiş"
+                  onClick={() => {
+                    // Mətnlərin və koordinatların yerini dəyişirik
+                    const tOrg = origin; const tLat = originLat; const tLng = originLng;
+                    setOrigin(destination); setOriginLat(destLat); setOriginLng(destLng);
+                    setDestination(tOrg); setDestLat(tLat); setDestLng(tLng);
+                  }}
+                  style={{
+                    background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '50%',
+                    width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', fontSize: 18, color: '#2563eb', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  ⇅
+                </button>
+              </div>
+
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Hara</label>
                 <div style={{ display: 'flex', gap: 8 }}>
