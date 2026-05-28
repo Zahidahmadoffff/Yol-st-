@@ -790,7 +790,18 @@ function getReportStatusLabel(status: ReportStatus) {
   if (status === 'dismissed') return 'Dismiss'
   return 'Açıq'
 }
+// ── Telegram Haptic Feedback (Titrəmə) Optimizasiyası ──
+const triggerVibration = (type: string = 'medium') => {
+  try {
+    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) {
+      (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type);
+    }
+  } catch (e) {
+    // səssiz davam et
+  }
+};
 
+export default function Page() {  // (Səndə bu sətir artıq var, sadəcə yerini bilmək üçün yazdım)
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
   const [adminSection, setAdminSection] = useState<AdminSection>('overview')
@@ -905,17 +916,7 @@ export default function Home() {
   const [adminEditingReviewId, setAdminEditingReviewId] = useState<number | null>(null)
   const [adminReviewRating, setAdminReviewRating] = useState('5')
   const [adminReviewComment, setAdminReviewComment] = useState('')
-  // ── Telegram Haptic Feedback (Titrəmə) Optimizasiyası ──
-  const triggerVibration = (type: string = 'medium') => {
-    try {
-      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) {
-        (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type);
-      }
-    } catch (e) {
-      // səssiz davam et
-    }
-  };
-
+  
   function getActiveUser() {
     if (typeof window === 'undefined') {
       return { driverId: 0, username: '', fullName: '', appRole: 'passenger' as AppRole }
@@ -1602,17 +1603,7 @@ useEffect(() => {
     setProfileSaving(false)
   }
 
- // ── Telegram Haptic Feedback (Titrəmə) Optimizasiyası ──
-  const triggerVibration = (type: string = 'medium') => {
-    try {
-      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) {
-        (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type);
-      }
-    } catch (e) {
-      // sessiz davam et
-    }
-  };
-  async function handleSubmitRide(e: React.FormEvent) {
+   async function handleSubmitRide(e: React.FormEvent) {
     triggerVibration('medium');
     e.preventDefault()
     triggerVibration('heavy');
