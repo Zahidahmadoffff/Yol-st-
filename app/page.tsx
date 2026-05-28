@@ -1739,6 +1739,11 @@ useEffect(() => {
         resetRideForm()
         await initializeData()
         setActiveTab('dashboard')
+        if (!error) {
+  setMessage('🎉 Elanınız uğurla yerləşdirildi!');
+} else {
+  setMessage('Xəta baş verdi');
+}
       }
     }
 
@@ -4438,9 +4443,13 @@ async function handleCloseConversation(conversationId: number) {
             alignItems: 'center',
             gap: '8px',
             animation: 'slideUpFade 0.4s ease-out forwards',
-            whiteSpace: 'nowrap'
+            whiteSpace: 'normal',
+            width: '90%',
+            maxWidth: '400px',
+            textAlign: 'center',
+            lineHeight: '1.4'
           }}>
-            {message.includes('xəta') || message.includes('tapılmadı') || message.includes('doldurun') ? '⚠️' : '✅'} {message}
+            {message.includes('xəta') || message.includes('tapılmadı') || message.includes('doldurun') || message.includes('Yalnız 1') || message.includes('artıq 1') ? '⚠️' : '✅'} {message}
           </div>
         </>
       )}
