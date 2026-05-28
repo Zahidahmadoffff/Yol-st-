@@ -906,14 +906,14 @@ export default function Home() {
   const [adminReviewRating, setAdminReviewRating] = useState('5')
   const [adminReviewComment, setAdminReviewComment] = useState('')
   // ── Telegram Haptic Feedback (Titrəmə) Optimizasiyası ──
-  const triggerVibration = (type = 'medium') => {
+  const triggerVibration = (type: string = 'medium') => {
     try {
-      // @ts-ignore (TypeScript-in Telegram obyektini tanımaması üçün)
-      if (window?.Telegram?.WebApp?.HapticFeedback) {
-        // @ts-ignore
-        window.Telegram.WebApp.HapticFeedback.impactOccurred(type);
+      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) {
+        (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type);
       }
-    } catch (e) { console.log('Titrəmə dəstəklənmir'); }
+    } catch (e) {
+      // səssiz davam et
+    }
   };
 
   function getActiveUser() {
