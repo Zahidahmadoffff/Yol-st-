@@ -3066,7 +3066,7 @@ async function handleCloseConversation(conversationId: number) {
 
       {activeTab === 'search' && (
         <>
-          <section style={styles.sectionCard}>
+         <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Axtarış</h2>
 
             <div style={styles.form}>
@@ -3080,25 +3080,9 @@ async function handleCloseConversation(conversationId: number) {
                 />
               </div>
 
-              <div style={styles.twoColumnGrid}>
-                <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Rol filteri</label>
-                  <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} style={styles.select}>
-                    <option value="all">Hamısı</option>
-                    <option value="driver">Sürücü elanları</option>
-                    <option value="passenger">Sərnişin elanları</option>
-                  </select>
-                </div>
-<select value={filterGender} onChange={(e) => setFilterGender(e.target.value)} style={{ ...styles.select, width: 'auto', flex: 1 }}>
-                  <option value="">Bütün cinslər</option>
-                  <option value="male">Kişi</option>
-                  <option value="female">Qadın</option>
-                </select>
-              </div>
-
               {/* Sürətli ünvanlar (Axtarış üçün) */}
               {(profile?.home_address || profile?.work_address) && (
-                <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {profile.home_address && (
                     <button type="button" onClick={() => setSearchText(profile.home_address!)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>
                   )}
@@ -3107,6 +3091,26 @@ async function handleCloseConversation(conversationId: number) {
                   )}
                 </div>
               )}
+
+              <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>Rol filteri</label>
+                  <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} style={styles.select}>
+                    <option value="all">Hamısı</option>
+                    <option value="driver">Sürücü elanları</option>
+                    <option value="passenger">Sərnişin elanları</option>
+                  </select>
+                </div>
+
+                <div style={styles.fieldWrap}>
+                  <label style={styles.label}>Cins filteri</label>
+                  <select value={filterGender} onChange={(e) => setFilterGender(e.target.value)} style={styles.select}>
+                    <option value="">Bütün cinslər</option>
+                    <option value="male">Kişi</option>
+                    <option value="female">Qadın</option>
+                  </select>
+                </div>
+
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Tarix filteri</label>
                   <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={styles.input} />
@@ -3119,6 +3123,7 @@ async function handleCloseConversation(conversationId: number) {
                   onClick={() => {
                     setSearchText('')
                     setFilterRole('all')
+                    setFilterGender('')
                     setFilterDate('')
                   }}
                   style={styles.secondaryButton}
