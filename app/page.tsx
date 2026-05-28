@@ -1602,19 +1602,16 @@ useEffect(() => {
     setProfileSaving(false)
   }
 
-  // ── Telegram Haptic Feedback (Titrəmə) Optimizasiyası ──
-  const triggerVibration = (type: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' = 'medium') => {
+ // ── Telegram Haptic Feedback (Titrəmə) Optimizasiyası ──
+  const triggerVibration = (type: string = 'medium') => {
     try {
-      // @ts-ignore
-      if (typeof window !== 'undefined' && window?.Telegram?.WebApp?.HapticFeedback) {
-        // @ts-ignore
-        window.Telegram.WebApp.HapticFeedback.impactOccurred(type);
+      if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) {
+        (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type);
       }
-    } catch (e) { 
-      console.log('Titrəmə dəstəklənmir'); 
+    } catch (e) {
+      // sessiz davam et
     }
   };
-
   async function handleSubmitRide(e: React.FormEvent) {
     triggerVibration('medium');
     e.preventDefault()
