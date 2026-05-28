@@ -1602,8 +1602,23 @@ useEffect(() => {
     setProfileSaving(false)
   }
 
+  // ── Telegram Haptic Feedback (Titrəmə) Optimizasiyası ──
+  const triggerVibration = (type: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' = 'medium') => {
+    try {
+      // @ts-ignore
+      if (typeof window !== 'undefined' && window?.Telegram?.WebApp?.HapticFeedback) {
+        // @ts-ignore
+        window.Telegram.WebApp.HapticFeedback.impactOccurred(type);
+      }
+    } catch (e) { 
+      console.log('Titrəmə dəstəklənmir'); 
+    }
+  };
+
   async function handleSubmitRide(e: React.FormEvent) {
+    triggerVibration('medium');
     e.preventDefault()
+    triggerVibration('heavy');
     setSubmitting(true)
     setMessage('')
 
