@@ -2797,36 +2797,36 @@ async function handleCloseConversation(conversationId: number) {
         .includes(q)
     )
   }, [adminReports, adminGlobalSearch])
-// ── YENİ MÜRACİƏT GÖZƏTÇİSİ (ZİREHLİ VERSİYA) ──
-  // Xüsusi qeyd: React.useRef yazırıq ki, import xətası verməsin. 
-  // -1 qoyuruq ki, ilk açılışda xəbərdarlıq etməsin.
-  const prevRequestsRef = React.useRef(-1);
+// ── YENİ MÜRACİƏT GÖZƏTÇİSİ (ZİREHLİ VƏ HƏSSAS VERSİYA 2.0) ──
+  const isFirstLoadRef = React.useRef(true);
+  const prevCountRef = React.useRef(0);
 
   React.useEffect(() => {
     try {
-      // 1. TƏHLÜKƏSİZLİK: Əgər data hələ gəlməyibsə və ya düzgün deyilsə, kodu dayandır ki, çökməsin!
+      // 1. Data gəlməyibsə, heç nə etmə
       if (!Array.isArray(incomingRideRequests)) return;
 
-      // 2. Sayı hesablayırıq (hər ehtimala qarşı x və x.ride yoxlaması ilə)
-      const currentPendingCount = incomingRideRequests.filter(
-        (x) => x && x.status === 'pending' && x.ride && x.ride.status === 'active'
+      // 2. Sadəcə "pending" olan müraciətləri sayırıq (dərin yoxlamaları çıxardıq ki, qaçırmasın)
+      const pendingCount = incomingRideRequests.filter(
+        (req) => req && req.status === 'pending'
       ).length;
 
-      // 3. Proqram ilk dəfə açılanda səssizcə mövcud müraciət sayını yaddaşa yazır, bildiriş vermir
-      if (prevRequestsRef.current === -1) {
-        prevRequestsRef.current = currentPendingCount;
+      // 3. Proqram ilk dəfə açılanda səssizcə yaddaşa yazır ki, köhnə mesajlara görə səs eləməsin
+      if (isFirstLoadRef.current) {
+        prevCountRef.current = pendingCount;
+        isFirstLoadRef.current = false;
         return;
       }
 
-      // 4. Əgər sonradan say artarsa (kimsə müraciət edərsə), o zaman işə düşür
-      if (currentPendingCount > prevRequestsRef.current) {
+      // 4. Əgər gözləyən müraciətlərin sayı əvvəlkindən çoxdursa -> BİLDİRİŞ VER!
+      if (pendingCount > prevCountRef.current) {
         if (typeof setMessage === 'function') setMessage('🔔 Yeni müraciət daxil oldu!');
         if (typeof triggerVibration === 'function') triggerVibration('medium');
       }
-      
-      prevRequestsRef.current = currentPendingCount;
+
+      // Yaddaşı daim yeniləyirik
+      prevCountRef.current = pendingCount;
     } catch (error) {
-      // Əgər hansısa görünməz xəta olarsa, sadəcə qulaq ardı edir və tətbiqi çökdürmür
       console.log("İzləyici xətası:", error);
     }
   }, [incomingRideRequests]);
