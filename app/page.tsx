@@ -964,6 +964,12 @@ const triggerVibration = (type: string = 'medium') => {
   const currentUser = getActiveUser()
   const isRealAdmin = currentUser.appRole === 'admin' // Əslində admindirmi?
   const isAdmin = isRealAdmin && isAdminMode // Yalnız Admin rejimini açanda yetkili olacaq!
+  // ── ADMIN REJİMİNƏ KEÇƏNDƏ MƏLUMATLARI YÜKLƏYƏN GÖZƏTÇİ ──
+  useEffect(() => {
+    if (isAdmin) {
+      void getAdminData();
+    }
+  }, [isAdmin]);
 
   function resetRideForm() {
     setEditingRideId(null)
