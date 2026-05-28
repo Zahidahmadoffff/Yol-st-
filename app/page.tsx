@@ -802,7 +802,7 @@ const triggerVibration = (type: string = 'medium') => {
   }
 };
 
-export default function Home() {export default function Home() {
+ export default function Home() {
   const [isAdminMode, setIsAdminMode] = useState(false) // YENİ: Rejim idarəedici
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
   const [adminSection, setAdminSection] = useState<AdminSection>('overview')
