@@ -1231,7 +1231,7 @@ useEffect(() => {
 
         const pData = profilesRes.data || []
         const rData = reviewsRes.data || []
-        const newMap: Record<number, { name: string, rating: string }> = {}
+        const newMap: Record<number, { name: string, rating: string, gender: string }> = {}
 
         pData.forEach(p => {
           const userReviews = rData.filter(r => r.reviewee_id === p.id)
