@@ -64,6 +64,8 @@ type Profile = {
   bio: string | null
   role: UserRole
   gender?: 'male' | 'female'
+  home_address?: string | null
+  work_address?: string | null
   car_brand: string | null
   license_plate: string | null
   is_blocked?: boolean
@@ -849,12 +851,15 @@ export default function Home() {
   const [profilePhone, setProfilePhone] = useState('')
   const [profileBio, setProfileBio] = useState('')
   const [profileGender, setProfileGender] = useState<'male' | 'female'>('male')
+  const [profileHomeAddress, setProfileHomeAddress] = useState('')
+  const [profileWorkAddress, setProfileWorkAddress] = useState('')
   const [womenOnly, setWomenOnly] = useState(false)
   const [carBrand, setCarBrand] = useState('')
   const [licensePlate, setLicensePlate] = useState('')
 
   const [searchText, setSearchText] = useState('')
   const [filterRole, setFilterRole] = useState('all')
+  const [filterGender, setFilterGender] = useState('')
   const [filterDate, setFilterDate] = useState('')
 
   const [requestMessageMap, setRequestMessageMap] = useState<Record<string, string>>({})
@@ -1193,6 +1198,8 @@ useEffect(() => {
       setProfilePhone(p.phone || '')
       setProfileBio(p.bio || '')
       setProfileGender(p.gender || 'male')
+      setProfileHomeAddress(p.home_address || '')
+      setProfileWorkAddress(p.work_address || '')
       setCarBrand(p.car_brand || '')
       setLicensePlate(p.license_plate || '')
       setInitialRole(p.role || 'passenger')
@@ -1203,6 +1210,8 @@ useEffect(() => {
       setProfilePhone('')
       setProfileBio(current.appRole === 'admin' ? 'Admin hesabı' : '')
       setProfileGender('male')
+      setProfileHomeAddress('')
+      setProfileWorkAddress('')
       setCarBrand('')
       setLicensePlate('')
       setInitialRole('passenger')
@@ -1559,6 +1568,8 @@ useEffect(() => {
       phone: profilePhone.trim(),
       bio: profileBio.trim(),
       gender: profileGender,
+      home_address: profileHomeAddress.trim() || null,
+      work_address: profileWorkAddress.trim() || null,
       role: effectiveRole,
       // DƏYİŞİKLİK BURADADIR: Artıq rolundan asılı olmayaraq maşın məlumatı yadda saxlanılacaq
       car_brand: carBrand.trim() || null,
@@ -2663,10 +2674,14 @@ async function handleCloseConversation(conversationId: number) {
       const matchesDate = !filterDate || (ride.ride_date || '') === filterDate
       const notMine = ride.driver_id !== current.driverId
       
-      // Qadınlara özəl elanı ancaq profilində "Qadın" seçən istifadəçilər görə bilər
-      const matchesGender = ride.women_only ? profile?.gender === 'female' : true
+      // Qadınlara özəl (Məxfilik)
+      const matchesWomenOnly = ride.women_only ? profile?.gender === 'female' : true
 
-      return matchesText && matchesRole && matchesDate && notMine && matchesGender && ride.status === 'active'
+      // Axtarış zamanı seçilən Cins filteri
+      const rideUserGender = driverProfilesMap[ride.driver_id]?.gender
+      const matchesSearchGender = !filterGender || rideUserGender === filterGender
+
+      return matchesText && matchesRole && matchesSearchGender && matchesDate && notMine && matchesWomenOnly && ride.status === 'active'
     })
   }, [rides, searchText, filterRole, filterDate, isAdmin])
 
@@ -2893,6 +2908,17 @@ async function handleCloseConversation(conversationId: number) {
             <p style={styles.mutedText}>Əvvəl profil yaratmaq lazımdır.</p>
           ) : (
             <form onSubmit={handleSubmitRide} style={styles.form}>
+            {/* Sürətli ünvanlar (Elan yaratmaq üçün) */}
+              {(profile?.home_address || profile?.work_address) && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                  {profile.home_address && (
+                    <button type="button" onClick={() => { if(!origin) setOrigin(profile.home_address!); else if(!destination) setDestination(profile.home_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>
+                  )}
+                  {profile.work_address && (
+                    <button type="button" onClick={() => { if(!origin) setOrigin(profile.work_address!); else if(!destination) setDestination(profile.work_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>
+                  )}
+                </div>
+              )}
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Aktiv rol</label>
                 <input value={getRoleLabel(profile.role)} readOnly style={styles.input} />
@@ -3063,7 +3089,24 @@ async function handleCloseConversation(conversationId: number) {
                     <option value="passenger">Sərnişin elanları</option>
                   </select>
                 </div>
+<select value={filterGender} onChange={(e) => setFilterGender(e.target.value)} style={{ ...styles.select, width: 'auto', flex: 1 }}>
+                  <option value="">Bütün cinslər</option>
+                  <option value="male">Kişi</option>
+                  <option value="female">Qadın</option>
+                </select>
+              </div>
 
+              {/* Sürətli ünvanlar (Axtarış üçün) */}
+              {(profile?.home_address || profile?.work_address) && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                  {profile.home_address && (
+                    <button type="button" onClick={() => setSearchText(profile.home_address!)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>
+                  )}
+                  {profile.work_address && (
+                    <button type="button" onClick={() => setSearchText(profile.work_address!)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>
+                  )}
+                </div>
+              )}
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Tarix filteri</label>
                   <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={styles.input} />
@@ -3592,7 +3635,21 @@ async function handleCloseConversation(conversationId: number) {
                 </div>
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Bio</label>
-                  <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={1} style={styles.textarea} />
+                  <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={1} style={styles.textarea} placeholder="Özünüz haqqında qısa..." />
+                </div>
+              </div>
+
+              <div style={{ marginTop: 10, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                <p style={{ margin: '0 0 12px', fontWeight: 700, color: '#334155' }}>📍 Sürətli Ünvanlarım (Axtarış və elan üçün)</p>
+                <div style={styles.twoColumnGrid}>
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>🏠 Ev ünvanı</label>
+                    <input value={profileHomeAddress} onChange={(e) => setProfileHomeAddress(e.target.value)} style={styles.input} placeholder="Məs: 20 Yanvar metrosu" />
+                  </div>
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>💼 İş/Universitet ünvanı</label>
+                    <input value={profileWorkAddress} onChange={(e) => setProfileWorkAddress(e.target.value)} style={styles.input} placeholder="Məs: Gənclik Mall" />
+                  </div>
                 </div>
               </div>
 
