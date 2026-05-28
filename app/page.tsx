@@ -1624,10 +1624,12 @@ useEffect(() => {
 
     const current = getActiveUser()
 
-    if (!profilePhone.trim()) {
-      setMessage('Telefon nömrəsi məcburidir.')
-      setProfileSaving(false)
-      return
+   // ── AĞILLI NÖMRƏ YOXLAMASI (Tam 12 rəqəm olmalıdır: 994 + 9 rəqəm) ──
+    const digitsOnly = profilePhone.replace(/\D/g, ''); // İçindəki boşluqları və + işarəsini saymır
+    if (digitsOnly.length !== 12) {
+      setMessage('Telefon nömrəsini tam daxil edin (Məs: +994 50 123 45 67)');
+      setProfileSaving(false);
+      return;
     }
 
     const effectiveRole = profile ? profile.role : initialRole
