@@ -6,7 +6,11 @@ export const metadata: Metadata = {
   description: 'Bakıda sürücü və sərnişinləri birləşdirən icma platforma',
 }
 
-export default function RootLayout({ children }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="az">
       <head>
@@ -14,5 +18,5 @@ export default function RootLayout({ children }) {
       </head>
       <body>{children}</body>
     </html>
-  )
+  );
 }
