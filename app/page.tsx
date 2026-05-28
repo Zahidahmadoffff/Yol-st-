@@ -3467,13 +3467,21 @@ async function handleCloseConversation(conversationId: number) {
               {/* YENİ: Üzən Filtr Düymələri */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                 <button 
-                  onClick={() => setChatFilter('active')} 
+                  onClick={() => {
+                    setChatFilter('active');
+                    const firstActive = conversations.find(c => c.status !== 'closed');
+                    setSelectedConversationId(firstActive ? firstActive.id : null);
+                  }} 
                   style={chatFilter === 'active' ? styles.chipActive : styles.chip}
                 >
                   🟢 Aktiv ({conversations.filter(c => c.status !== 'closed').length})
                 </button>
                 <button 
-                  onClick={() => setChatFilter('closed')} 
+                  onClick={() => {
+                    setChatFilter('closed');
+                    const firstClosed = conversations.find(c => c.status === 'closed');
+                    setSelectedConversationId(firstClosed ? firstClosed.id : null);
+                  }} 
                   style={chatFilter === 'closed' ? styles.chipActive : styles.chip}
                 >
                   🗄️ Arxiv ({conversations.filter(c => c.status === 'closed').length})
@@ -3508,8 +3516,13 @@ async function handleCloseConversation(conversationId: number) {
             </div>
 
             <div style={styles.chatPanel}>
-              {!selectedConversation ? (
-                <p style={styles.mutedText}>Conversation seç.</p>
+              {(!selectedConversation || (chatFilter === 'active' ? selectedConversation.status === 'closed' : selectedConversation.status !== 'closed')) ? (
+                <div style={{ textAlign: 'center', marginTop: 40 }}>
+                  <span style={{ fontSize: 40 }}>💬</span>
+                  <p style={{ ...styles.mutedText, marginTop: 12 }}>
+                    {chatFilter === 'active' ? 'Göstəriləcək aktiv çat yoxdur.' : 'Göstəriləcək arxiv çat yoxdur.'}
+                  </p>
+                </div>
               ) : (
                 <>
                   <div style={styles.resultCard}>
