@@ -917,24 +917,7 @@ export default function Home() {
   const [adminReviewRating, setAdminReviewRating] = useState('5')
   const [adminReviewComment, setAdminReviewComment] = useState('')
 // ── YENİ MESAJ GÖZƏTÇİSİ ──
-// ── YENİ MÜRACİƏT GÖZƏTÇİSİ ──
-  const prevRequestsRef = useRef(0);
 
-  useEffect(() => {
-    // Sənin öz yazdığın filter məntiqi ilə cari sayı tapırıq
-    const currentPendingCount = incomingRideRequests.filter(
-      (x) => x.status === 'pending' && x.ride?.status === 'active'
-    ).length || 0;
-
-    // Əgər yeni müraciətlərin sayı əvvəlkindən çoxdursa...
-    if (currentPendingCount > prevRequestsRef.current) {
-      setMessage('🔔 Yeni müraciət daxil oldu!');
-      triggerVibration('medium');
-    }
-    
-    // Yaddaşı yeniləyirik
-    prevRequestsRef.current = currentPendingCount;
-  }, [incomingRideRequests]);
   const prevUnreadRef = useRef(0);
 
   useEffect(() => {
@@ -2817,6 +2800,22 @@ async function handleCloseConversation(conversationId: number) {
 
   // Telegram yüklənməyibsə loading göstər
   if (!tgReady) {
+    // ── YENİ MÜRACİƏT GÖZƏTÇİSİ ──
+  const prevRequestsRef = useRef(0);
+
+  useEffect(() => {
+    // optional chaining (?) əlavə etdik ki, undefined olanda çökməsin
+    const currentPendingCount = incomingRideRequests?.filter(
+      (x) => x.status === 'pending' && x.ride?.status === 'active'
+    ).length || 0;
+
+    if (currentPendingCount > prevRequestsRef.current) {
+      setMessage('🔔 Yeni müraciət daxil oldu!');
+      triggerVibration('medium');
+    }
+    
+    prevRequestsRef.current = currentPendingCount;
+  }, [incomingRideRequests]);
     return (
       <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center', padding: 40 }}>
