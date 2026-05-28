@@ -3370,93 +3370,102 @@ async function handleCloseConversation(conversationId: number) {
       )}
 
       {activeTab === 'requests' && (
-        <>
-          <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Gələn müraciətlər</h2>
-            
-            <p style={{ margin: '0 0 12px', fontWeight: 800, color: '#0f172a' }}>Aktiv müraciətlər</p>
-            {incomingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length === 0 ? (
-              <p style={styles.mutedText}>Aktiv gələn müraciət yoxdur.</p>
-            ) : (
-              <div style={styles.ridesGrid}>
-                {incomingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).map((item) => (
-                  <div key={item.id} style={styles.resultCard}>
-                    <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
-                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(item.requester_role)}</p>
-                    <p style={styles.infoRow}><strong>İstənən yer:</strong> {item.seats_requested}</p>
-                    <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
-                    {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
-                    <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
-                    
-                    {item.status === 'pending' && item.ride?.status === 'active' && (
-                      <div style={styles.actionRow}>
-                        <button type="button" style={styles.successButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'accepted')}>Qəbul et</button>
-                        <button type="button" style={styles.dangerButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'rejected')}>Rədd et</button>
-                      </div>
-                    )}
-                    {item.status === 'accepted' && item.ride?.status === 'active' && (
-                      <div style={styles.actionRow}>
-                        <button type="button" style={styles.closeButton} disabled={rideRequestLoading === item.id} onClick={() => void handleConfirmDeal(item)}>Deal təsdiqlə</button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+        <section style={styles.sectionCard}>
+          <h2 style={styles.sectionTitle}>Müraciətlər</h2>
 
-            <p style={{ margin: '24px 0 12px', fontWeight: 800, color: '#64748b' }}>Arxiv (Rədd edilmiş / Elanı bağlanmış)</p>
-            {incomingRideRequests.filter(req => !(req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active'))).length === 0 ? (
-              <p style={styles.mutedText}>Arxiv boşdur.</p>
-            ) : (
-              <div style={styles.ridesGrid}>
-                {incomingRideRequests.filter(req => !(req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active'))).map((item) => (
-                  <div key={item.id} style={{...styles.resultCard, opacity: 0.65}}>
-                    <div style={{...styles.badge, background: '#e2e8f0'}}>{getRequestStatusLabel(item.status)}</div>
-                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(item.requester_role)}</p>
-                    <p style={styles.infoRow}><strong>İstənən yer:</strong> {item.seats_requested}</p>
-                    {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+          {/* --- SƏVİYYƏ 1: GƏLƏNLƏR VƏ GÖNDƏRİLƏNLƏR TABLARI --- */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => { setReqView('incoming'); setReqStatus('active'); }}
+              style={reqView === 'incoming' ? styles.primaryButton : styles.ghostButton}
+            >
+              📥 Gələnlər ({incomingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => { setReqView('outgoing'); setReqStatus('active'); }}
+              style={reqView === 'outgoing' ? styles.primaryButton : styles.ghostButton}
+            >
+              📤 Göndərdiklərim ({outgoingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})
+            </button>
+          </div>
 
-          <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Göndərdiyim müraciətlər</h2>
-            
-            <p style={{ margin: '0 0 12px', fontWeight: 800, color: '#0f172a' }}>Aktiv</p>
-            {outgoingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length === 0 ? (
-              <p style={styles.mutedText}>Aktiv göndərilmiş müraciət yoxdur.</p>
-            ) : (
-              <div style={styles.ridesGrid}>
-                {outgoingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).map((item) => (
-                  <div key={item.id} style={styles.resultCard}>
-                    <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
-                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(item.owner_role)}</p>
-                    <p style={styles.infoRow}><strong>Yer sayı:</strong> {item.seats_requested}</p>
-                    {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
-                    <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* --- SƏVİYYƏ 2: AKTİV VƏ ARXİV TABLARI --- */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
+            <button
+              type="button"
+              onClick={() => setReqStatus('active')}
+              style={reqStatus === 'active' ? styles.chipActive : styles.chip}
+            >
+              🟢 Aktiv
+            </button>
+            <button
+              type="button"
+              onClick={() => setReqStatus('archived')}
+              style={reqStatus === 'archived' ? styles.chipActive : styles.chip}
+            >
+              🗄️ Arxiv
+            </button>
+          </div>
 
-            <p style={{ margin: '24px 0 12px', fontWeight: 800, color: '#64748b' }}>Arxiv</p>
-            {outgoingRideRequests.filter(req => !(req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active'))).length === 0 ? (
-              <p style={styles.mutedText}>Arxiv boşdur.</p>
-            ) : (
-              <div style={styles.ridesGrid}>
-                {outgoingRideRequests.filter(req => !(req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active'))).map((item) => (
-                  <div key={item.id} style={{...styles.resultCard, opacity: 0.65}}>
-                    <div style={{...styles.badge, background: '#e2e8f0'}}>{getRequestStatusLabel(item.status)}</div>
-                    <p style={styles.infoRow}><strong>Yer sayı:</strong> {item.seats_requested}</p>
-                    {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
+          {/* --- MƏLUMATLARIN (KARTLARIN) GÖSTƏRİLMƏSİ --- */}
+          <div style={styles.ridesGrid}>
+            {(() => {
+              // Hazırkı müraciət siyahısını təyin edirik
+              const currentList = reqView === 'incoming' ? incomingRideRequests : outgoingRideRequests;
+              
+              // Müraciətin "Aktiv" olub-olmadığını yoxlayan məntiq
+              const isReqActive = (req: any) => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active');
+              
+              // Siyahını filterdən keçiririk
+              const filteredList = currentList.filter(req => reqStatus === 'active' ? isReqActive(req) : !isReqActive(req));
+
+              // Əgər siyahı boşdursa
+              if (filteredList.length === 0) {
+                return (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 10px', background: '#f8fafc', borderRadius: 16, border: '1px dashed #cbd5e1' }}>
+                    <span style={{ fontSize: 40 }}>{reqStatus === 'active' ? '📬' : '🗄️'}</span>
+                    <p style={{ ...styles.mutedText, marginTop: 12, fontWeight: 600 }}>
+                      {reqStatus === 'active' ? 'Göstəriləcək aktiv müraciət yoxdur.' : 'Arxiv boşdur.'}
+                    </p>
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </>
+                );
+              }
+
+              // Siyahı dolu isə kartları çəkirik
+              return filteredList.map((item) => (
+                <div key={item.id} style={{ ...styles.resultCard, opacity: reqStatus === 'archived' ? 0.65 : 1 }}>
+                  <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
+                  <p style={styles.infoRow}>
+                    <strong>Rol:</strong> {getRoleLabel(reqView === 'incoming' ? item.requester_role : item.owner_role)}
+                  </p>
+                  <p style={styles.infoRow}><strong>İstənən yer:</strong> {item.seats_requested}</p>
+                  {item.message_text && <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text}</p>}
+                  {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
+                  <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
+
+                  {/* DÜYMƏLƏR - YALNIZ "GƏLƏNLƏR" VƏ "AKTİV" BÖLMƏSİNDƏ GÖRÜNÜR */}
+                  {reqView === 'incoming' && reqStatus === 'active' && (
+                    <>
+                      {item.status === 'pending' && item.ride?.status === 'active' && (
+                        <div style={styles.actionRow}>
+                          <button type="button" style={styles.successButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'accepted')}>Qəbul et</button>
+                          <button type="button" style={styles.dangerButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'rejected')}>Rədd et</button>
+                        </div>
+                      )}
+                      {item.status === 'accepted' && item.ride?.status === 'active' && (
+                        <div style={styles.actionRow}>
+                          <button type="button" style={styles.closeButton} disabled={rideRequestLoading === item.id} onClick={() => void handleConfirmDeal(item)}>Deal təsdiqlə</button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ));
+            })()}
+          </div>
+        </section>
       )}
       {activeTab === 'chat' && (
         <section style={styles.sectionCard}>
