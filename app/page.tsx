@@ -917,6 +917,24 @@ export default function Home() {
   const [adminReviewRating, setAdminReviewRating] = useState('5')
   const [adminReviewComment, setAdminReviewComment] = useState('')
 // ── YENİ MESAJ GÖZƏTÇİSİ ──
+// ── YENİ MÜRACİƏT GÖZƏTÇİSİ ──
+  const prevRequestsRef = useRef(0);
+
+  useEffect(() => {
+    // Sənin öz yazdığın filter məntiqi ilə cari sayı tapırıq
+    const currentPendingCount = incomingRideRequests.filter(
+      (x) => x.status === 'pending' && x.ride?.status === 'active'
+    ).length || 0;
+
+    // Əgər yeni müraciətlərin sayı əvvəlkindən çoxdursa...
+    if (currentPendingCount > prevRequestsRef.current) {
+      setMessage('🔔 Yeni müraciət daxil oldu!');
+      triggerVibration('medium');
+    }
+    
+    // Yaddaşı yeniləyirik
+    prevRequestsRef.current = currentPendingCount;
+  }, [incomingRideRequests]);
   const prevUnreadRef = useRef(0);
 
   useEffect(() => {
