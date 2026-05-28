@@ -916,6 +916,9 @@ export default function Home() {
   const [adminEditingReviewId, setAdminEditingReviewId] = useState<number | null>(null)
   const [adminReviewRating, setAdminReviewRating] = useState('5')
   const [adminReviewComment, setAdminReviewComment] = useState('')
+  // ── YENİ MESAJ VƏ MÜRACİƏT GÖZƏTÇİSİ ──
+  const prevUnreadRef = useRef(0);
+  const prevRequestsRef = useRef(0);
   // ── Toast Bildirişlərinin Avtomatik Silinməsi (3 saniyə) ──
   useEffect(() => {
     if (message) {
@@ -1125,6 +1128,24 @@ export default function Home() {
       setSelectedConversationId(conversations[0].id)
     }
   }, [conversations, selectedConversationId, isAdmin])
+  useEffect(() => {
+    // DİQQƏT: Buradakı 'unreadCount' və 'pendingRequests' sözlərini öz kodundakı dəyişən adları ilə ƏVƏZLƏ!
+    
+    // 1. Yeni mesaj yoxlaması
+    if (${unreadTotal} yeni)` : `Chat (${conversations.filter(c => c.status !== 'closed').length} > prevUnreadRef.current) {
+      setMessage('🔔 Yeni mesajınız var!');
+      triggerVibration('medium'); // Telefonda zərif titrəmə verəcək
+    }
+    prevUnreadRef.current = ${unreadTotal} yeni)` : `Chat (${conversations.filter(c => c.status !== 'closed').length} || 0;
+
+    // 2. Yeni müraciət yoxlaması
+    if (${incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length} > prevRequestsRef.current) {
+      setMessage('🔔 Yeni müraciət daxil oldu!');
+      triggerVibration('medium');
+    }
+    prevRequestsRef.current = pendingRequests || 0;
+
+  }, [${unreadTotal} yeni)` : `Chat (${conversations.filter(c => c.status !== 'closed').length}, ${incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length}]); // Bu dəyişənlərin adını da yuxarıdakılara uyğun dəyiş
 
   useEffect(() => {
     if (isAdmin) return
