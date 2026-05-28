@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'YolDash',
+  title: 'Yolustu',
   description: 'Bakıda sürücü və sərnişinləri birləşdirən icma platforma',
 }
 
@@ -18,6 +18,18 @@ export default function RootLayout({
         <script src="https://telegram.org/js/telegram-web-app.js" />
       </head>
       <body>{children}</body>
+      export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="az">
+      <head>
+        <script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive"></script>
+      </head>
+      <body>
+        {children}
+      </body>
+    </html>
+  )
+}
     </html>
   )
 }
