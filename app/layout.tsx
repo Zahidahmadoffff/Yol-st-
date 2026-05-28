@@ -18,18 +18,17 @@ export default function RootLayout({
         <script src="https://telegram.org/js/telegram-web-app.js" />
       </head>
       <body>{children}</body>
-      export default function RootLayout({ children }: { children: React.ReactNode }) {
+  export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="az">
       <head>
-        <script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive"></script>
+        <script src="https://telegram.org/js/telegram-web-app.js"></script>
       </head>
-      <body>
-        {children}
-      </body>
-    </html>
-  )
-}
+      <body>{children}</body>
     </html>
   )
 }
