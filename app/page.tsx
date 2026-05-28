@@ -928,6 +928,32 @@ export default function Home() {
     }
     prevUnreadRef.current = unreadTotal || 0;
   }, [unreadTotal]);
+  // ── YENİ MÜRACİƏT GÖZƏTÇİSİ (SADƏ RƏQƏM MƏNTİQİ) ──
+  const isFirstLoadReq = React.useRef(true);
+  const prevReqRef = React.useRef(0);
+
+  // 1. Array-in içindəki sayı koddan kənarda hesablayıb, adi bir RƏQƏMƏ çeviririk
+  const pendingReqCount = (incomingRideRequests || []).filter(
+    (req) => req?.status === 'pending'
+  ).length;
+
+  React.useEffect(() => {
+    // 2. Proqram ilk açılanda mövcud sayı yaddaşa atır və səs eləmir
+    if (isFirstLoadReq.current) {
+      prevReqRef.current = pendingReqCount;
+      isFirstLoadReq.current = false;
+      return;
+    }
+
+    // 3. Əgər RƏQƏM (say) köhnə rəqəmdən böyükdürsə, dərhal işə düşür!
+    if (pendingReqCount > prevReqRef.current) {
+      if (typeof setMessage === 'function') setMessage('🔔 Yeni müraciət daxil oldu!');
+      try { if (typeof triggerVibration === 'function') triggerVibration('medium'); } catch(e){}
+    }
+    
+    // Yaddaşı yeniləyirik
+    prevReqRef.current = pendingReqCount;
+  }, [pendingReqCount]); // Bu dəfə Array-i yox, sadəcə Rəqəmi izləyirik!
   // ── Toast Bildirişlərinin Avtomatik Silinməsi (3 saniyə) ──
   useEffect(() => {
     if (message) {
@@ -2797,39 +2823,7 @@ async function handleCloseConversation(conversationId: number) {
         .includes(q)
     )
   }, [adminReports, adminGlobalSearch])
-// ── YENİ MÜRACİƏT GÖZƏTÇİSİ (ZİREHLİ VƏ HƏSSAS VERSİYA 2.0) ──
-  const isFirstLoadRef = React.useRef(true);
-  const prevCountRef = React.useRef(0);
 
-  React.useEffect(() => {
-    try {
-      // 1. Data gəlməyibsə, heç nə etmə
-      if (!Array.isArray(incomingRideRequests)) return;
-
-      // 2. Sadəcə "pending" olan müraciətləri sayırıq (dərin yoxlamaları çıxardıq ki, qaçırmasın)
-      const pendingCount = incomingRideRequests.filter(
-        (req) => req && req.status === 'pending'
-      ).length;
-
-      // 3. Proqram ilk dəfə açılanda səssizcə yaddaşa yazır ki, köhnə mesajlara görə səs eləməsin
-      if (isFirstLoadRef.current) {
-        prevCountRef.current = pendingCount;
-        isFirstLoadRef.current = false;
-        return;
-      }
-
-      // 4. Əgər gözləyən müraciətlərin sayı əvvəlkindən çoxdursa -> BİLDİRİŞ VER!
-      if (pendingCount > prevCountRef.current) {
-        if (typeof setMessage === 'function') setMessage('🔔 Yeni müraciət daxil oldu!');
-        if (typeof triggerVibration === 'function') triggerVibration('medium');
-      }
-
-      // Yaddaşı daim yeniləyirik
-      prevCountRef.current = pendingCount;
-    } catch (error) {
-      console.log("İzləyici xətası:", error);
-    }
-  }, [incomingRideRequests]);
   // Telegram yüklənməyibsə loading göstər
   if (!tgReady) {
 
