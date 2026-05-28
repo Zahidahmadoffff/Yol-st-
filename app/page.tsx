@@ -805,9 +805,6 @@ const triggerVibration = (type: string = 'medium') => {
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
   const [adminSection, setAdminSection] = useState<AdminSection>('overview')
-// ... (kodun davamı)
-  const [activeTab, setActiveTab] = useState<TabType>('dashboard')
-  const [adminSection, setAdminSection] = useState<AdminSection>('overview')
 
   const [tgReady, setTgReady] = useState(false)
 
