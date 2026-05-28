@@ -905,6 +905,16 @@ export default function Home() {
   const [adminEditingReviewId, setAdminEditingReviewId] = useState<number | null>(null)
   const [adminReviewRating, setAdminReviewRating] = useState('5')
   const [adminReviewComment, setAdminReviewComment] = useState('')
+  // ── Telegram Haptic Feedback (Titrəmə) Optimizasiyası ──
+  const triggerVibration = (type = 'medium') => {
+    try {
+      // @ts-ignore (TypeScript-in Telegram obyektini tanımaması üçün)
+      if (window?.Telegram?.WebApp?.HapticFeedback) {
+        // @ts-ignore
+        window.Telegram.WebApp.HapticFeedback.impactOccurred(type);
+      }
+    } catch (e) { console.log('Titrəmə dəstəklənmir'); }
+  };
 
   function getActiveUser() {
     if (typeof window === 'undefined') {
@@ -1111,18 +1121,22 @@ export default function Home() {
     void getMessages(selectedConversationId)
   }, [selectedConversationId, isAdmin])
 useEffect(() => {
-    // 1. Sürətli yenilənmə: Çat, Mesajlar və Müraciətlər üçün (4 saniyə)
+    // 1. Sürətli yenilənmə: Çat, Mesajlar və Müraciətlər üçün (10 saniyə)
     const fastInterval = setInterval(() => {
+      // PRO OPTİMİZASİYA: Əgər istifadəçi başqa səhifədədirsə və ya telefon bloklanıbsa, boşuna serverə sorğu atma (Pulsuz limiti qoru)
+      if (document.hidden) return;
+
       getRideRequests();
       getConversations(true);
       getAllMyRides();
       if (selectedConversationIdRef.current) {
         getMessages(selectedConversationIdRef.current, false);
       }
-    }, 4000);
+    }, 10000);
 
     // 2. Yavaş yenilənmə: Axtarış və Ana Ekran elanları üçün (2 dəqiqə = 120000 ms)
     const slowInterval = setInterval(() => {
+      if (document.hidden) return;
       getRides();
     }, 120000);
 
@@ -3205,9 +3219,20 @@ async function handleCloseConversation(conversationId: number) {
             {loading ? (
               <p style={styles.mutedText}>Yüklənir...</p>
             ) : filteredRides.length === 0 ? (
-              <p style={styles.mutedText}>Uyğun aktiv elan tapılmadı.</p>
-            ) : (
-              <div style={styles.ridesGrid}>
+                <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '2px dashed #cbd5e1', marginTop: 20 }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+                  <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
+                  <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
+                  <button 
+                    type="button" 
+                    onClick={() => setActiveTab('create')} 
+                    style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    🚀 İlk Elanı Sən Yarat!
+                  </button>
+                </div>
+              ) : (
+                <div style={styles.ridesGrid}>
                 {filteredRides.map((ride) => (
                   <div key={ride.id} style={styles.resultCard}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
