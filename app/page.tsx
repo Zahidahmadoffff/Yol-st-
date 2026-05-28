@@ -973,7 +973,36 @@ const triggerVibration = (type: string = 'medium') => {
       void getAdminData();
     }
   }, [isAdmin]);
+// ── AĞILLI TELEFON NÖMRƏSİ FORMATI ──
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
 
+    // Əgər istifadəçi hər şeyi sildisə və ya prefixi (+994) tamamilə pozmağa çalışırsa, təmizlə
+    if (!input || (input.length < profilePhone.length && input.length <= 4)) {
+      setProfilePhone('');
+      return;
+    }
+
+    let numbers = input.replace(/\D/g, ''); // Yalnız rəqəmləri saxlayırıq
+
+    // Azərbaycan kodunu avtomatik bərpa edirik
+    if (numbers.startsWith('0')) {
+      numbers = '994' + numbers.substring(1);
+    } else if (!numbers.startsWith('994') && numbers.length > 0) {
+      numbers = '994' + numbers;
+    }
+
+    numbers = numbers.substring(0, 12); // Maksimum uzunluğu kəsirik (994 + 9 rəqəm)
+
+    // Vizual formata salırıq: +994 50 123 45 67
+    let formatted = '+994';
+    if (numbers.length > 3) formatted += ' ' + numbers.substring(3, 5);
+    if (numbers.length > 5) formatted += ' ' + numbers.substring(5, 8);
+    if (numbers.length > 8) formatted += ' ' + numbers.substring(8, 10);
+    if (numbers.length > 10) formatted += ' ' + numbers.substring(10, 12);
+
+    setProfilePhone(formatted);
+  };
   function resetRideForm() {
     setEditingRideId(null)
     setOrigin('')
@@ -3791,7 +3820,14 @@ async function handleCloseConversation(conversationId: number) {
 
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Telefon</label>
-                  <input value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} style={styles.input} required />
+                  <input 
+                    type="tel"
+                    value={profilePhone} 
+                    onChange={handlePhoneChange} 
+                    style={{ ...styles.input, letterSpacing: '1px', fontWeight: 600, color: '#1e293b' }} 
+                    placeholder="+994 50 123 45 67"
+                    required 
+                  />
                 </div>
               </div>
 
