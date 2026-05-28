@@ -916,6 +916,15 @@ export default function Home() {
   const [adminEditingReviewId, setAdminEditingReviewId] = useState<number | null>(null)
   const [adminReviewRating, setAdminReviewRating] = useState('5')
   const [adminReviewComment, setAdminReviewComment] = useState('')
+  // ── Toast Bildirişlərinin Avtomatik Silinməsi (3 saniyə) ──
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        setMessage('')
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [message])
   
 
   function getActiveUser() {
@@ -4401,6 +4410,38 @@ async function handleCloseConversation(conversationId: number) {
               </div>
             </section>
           )}
+        </>
+      )}
+    {/* ── Qlobal Toast Bildirişi ── */}
+      {message && (
+        <>
+          <style>{`
+            @keyframes slideUpFade {
+              0% { transform: translate(-50%, 20px); opacity: 0; }
+              100% { transform: translate(-50%, 0); opacity: 1; }
+            }
+          `}</style>
+          <div style={{
+            position: 'fixed',
+            bottom: '40px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: message.includes('xəta') || message.includes('tapılmadı') || message.includes('doldurun') ? '#ef4444' : '#10b981',
+            color: '#ffffff',
+            padding: '12px 24px',
+            borderRadius: '50px',
+            fontSize: '14px',
+            fontWeight: 600,
+            boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            animation: 'slideUpFade 0.4s ease-out forwards',
+            whiteSpace: 'nowrap'
+          }}>
+            {message.includes('xəta') || message.includes('tapılmadı') || message.includes('doldurun') ? '⚠️' : '✅'} {message}
+          </div>
         </>
       )}
     </main>
