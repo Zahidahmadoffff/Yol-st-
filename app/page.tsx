@@ -2154,7 +2154,29 @@ async function handleCloseConversation(conversationId: number) {
       await getReviews()
     }
   }
+// ── SOS / TƏCİLİ YARDIM FUNKSİYASI ──
+  async function handleSOS() {
+    const confirmed = window.confirm(
+      '🚨 DİQQƏT! 🚨\n\nTəhlükəli vəziyyətdəsiniz?\n\nBu düyməni təsdiqləsəniz, sistem administratoruna TƏCİLİ HƏYƏCAN (SOS) siqnalı göndəriləcək və telefonunuz avtomatik Polisə (102) zəng edəcək. Davam edilsin?'
+    );
+    if (!confirmed) return;
 
+    const current = getActiveUser();
+
+    // Adminə dərhal açıq və təcili report göndəririk
+    await supabase.from('user_reports').insert({
+      reporter_id: current.driverId || 0,
+      target_user_id: null,
+      reason: '🚨 SOS TƏCİLİ SİQNAL! 🚨',
+      details: `İstifadəçi təcili SOS düyməsini basdı! Dərhal onunla əlaqə saxlayın və ya aktiv çatlardakı/səfərlərdəki məkanını yoxlayın.`,
+      status: 'open',
+    });
+
+    alert('SOS siqnalı adminə göndərildi!\nİndi Polisə (102) yönləndirilirsiniz...');
+    
+    // Telefonun zəng bölməsini (102) avtomatik açır
+    window.location.href = 'tel:102';
+  }
   // ── Rol dəyişdirmə (sürücü ↔ sərnişin) ───────────────────────────────
   // ── Rol dəyişdirmə (sürücü ↔ sərnişin) ───────────────────────────────
   async function handleCreateSupport(e: React.FormEvent) {
@@ -2767,10 +2789,28 @@ async function handleCloseConversation(conversationId: number) {
   return (
     <main style={styles.page}>
       <div style={styles.headerCard}>
-        <h1 style={styles.title}>Yolüstü</h1>
-        <p style={styles.subtitle}>
-          Bakıda sürücü və sərnişinləri birləşdirən icma platforma.
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          <div>
+            <h1 style={styles.title}>Yolüstü</h1>
+            <p style={styles.subtitle}>
+              Bakıda sürücü və sərnişinləri birləşdirən icma platforma.
+            </p>
+          </div>
+          
+          <button 
+            type="button" 
+            onClick={() => void handleSOS()} 
+            style={{ 
+              background: '#ef4444', color: '#ffffff', border: 'none', 
+              padding: '12px 20px', borderRadius: '12px', fontWeight: 900, 
+              fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', 
+              gap: 8, boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
+              animation: 'pulse 2s infinite'
+            }}
+          >
+            🚨 SOS
+          </button>
+        </div>
       </div>
 
 
