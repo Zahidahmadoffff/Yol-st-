@@ -805,6 +805,9 @@ const triggerVibration = (type: string = 'medium') => {
  export default function Home() {
   const [isAdminMode, setIsAdminMode] = useState(false) // YENİ: Rejim idarəedici
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
+  const [chatFilter, setChatFilter] = useState<'active' | 'closed'>('active')
+  const [reqView, setReqView] = useState<'incoming' | 'outgoing'>('incoming')
+  const [reqStatus, setReqStatus] = useState<'active' | 'archived'>('active')
   const [adminSection, setAdminSection] = useState<AdminSection>('overview')
 
   const [tgReady, setTgReady] = useState(false)
@@ -2806,15 +2809,6 @@ async function handleCloseConversation(conversationId: number) {
         .includes(q)
     )
   }, [adminReports, adminGlobalSearch])
-// ── ÇAT AVTOMATİK SÜRÜŞMƏ (AUTO-SCROLL) ──
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    // Əgər Çat tabındayıqsa və yeni mesaj gəlibsə, ən aşağı sürüşdür
-    if (activeTab === 'chat' && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [currentMessages, activeTab]);
   // Telegram yüklənməyibsə loading göstər
   if (!tgReady) {
 
@@ -3470,28 +3464,48 @@ async function handleCloseConversation(conversationId: number) {
 
           <div style={styles.chatLayout}>
             <div>
-              <p style={styles.mutedText}>Conversation siyahısı</p>
+              {/* YENİ: Üzən Filtr Düymələri */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                <button 
+                  onClick={() => setChatFilter('active')} 
+                  style={chatFilter === 'active' ? styles.chipActive : styles.chip}
+                >
+                  🟢 Aktiv ({conversations.filter(c => c.status !== 'closed').length})
+                </button>
+                <button 
+                  onClick={() => setChatFilter('closed')} 
+                  style={chatFilter === 'closed' ? styles.chipActive : styles.chip}
+                >
+                  🗄️ Arxiv ({conversations.filter(c => c.status === 'closed').length})
+                </button>
+              </div>
 
               <div style={styles.conversationList}>
-                <p style={{ margin: '0 0 8px', fontWeight: 800, color: '#0f172a' }}>Aktiv Çatlar</p>
-                {conversations.filter(c => c.status !== 'closed').length === 0 ? (
-                  <p style={styles.mutedText}>Aktiv chat yoxdur.</p>
+                {conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').length === 0 ? (
+                  <p style={styles.mutedText}>{chatFilter === 'active' ? 'Aktiv chat yoxdur.' : 'Arxiv boşdur.'}</p>
                 ) : (
-                  conversations.filter(c => c.status !== 'closed').map((conv) => {
+                  conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').map((conv) => {
                     const ride = conv.ride
                     return (
                       <div
                         key={conv.id}
-                        style={selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard}
+                        style={{ ...(selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard), opacity: chatFilter === 'closed' ? 0.6 : 1 }}
                         onClick={() => void handleOpenConversation(conv.id)}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                          <div style={styles.badge}>Chat #{conv.id}</div>
-                          {conv.unread_count ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
+                          <div style={chatFilter === 'closed' ? {...styles.badge, background: '#e2e8f0', color: '#64748b'} : styles.badge}>
+                            {chatFilter === 'closed' ? 'Bağlı' : 'Chat'} #{conv.id}
+                          </div>
+                          {conv.unread_count && chatFilter === 'active' ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
                         </div>
                         <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}</p>
                         <p style={styles.infoRow}><strong>Tarix:</strong> {ride ? `${ride.ride_date || '-'} / ${ride.departure_time}` : '-'}</p>
                       </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
                     )
                   })
                 )}
