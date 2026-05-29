@@ -196,17 +196,21 @@ const LIMITS = {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  // YENİ: iOS Optimizasiyaları (100dvh, overscrollBehavior, -apple-system)
-  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 120px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', background: '#f8fafc', minHeight: '100dvh', color: '#0f172a', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent' },
+  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: 'Arial, sans-serif', background: '#f8fafc', minHeight: '100vh', color: '#0f172a' },
   headerCard: { background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)', border: '1px solid #e2e8f0', borderRadius: 20, padding: 22, marginBottom: 18, boxShadow: '0 6px 20px rgba(15, 23, 42, 0.06)' },
   title: { margin: 0, fontSize: 30, fontWeight: 800, color: '#0f172a' },
   subtitle: { marginTop: 8, marginBottom: 0, color: '#475569', fontSize: 15, lineHeight: 1.5 },
+  topTabs: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 },
+  tabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', cursor: 'pointer', fontWeight: 700, fontSize: 14 },
+  activeTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #2563eb', background: '#2563eb', color: '#ffffff', cursor: 'pointer', fontWeight: 700, fontSize: 14 },
+  adminTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #7c3aed', background: '#faf5ff', color: '#6d28d9', cursor: 'pointer', fontWeight: 800, fontSize: 14 },
+  adminActiveTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #7c3aed', background: '#7c3aed', color: '#ffffff', cursor: 'pointer', fontWeight: 800, fontSize: 14 },
   sectionCard: { background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 20, marginBottom: 18, boxShadow: '0 3px 14px rgba(15, 23, 42, 0.05)' },
   sectionTitle: { marginTop: 0, marginBottom: 16, fontSize: 22, fontWeight: 800, color: '#0f172a' },
   form: { display: 'grid', gap: 14 },
   fieldWrap: { display: 'grid', gap: 6 },
   label: { fontSize: 14, fontWeight: 700, color: '#334155' },
-  input: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box', transition: 'border 0.2s' },
+  input: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box' },
   select: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box' },
   textarea: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box', resize: 'vertical' },
   primaryButton: { padding: '12px 16px', background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800, boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)' },
@@ -218,15 +222,17 @@ const styles: Record<string, React.CSSProperties> = {
   closeButton: { padding: '10px 14px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
   cancelButton: { padding: '12px 16px', background: '#94a3b8', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800 },
   message: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#dbeafe', color: '#1e3a8a', border: '1px solid #bfdbfe', fontSize: 14 },
+  adminMessage: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe', fontSize: 14 },
   ridesGrid: { display: 'grid', gap: 16 },
-  statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' },
+  statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' },
   twoColumnGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' },
-  statsCard: { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#ffffff', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s', },
+  adminGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' },
+  statsCard: { border: '1px solid #dbe3ee', borderRadius: 16, padding: 16, background: '#ffffff', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s' },
   adminStatsCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#faf5ff' },
   statLabel: { margin: 0, fontSize: 13, color: '#64748b', fontWeight: 700 },
-  statValue: { margin: '8px 0 0', fontSize: 26, color: '#0f172a', fontWeight: 800 },
+  statValue: { margin: '8px 0 0', fontSize: 28, color: '#0f172a', fontWeight: 800 },
   myRideCard: { border: '1px solid #bfdbfe', borderRadius: 16, padding: 16, background: '#eff6ff', color: '#0f172a', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
-  resultCard: { border: '1px solid #cbd5e1', borderRadius: 16, padding: 16, background: '#ffffff', color: '#0f172a', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' },
+  resultCard: { border: '1px solid #cbd5e1', borderRadius: 16, padding: 16, background: '#f8fafc', color: '#0f172a', boxShadow: '0 1px 6px rgba(15, 23, 42, 0.04)' },
   adminCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#fcfaff', color: '#0f172a', boxShadow: '0 1px 6px rgba(124, 58, 237, 0.06)' },
   infoRow: { margin: '6px 0', color: '#1e293b', lineHeight: 1.5 },
   mutedText: { color: '#64748b', fontSize: 14, lineHeight: 1.5 },
@@ -244,23 +250,19 @@ const styles: Record<string, React.CSSProperties> = {
   fullBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#ede9fe', color: '#5b21b6' },
   completedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#d1fae5', color: '#065f46' },
   warningBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef9c3', color: '#b45309' }, 
-  unreadBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 22, padding: '0 8px', borderRadius: 999, background: '#ef4444', color: '#ffffff', fontSize: 12, fontWeight: 800, marginLeft: 8 },
+  unreadBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 22, padding: '0 8px', borderRadius: 999, background: '#2563eb', color: '#ffffff', fontSize: 12, fontWeight: 800, marginLeft: 8 },
   chatLayout: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
   conversationList: { display: 'grid', gap: 12 },
-  conversationCard: { border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, background: '#ffffff', cursor: 'pointer', transition: '0.2s' },
+  conversationCard: { border: '1px solid #dbe3ee', borderRadius: 14, padding: 14, background: '#ffffff', cursor: 'pointer' },
   conversationCardActive: { border: '1px solid #2563eb', borderRadius: 14, padding: 14, background: '#eff6ff', cursor: 'pointer' },
-  chatPanel: { border: '1px solid #e2e8f0', borderRadius: 16, background: '#ffffff', padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
-  messageList: { display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
-  myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: '#2563eb', color: '#ffffff', padding: '10px 14px', borderRadius: '16px 16px 2px 16px' },
-  otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: '#f1f5f9', color: '#0f172a', padding: '10px 14px', borderRadius: '16px 16px 16px 2px' },
+  chatPanel: { border: '1px solid #dbe3ee', borderRadius: 16, background: '#ffffff', padding: 16 },
+  messageList: { display: 'grid', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
+  myMessage: { justifySelf: 'end', maxWidth: '80%', background: '#2563eb', color: '#ffffff', padding: '10px 12px', borderRadius: 14 },
+  otherMessage: { justifySelf: 'start', maxWidth: '80%', background: '#e2e8f0', color: '#0f172a', padding: '10px 12px', borderRadius: 14 },
   tableWrap: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
   th: { textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #e2e8f0', color: '#475569', whiteSpace: 'nowrap' },
   td: { padding: '10px 8px', borderBottom: '1px solid #eef2f7', verticalAlign: 'top' },
-  bottomNav: { position: 'fixed', bottom: 0, left: 0, right: 0, background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-around', paddingBottom: '22px', paddingTop: '10px', zIndex: 1000, boxShadow: '0 -4px 20px rgba(0,0,0,0.05)' },
-  navItem: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#64748b', cursor: 'pointer', fontSize: 11, fontWeight: 700, background: 'transparent', border: 'none', outline: 'none', transition: 'color 0.2s' },
-  navItemActive: { color: '#2563eb' },
-  profileBlock: { padding: 20, background: '#ffffff', borderRadius: 16, border: '1px solid #e2e8f0', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }
 }
 
 function pad(value: number) { return String(value).padStart(2, '0') }
@@ -276,6 +278,7 @@ function formatDateTime(value: string | null | undefined) {
 
 function normalizeText(value: string | null | undefined) { return (value || '').toLowerCase().trim() }
 function getRoleLabel(role: UserRole | null) { return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
+function getAppRoleLabel(role: AppRole) { if (role === 'admin') return 'Admin'; return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
 
 function getRequestStatusLabel(status: RideRequestStatus) {
   if (status === 'accepted') return 'Qəbul edildi'
@@ -315,7 +318,7 @@ function getReportStatusLabel(status: ReportStatus) {
 function isRideExpired(ride: Ride | null | undefined) {
   if (!ride || !ride.ride_date) return false;
   const rideDateTime = new Date(`${ride.ride_date}T${ride.departure_time}:00`);
-  return rideDateTime.getTime() + 2 * 60 * 60 * 1000 < new Date().getTime(); 
+  return rideDateTime.getTime() + 2 * 60 * 60 * 1000 < new Date().getTime(); // 2 saat
 }
 
 function getRideStatusLabel(ride: Ride) {
@@ -1210,6 +1213,25 @@ export default function Home() {
         </div>
       </div>
 
+      {!isAdminMode && (
+        <div style={styles.topTabs}>
+          {[
+            { key: 'dashboard', label: 'Dashboard' },
+            { key: 'create', label: 'Elan ver' },
+            { key: 'search', label: 'Axtarış' },
+            { key: 'requests', label: `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active' && !isRideExpired(x.ride)).length})` },
+            { key: 'chat', label: unreadTotal > 0 ? `Chat (${unreadTotal} yeni)` : `Chat (${conversations.filter(c => c.status !== 'closed').length})` },
+            { key: 'history', label: 'Tarixçə' },
+            { key: 'support', label: 'Dəstək' },
+            { key: 'profile', label: 'Profil' }
+          ].map((item) => (
+            <button key={item.key} type="button" onClick={() => setActiveTab(item.key as TabType)} style={ activeTab === item.key ? styles.activeTabButton : styles.tabButton }>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {activeTab === 'dashboard' && (
         <>
           <section style={styles.sectionCard}>
@@ -1224,37 +1246,15 @@ export default function Home() {
           </section>
 
           <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Kəşf Et (Aktiv Elanlar)</h2>
-            {loading ? (
-              <p style={styles.mutedText}>Yüklənir...</p>
-            ) : filteredRides.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '2px dashed #cbd5e1', marginTop: 20 }}>
-                  <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-                  <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
-                  <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 14 }}>Hələ ki, sənə uyğun aktiv elan yoxdur.</p>
-                  <button type="button" onClick={() => setActiveTab('create')} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
-                </div>
-              ) : (
-                <div style={styles.ridesGrid}>
-                {filteredRides.map((ride) => (
-                  <div key={ride.id} style={styles.resultCard}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{...styles.approvedBadge, margin: 0}}>Aktiv</div>
-                      {driverProfilesMap[ride.driver_id] && (
-                        <div style={{ display: 'flex', gap: 10, background: '#f8fafc', padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }}>
-                          <span style={{ fontWeight: 700, color: '#334155' }}>{driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}</span>
-                          <span style={{ fontWeight: 800, color: '#eab308' }}>{renderStars(driverProfilesMap[ride.driver_id].rating)}</span>
-                        </div>
-                      )}
-                    </div>
+            <h2 style={styles.sectionTitle}>Mənim aktiv elanlarım</h2>
+            {myRides.length === 0 ? (
+              <p style={styles.mutedText}>Aktiv elanın yoxdur.</p>
+            ) : (
+              <div style={styles.ridesGrid}>
+                {myRides.map((ride) => (
+                  <div key={ride.id} style={styles.myRideCard}>
+                    <div style={getRideBadgeStyle(ride)}>{getRideStatusLabel(ride)}</div>
                     <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
-                    
-                    {driverProfilesMap[ride.driver_id]?.carBrand && (
-                      <p style={styles.infoRow}>
-                        <strong>Avtomobil:</strong> {driverProfilesMap[ride.driver_id].carBrand} ({driverProfilesMap[ride.driver_id].carColor})
-                      </p>
-                    )}
-
                     <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
                     <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
                     <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
@@ -1262,17 +1262,11 @@ export default function Home() {
                     <p style={styles.infoRow}><strong>Qalan yer:</strong> {ride.seats}</p>
                     <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
                     {ride.notes && <p style={styles.infoRow}><strong>Qeyd:</strong> {ride.notes}</p>}
-
-                    <div style={styles.fieldWrap}>
-                      <label style={styles.label}>Müraciət mesajı</label>
-                      <textarea rows={2} value={requestMessageMap[ride.id] || ''} onChange={(e) => setRequestMessageMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.textarea} placeholder="Qısa mesaj yaz" />
-                    </div>
-                    <div style={styles.fieldWrap}>
-                      <label style={styles.label}>Neçə yer / nəfər</label>
-                      <input type="number" min="1" max={ride.seats} value={requestSeatsMap[ride.id] || '1'} onChange={(e) => setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.input} />
-                    </div>
                     <div style={styles.actionRow}>
-                      <button type="button" onClick={() => void handleCreateRideRequest(ride)} style={styles.primaryButton} disabled={rideRequestLoading === ride.id}>{rideRequestLoading === ride.id ? 'Göndərilir...' : 'Müraciət et'}</button>
+                      <button type="button" onClick={() => handleEditRide(ride)} style={styles.warningButton}>Redaktə et</button>
+                      <button type="button" onClick={() => void handleCloseRide(ride.id)} style={styles.closeButton} disabled={rideActionLoading === ride.id}>Elanı bağla</button>
+                      <button type="button" onClick={() => void handleCompleteRide(ride.id)} style={styles.successButton} disabled={rideActionLoading === ride.id}>Tamamlandı</button>
+                      <button type="button" onClick={() => void handleDeleteRide(ride.id)} style={styles.dangerButton} disabled={rideActionLoading === ride.id}>Ləğv et</button>
                     </div>
                   </div>
                 ))}
@@ -1405,9 +1399,67 @@ export default function Home() {
 
             <div style={styles.buttonRow}>
               <button type="button" onClick={() => { setSearchText(''); setFilterRole('all'); setFilterGender(''); setFilterDate(''); }} style={styles.secondaryButton}>Filteri sıfırla</button>
-              <button type="button" onClick={() => { void initializeData(); setActiveTab('dashboard') }} style={styles.ghostButton}>Axtar (Kəşf Et)</button>
             </div>
           </div>
+        </section>
+      )}
+
+      {activeTab === 'search' && (
+        <section style={styles.sectionCard}>
+          <h2 style={styles.sectionTitle}>Aktiv elanlar</h2>
+          {loading ? (
+            <p style={styles.mutedText}>Yüklənir...</p>
+          ) : filteredRides.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '2px dashed #cbd5e1', marginTop: 20 }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+                <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
+                <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
+                <button type="button" onClick={() => setActiveTab('create')} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
+              </div>
+            ) : (
+              <div style={styles.ridesGrid}>
+              {filteredRides.map((ride) => (
+                <div key={ride.id} style={styles.resultCard}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div style={{...styles.approvedBadge, margin: 0}}>Aktiv</div>
+                    {driverProfilesMap[ride.driver_id] && (
+                      <div style={{ display: 'flex', gap: 10, background: '#f8fafc', padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }}>
+                        <span style={{ fontWeight: 700, color: '#334155' }}>{driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}</span>
+                        <span style={{ fontWeight: 800, color: '#eab308' }}>{renderStars(driverProfilesMap[ride.driver_id].rating)}</span>
+                      </div>
+                    )}
+                  </div>
+                  <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
+                  
+                  {driverProfilesMap[ride.driver_id]?.carBrand && (
+                    <p style={styles.infoRow}>
+                      <strong>Avtomobil:</strong> {driverProfilesMap[ride.driver_id].carBrand} ({driverProfilesMap[ride.driver_id].carColor})
+                    </p>
+                  )}
+
+                  <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
+                  <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
+                  <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
+                  <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
+                  <p style={styles.infoRow}><strong>Qalan yer:</strong> {ride.seats}</p>
+                  <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
+                  {ride.notes && <p style={styles.infoRow}><strong>Qeyd:</strong> {ride.notes}</p>}
+
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>Müraciət mesajı</label>
+                    <textarea rows={2} value={requestMessageMap[ride.id] || ''} onChange={(e) => setRequestMessageMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.textarea} placeholder="Qısa mesaj yaz" />
+                  </div>
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>Neçə yer / nəfər</label>
+                    <input type="number" min="1" max={ride.seats} value={requestSeatsMap[ride.id] || '1'} onChange={(e) => setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.input} />
+                  </div>
+                  <div style={styles.actionRow}>
+                    <button type="button" onClick={() => void handleCreateRideRequest(ride)} style={styles.primaryButton} disabled={rideRequestLoading === ride.id}>{rideRequestLoading === ride.id ? 'Göndərilir...' : 'Müraciət et'}</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -1460,12 +1512,12 @@ export default function Home() {
                           <button type="button" style={styles.dangerButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'rejected')}>Rədd et</button>
                         </div>
                       )}
-                      {item.status === 'accepted' && (
-                        <div style={styles.actionRow}>
-                          <button type="button" style={styles.closeButton} disabled={rideRequestLoading === item.id} onClick={() => void handleConfirmDeal(item)}>Deal təsdiqlə (Səfəri rəsmiləşdir)</button>
-                        </div>
-                      )}
                     </>
+                  )}
+                  {reqView === 'incoming' && item.status === 'accepted' && (
+                    <div style={styles.actionRow}>
+                      <button type="button" style={styles.closeButton} disabled={rideRequestLoading === item.id} onClick={() => void handleConfirmDeal(item)}>Deal təsdiqlə (Səfəri rəsmiləşdir)</button>
+                    </div>
                   )}
                 </div>
               ));
@@ -1572,7 +1624,6 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-
                   <div style={{ height: 12 }} />
                   {selectedConversationRide?.status === 'active' && selectedConversation.status !== 'closed' && (
                     <LiveMap conversationId={selectedConversation.id} currentUserId={currentUser.driverId} isDriver={profile?.role === 'driver'} otherUserId={ currentUser.driverId === selectedConversation.driver_user_id ? selectedConversation.passenger_user_id : selectedConversation.driver_user_id } />
