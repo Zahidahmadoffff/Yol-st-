@@ -227,7 +227,7 @@ const styles: Record<string, React.CSSProperties> = {
   statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' },
   twoColumnGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' },
   adminGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' },
-  statsCard: { border: '1px solid #dbe3ee', borderRadius: 16, padding: 16, background: '#ffffff', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s' },
+  statsCard: { border: '1px solid #dbe3ee', borderRadius: 16, padding: 16, background: '#f8fafc', cursor: 'pointer', transition: 'transform 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' },
   adminStatsCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#faf5ff' },
   statLabel: { margin: 0, fontSize: 13, color: '#64748b', fontWeight: 700 },
   statValue: { margin: '8px 0 0', fontSize: 28, color: '#0f172a', fontWeight: 800 },
@@ -263,6 +263,7 @@ const styles: Record<string, React.CSSProperties> = {
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
   th: { textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #e2e8f0', color: '#475569', whiteSpace: 'nowrap' },
   td: { padding: '10px 8px', borderBottom: '1px solid #eef2f7', verticalAlign: 'top' },
+  profileBlock: { padding: 20, background: '#ffffff', borderRadius: 16, border: '1px solid #e2e8f0', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }
 }
 
 function pad(value: number) { return String(value).padStart(2, '0') }
@@ -318,7 +319,7 @@ function getReportStatusLabel(status: ReportStatus) {
 function isRideExpired(ride: Ride | null | undefined) {
   if (!ride || !ride.ride_date) return false;
   const rideDateTime = new Date(`${ride.ride_date}T${ride.departure_time}:00`);
-  return rideDateTime.getTime() + 2 * 60 * 60 * 1000 < new Date().getTime(); // 2 saat
+  return rideDateTime.getTime() + 2 * 60 * 60 * 1000 < new Date().getTime(); 
 }
 
 function getRideStatusLabel(ride: Ride) {
@@ -336,6 +337,22 @@ function getRideBadgeStyle(ride: Ride) {
   if (isRideExpired(ride) && ride.status === 'active') return styles.warningBadge
   return styles.approvedBadge
 }
+
+// ── YENİ: Çatda Göndərilmiş Linkləri Formatlamaq (Kliklənə bilən etmək) ──
+const formatMessageText = (text: string, isMine: boolean) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: isMine ? '#fff' : '#2563eb', textDecoration: 'underline', fontWeight: 800 }}>
+          🗺️ Xəritədə Aç
+        </a>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+};
 
 const triggerVibration = (type: string = 'medium') => {
   try { if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) { (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type); } } catch (e) { }
@@ -847,7 +864,7 @@ export default function Home() {
       setRequestMessageMap((prev) => ({ ...prev, [ride.id]: '' }))
       setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: '1' }))
       try { await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ride.driver_id, text: `🚗 <b>YolDash: Yeni müraciət!</b>\n\n<b>Marşrut:</b> ${ride.origin} → ${ride.destination}\n<b>Tarix:</b> ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' }) }) } catch (_) { }
-      await getRideRequests(); setActiveTab('chat')
+      setActiveTab('requests') // Müraciət ediləndə birbaşa ora atacaq
     }
     setRideRequestLoading(null)
   }
@@ -957,6 +974,42 @@ export default function Home() {
     }
     setMessageSending(false)
   }
+
+  // ── YENİ: Çatda Lokasiya (GPS) Göndərmək Düyməsi ──
+  const handleSendLocation = () => {
+    if (!navigator.geolocation) {
+      setMessage('Cihazınız konum paylaşmağı dəstəkləmir.');
+      return;
+    }
+    setMessageSending(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps?q=${lat},${lng}`;
+
+        const { error } = await supabase.from('messages').insert({
+          conversation_id: selectedConversationId!,
+          sender_id: currentUser.driverId,
+          message_text: locMsg,
+          is_read: false
+        });
+
+        if (error) setMessage('Konum göndərilmədi.');
+        else {
+          await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', selectedConversationId);
+          await getMessages(selectedConversationId!, false);
+          await getConversations(false);
+        }
+        setMessageSending(false);
+      },
+      (err) => {
+        setMessage('Konum alına bilmədi. Zəhmət olmasa GPS-ə (Məkan) icazə verdiyinizdən əmin olun.');
+        setMessageSending(false);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
 
   async function handleCreateReview() {
     if (!reviewTargetRequestId) { setMessage('Əvvəl request seç.'); return }
@@ -1219,13 +1272,15 @@ export default function Home() {
             { key: 'dashboard', label: 'Dashboard' },
             { key: 'create', label: 'Elan ver' },
             { key: 'search', label: 'Axtarış' },
-            { key: 'requests', label: `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active' && !isRideExpired(x.ride)).length})` },
-            { key: 'chat', label: unreadTotal > 0 ? `Chat (${unreadTotal} yeni)` : `Chat (${conversations.filter(c => c.status !== 'closed').length})` },
-            { key: 'history', label: 'Tarixçə' },
-            { key: 'support', label: 'Dəstək' },
+            { key: 'chat', label: `Gələnlər (${unreadTotal + incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active' && !isRideExpired(req.ride)).length})` },
             { key: 'profile', label: 'Profil' }
           ].map((item) => (
-            <button key={item.key} type="button" onClick={() => setActiveTab(item.key as TabType)} style={ activeTab === item.key ? styles.activeTabButton : styles.tabButton }>
+            <button 
+              key={item.key} 
+              type="button" 
+              onClick={() => setActiveTab(item.key as TabType)} 
+              style={(activeTab === item.key || (item.key === 'chat' && activeTab === 'requests')) ? styles.activeTabButton : styles.tabButton}
+            >
               {item.label}
             </button>
           ))}
@@ -1364,7 +1419,7 @@ export default function Home() {
 
       {activeTab === 'search' && (
         <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>Ətraflı Axtarış</h2>
+          <h2 style={styles.sectionTitle}>Axtarış (Kəşf Et)</h2>
           <div style={styles.form}>
             <div style={styles.fieldWrap}>
               <label style={styles.label}>Axtarış</label>
@@ -1399,6 +1454,7 @@ export default function Home() {
 
             <div style={styles.buttonRow}>
               <button type="button" onClick={() => { setSearchText(''); setFilterRole('all'); setFilterGender(''); setFilterDate(''); }} style={styles.secondaryButton}>Filteri sıfırla</button>
+              <button type="button" onClick={() => { void initializeData(); }} style={styles.ghostButton}>Yenilə</button>
             </div>
           </div>
         </section>
@@ -1463,203 +1519,201 @@ export default function Home() {
         </section>
       )}
 
-      {activeTab === 'requests' && (
+      {(activeTab === 'requests' || activeTab === 'chat') && (
         <section style={styles.sectionCard}>
           <div style={{ display: 'flex', gap: 10, marginBottom: 20, background: '#f1f5f9', padding: 6, borderRadius: 12 }}>
-            <button onClick={() => setActiveTab('chat')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: 'transparent', color: '#64748b' }}>
+            <button onClick={() => setActiveTab('chat')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: activeTab === 'chat' ? '#ffffff' : 'transparent', color: activeTab === 'chat' ? '#0f172a' : '#64748b', boxShadow: activeTab === 'chat' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
               💬 Mesajlar ({unreadTotal > 0 ? `${unreadTotal} yeni` : conversations.filter(c => c.status !== 'closed').length})
             </button>
-            <button onClick={() => setActiveTab('requests')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#0f172a', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <button onClick={() => setActiveTab('requests')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: activeTab === 'requests' ? '#ffffff' : 'transparent', color: activeTab === 'requests' ? '#0f172a' : '#64748b', boxShadow: activeTab === 'requests' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
               🔔 Müraciətlər ({incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active' && !isRideExpired(req.ride)).length})
             </button>
           </div>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-            <button type="button" onClick={() => { setReqView('incoming'); setReqStatus('active'); }} style={reqView === 'incoming' ? styles.primaryButton : styles.ghostButton}>📥 Gələnlər ({incomingRideRequests.filter(req => (req.status === 'pending' || req.status === 'accepted') && req.ride?.status === 'active' && !isRideExpired(req.ride)).length})</button>
-            <button type="button" onClick={() => { setReqView('outgoing'); setReqStatus('active'); }} style={reqView === 'outgoing' ? styles.primaryButton : styles.ghostButton}>📤 Göndərdiklərim ({outgoingRideRequests.filter(req => (req.status === 'pending' || req.status === 'accepted') && req.ride?.status === 'active' && !isRideExpired(req.ride)).length})</button>
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
-            <button type="button" onClick={() => setReqStatus('active')} style={reqStatus === 'active' ? styles.chipActive : styles.chip}>🟢 Aktiv</button>
-            <button type="button" onClick={() => setReqStatus('archived')} style={reqStatus === 'archived' ? styles.chipActive : styles.chip}>🗄️ Arxiv (Tarixçə)</button>
-          </div>
-          <div style={styles.ridesGrid}>
-            {(() => {
-              const currentList = reqView === 'incoming' ? incomingRideRequests : outgoingRideRequests;
-              const isReqActive = (req: any) => (req.status === 'pending' || req.status === 'accepted') && req.ride?.status === 'active' && !isRideExpired(req.ride);
-              const filteredList = currentList.filter(req => reqStatus === 'active' ? isReqActive(req) : !isReqActive(req));
-              if (filteredList.length === 0) {
-                return (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 10px', background: '#f8fafc', borderRadius: 16, border: '1px dashed #cbd5e1' }}>
-                    <span style={{ fontSize: 40 }}>{reqStatus === 'active' ? '📬' : '🗄️'}</span>
-                    <p style={{ ...styles.mutedText, marginTop: 12, fontWeight: 600 }}>{reqStatus === 'active' ? 'Göstəriləcək aktiv müraciət yoxdur.' : 'Arxiv boşdur.'}</p>
-                  </div>
-                );
-              }
-              return filteredList.map((item) => (
-                <div key={item.id} style={{ ...styles.resultCard, opacity: reqStatus === 'archived' ? 0.75 : 1 }}>
-                  <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
-                  {reqStatus === 'archived' && <span style={{ marginLeft: 8, fontSize: 11, background: '#e2e8f0', padding: '4px 8px', borderRadius: 6, fontWeight: 700 }}>Vaxtı bitib</span>}
-                  <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(reqView === 'incoming' ? item.requester_role : item.owner_role)}</p>
-                  <p style={styles.infoRow}><strong>İstənən yer:</strong> {item.seats_requested}</p>
-                  {item.message_text && <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text}</p>}
-                  {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
-                  <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
-                  
-                  {reqView === 'incoming' && reqStatus === 'active' && (
-                    <>
-                      {item.status === 'pending' && item.ride?.status === 'active' && !isRideExpired(item.ride) && (
+
+          {activeTab === 'requests' && (
+            <>
+              <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => { setReqView('incoming'); setReqStatus('active'); }} style={reqView === 'incoming' ? styles.primaryButton : styles.ghostButton}>📥 Gələnlər ({incomingRideRequests.filter(req => (req.status === 'pending' || req.status === 'accepted') && req.ride?.status === 'active' && !isRideExpired(req.ride)).length})</button>
+                <button type="button" onClick={() => { setReqView('outgoing'); setReqStatus('active'); }} style={reqView === 'outgoing' ? styles.primaryButton : styles.ghostButton}>📤 Göndərdiklərim ({outgoingRideRequests.filter(req => (req.status === 'pending' || req.status === 'accepted') && req.ride?.status === 'active' && !isRideExpired(req.ride)).length})</button>
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
+                <button type="button" onClick={() => setReqStatus('active')} style={reqStatus === 'active' ? styles.chipActive : styles.chip}>🟢 Aktiv</button>
+                <button type="button" onClick={() => setReqStatus('archived')} style={reqStatus === 'archived' ? styles.chipActive : styles.chip}>🗄️ Arxiv (Tarixçə)</button>
+              </div>
+              <div style={styles.ridesGrid}>
+                {(() => {
+                  const currentList = reqView === 'incoming' ? incomingRideRequests : outgoingRideRequests;
+                  const isReqActive = (req: any) => (req.status === 'pending' || req.status === 'accepted') && req.ride?.status === 'active' && !isRideExpired(req.ride);
+                  const filteredList = currentList.filter(req => reqStatus === 'active' ? isReqActive(req) : !isReqActive(req));
+                  if (filteredList.length === 0) {
+                    return (
+                      <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 10px', background: '#f8fafc', borderRadius: 16, border: '1px dashed #cbd5e1' }}>
+                        <span style={{ fontSize: 40 }}>{reqStatus === 'active' ? '📬' : '🗄️'}</span>
+                        <p style={{ ...styles.mutedText, marginTop: 12, fontWeight: 600 }}>{reqStatus === 'active' ? 'Göstəriləcək aktiv müraciət yoxdur.' : 'Arxiv boşdur.'}</p>
+                      </div>
+                    );
+                  }
+                  return filteredList.map((item) => (
+                    <div key={item.id} style={{ ...styles.resultCard, opacity: reqStatus === 'archived' ? 0.75 : 1 }}>
+                      <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
+                      {reqStatus === 'archived' && <span style={{ marginLeft: 8, fontSize: 11, background: '#e2e8f0', padding: '4px 8px', borderRadius: 6, fontWeight: 700 }}>Vaxtı bitib</span>}
+                      <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(reqView === 'incoming' ? item.requester_role : item.owner_role)}</p>
+                      <p style={styles.infoRow}><strong>İstənən yer:</strong> {item.seats_requested}</p>
+                      {item.message_text && <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text}</p>}
+                      {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
+                      <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
+                      
+                      {reqView === 'incoming' && reqStatus === 'active' && (
+                        <>
+                          {item.status === 'pending' && item.ride?.status === 'active' && !isRideExpired(item.ride) && (
+                            <div style={styles.actionRow}>
+                              <button type="button" style={styles.successButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'accepted')}>Qəbul et</button>
+                              <button type="button" style={styles.dangerButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'rejected')}>Rədd et</button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {reqView === 'incoming' && item.status === 'accepted' && (
                         <div style={styles.actionRow}>
-                          <button type="button" style={styles.successButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'accepted')}>Qəbul et</button>
-                          <button type="button" style={styles.dangerButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'rejected')}>Rədd et</button>
+                          <button type="button" style={styles.closeButton} disabled={rideRequestLoading === item.id} onClick={() => void handleConfirmDeal(item)}>Deal təsdiqlə (Səfəri rəsmiləşdir)</button>
                         </div>
                       )}
-                    </>
-                  )}
-                  {reqView === 'incoming' && item.status === 'accepted' && (
-                    <div style={styles.actionRow}>
-                      <button type="button" style={styles.closeButton} disabled={rideRequestLoading === item.id} onClick={() => void handleConfirmDeal(item)}>Deal təsdiqlə (Səfəri rəsmiləşdir)</button>
                     </div>
+                  ));
+                })()}
+              </div>
+            </>
+          )}
+
+          {activeTab === 'chat' && (
+            <div style={styles.chatLayout}>
+              <div>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                  <button onClick={() => { setChatFilter('active'); const firstActive = conversations.find(c => c.status !== 'closed'); setSelectedConversationId(firstActive ? firstActive.id : null); }} style={chatFilter === 'active' ? styles.chipActive : styles.chip}>🟢 Aktiv ({conversations.filter(c => c.status !== 'closed').length})</button>
+                  <button onClick={() => { setChatFilter('closed'); const firstClosed = conversations.find(c => c.status === 'closed'); setSelectedConversationId(firstClosed ? firstClosed.id : null); }} style={chatFilter === 'closed' ? styles.chipActive : styles.chip}>🗄️ Arxiv ({conversations.filter(c => c.status === 'closed').length})</button>
+                </div>
+                <div style={styles.conversationList}>
+                  {conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').length === 0 ? (
+                    <p style={styles.mutedText}>{chatFilter === 'active' ? 'Aktiv chat yoxdur.' : 'Arxiv boşdur.'}</p>
+                  ) : (
+                    conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').map((conv) => {
+                      const ride = conv.ride
+                      return (
+                        <div key={conv.id} style={{ ...(selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard), opacity: chatFilter === 'closed' ? 0.6 : 1 }} onClick={() => void handleOpenConversation(conv.id)}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                            <div style={chatFilter === 'closed' ? {...styles.badge, background: '#e2e8f0', color: '#64748b'} : styles.badge}>{chatFilter === 'closed' ? 'Bağlı' : 'Chat'} #{conv.id}</div>
+                            {conv.unread_count && chatFilter === 'active' ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
+                          </div>
+                          <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}</p>
+                          <p style={styles.infoRow}><strong>Tarix:</strong> {ride ? `${ride.ride_date || '-'} / ${ride.departure_time}` : '-'}</p>
+                        </div>
+                      )
+                    })
                   )}
                 </div>
-              ));
-            })()}
-          </div>
-        </section>
-      )}
-
-      {activeTab === 'chat' && (
-        <section style={styles.sectionCard}>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 20, background: '#f1f5f9', padding: 6, borderRadius: 12 }}>
-            <button onClick={() => setActiveTab('chat')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#0f172a', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-              💬 Mesajlar ({unreadTotal > 0 ? `${unreadTotal} yeni` : conversations.filter(c => c.status !== 'closed').length})
-            </button>
-            <button onClick={() => setActiveTab('requests')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: 'transparent', color: '#64748b' }}>
-              🔔 Müraciətlər ({incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active' && !isRideExpired(req.ride)).length})
-            </button>
-          </div>
-          <div style={styles.chatLayout}>
-            <div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                <button onClick={() => { setChatFilter('active'); const firstActive = conversations.find(c => c.status !== 'closed'); setSelectedConversationId(firstActive ? firstActive.id : null); }} style={chatFilter === 'active' ? styles.chipActive : styles.chip}>🟢 Aktiv ({conversations.filter(c => c.status !== 'closed').length})</button>
-                <button onClick={() => { setChatFilter('closed'); const firstClosed = conversations.find(c => c.status === 'closed'); setSelectedConversationId(firstClosed ? firstClosed.id : null); }} style={chatFilter === 'closed' ? styles.chipActive : styles.chip}>🗄️ Arxiv ({conversations.filter(c => c.status === 'closed').length})</button>
               </div>
-              <div style={styles.conversationList}>
-                {conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').length === 0 ? (
-                  <p style={styles.mutedText}>{chatFilter === 'active' ? 'Aktiv chat yoxdur.' : 'Arxiv boşdur.'}</p>
+              <div style={styles.chatPanel}>
+                {(!selectedConversation || (chatFilter === 'active' ? selectedConversation.status === 'closed' : selectedConversation.status !== 'closed')) ? (
+                  <div style={{ textAlign: 'center', marginTop: 40 }}><span style={{ fontSize: 40 }}>💬</span><p style={{ ...styles.mutedText, marginTop: 12 }}>{chatFilter === 'active' ? 'Göstəriləcək aktiv çat yoxdur.' : 'Göstəriləcək arxiv çat yoxdur.'}</p></div>
                 ) : (
-                  conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').map((conv) => {
-                    const ride = conv.ride
-                    return (
-                      <div key={conv.id} style={{ ...(selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard), opacity: chatFilter === 'closed' ? 0.6 : 1 }} onClick={() => void handleOpenConversation(conv.id)}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                          <div style={chatFilter === 'closed' ? {...styles.badge, background: '#e2e8f0', color: '#64748b'} : styles.badge}>{chatFilter === 'closed' ? 'Bağlı' : 'Chat'} #{conv.id}</div>
-                          {conv.unread_count && chatFilter === 'active' ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
+                  <>
+                    {/* YENİ: Deal Təsdiqlə Xatırladıcı Banner Çatın Ən Üstündə */}
+                    {(() => {
+                      const chatReq = rideRequests.find(r => r.id === selectedConversation.request_id);
+                      if (chatReq && chatReq.status === 'accepted' && selectedConversationRide?.status === 'active' && !isRideExpired(selectedConversationRide)) {
+                        return (
+                          <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', padding: 14, borderRadius: 12, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <p style={{ margin: 0, fontWeight: 800, color: '#92400e', fontSize: 14 }}>🤝 Razılaşma əldə olundu?</p>
+                              <p style={{ margin: '4px 0 0', fontSize: 12, color: '#b45309' }}>Səfərin baş tutması üçün zəhmət olmasa təsdiqləyin.</p>
+                            </div>
+                            <button type="button" onClick={() => void handleConfirmDeal(chatReq)} style={{ ...styles.successButton, padding: '10px 18px' }} disabled={rideRequestLoading === chatReq.id}>
+                              {rideRequestLoading === chatReq.id ? 'Təsdiqlənir...' : '✅ Deal Təsdiqlə'}
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    <div style={styles.resultCard}>
+                      <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
+                      <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
+                      
+                      {/* YENİ: Başlanğıc və Son nöqtəyə Yol Göstər xüsusiyyəti (Chat bağlı deyilsə görünür) */}
+                      {selectedConversation.status !== 'closed' && selectedConversationRide && (
+                        <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                          {selectedConversationRide.origin_lat && (
+                            <a href={`https://www.google.com/maps?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              📍 Başlanğıca get
+                            </a>
+                          )}
+                          {selectedConversationRide.destination_lat && (
+                            <a href={`https://www.google.com/maps?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              🏁 Son nöqtəyə get
+                            </a>
+                          )}
                         </div>
-                        <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}</p>
-                        <p style={styles.infoRow}><strong>Tarix:</strong> {ride ? `${ride.ride_date || '-'} / ${ride.departure_time}` : '-'}</p>
-                      </div>
-                    )
-                  })
+                      )}
+
+                      <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {selectedConversationRide ? `${selectedConversationRide.ride_date || '-'} / ${selectedConversationRide.departure_time}` : '-'}</p>
+
+                      {selectedConversationRide && driverProfilesMap[selectedConversationRide.driver_id]?.carBrand && (
+                        <p style={styles.infoRow}>
+                          <strong>Avtomobil:</strong> {driverProfilesMap[selectedConversationRide.driver_id].carBrand} ({driverProfilesMap[selectedConversationRide.driver_id].carColor}) 
+                          {' '}
+                          <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>
+                            {driverProfilesMap[selectedConversationRide.driver_id].licensePlate}
+                          </span>
+                        </p>
+                      )}
+
+                      <p style={styles.infoRow}><strong>Qiymət:</strong> {selectedConversationRide ? `${selectedConversationRide.price_per_seat} AZN` : '-'}</p>
+                      <p style={styles.infoRow}><strong>Status:</strong> {selectedConversation.status === 'closed' ? 'Arxivlənib (Bağlı)' : selectedConversation.status}</p>
+                      {selectedConversation.status !== 'closed' && (
+                        <div style={{ marginTop: 10 }}>
+                          <button type="button" onClick={() => void handleCloseConversation(selectedConversation.id)} style={styles.dangerButton}>🔒 Çatı Bağla</button>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ height: 12 }} />
+                    {selectedConversationRide?.status === 'active' && selectedConversation.status !== 'closed' && (
+                      <LiveMap conversationId={selectedConversation.id} currentUserId={currentUser.driverId} isDriver={profile?.role === 'driver'} otherUserId={ currentUser.driverId === selectedConversation.driver_user_id ? selectedConversation.passenger_user_id : selectedConversation.driver_user_id } />
+                    )}
+                    <div style={styles.messageList}>
+                      {currentMessages.length === 0 ? (
+                        <p style={styles.mutedText}>Hələ mesaj yoxdur.</p>
+                      ) : (
+                        currentMessages.map((msg) => {
+                          const isMine = msg.sender_id === currentUser.driverId
+                          return (
+                            <div key={msg.id} style={isMine ? styles.myMessage : styles.otherMessage}>
+                              <div>{formatMessageText(msg.message_text, isMine)}</div>
+                              <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8 }}>{formatDateTime(msg.created_at)}</div>
+                            </div>
+                          )
+                        })
+                      )}
+                    </div>
+                    {selectedConversation.status !== 'closed' ? (
+                      <>
+                        <div style={styles.fieldWrap}>
+                          <label style={styles.label}>Mesaj</label>
+                          <textarea rows={2} value={chatInput} onChange={(e) => setChatInput(e.target.value)} style={styles.textarea} placeholder="Mesaj yaz..." />
+                        </div>
+                        <div style={styles.actionRow}>
+                          <button type="button" onClick={() => void handleSendMessage()} style={styles.primaryButton} disabled={messageSending}>{messageSending ? 'Göndərilir...' : 'Göndər'}</button>
+                          <button type="button" onClick={handleSendLocation} style={{...styles.secondaryButton, padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center'}} disabled={messageSending} title="Cari konumu göndər">📍 Konum göndər</button>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ marginTop: 16, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}><p style={{ margin: 0, fontWeight: 700, color: '#64748b' }}>🔒 Bu çat bağlanıb. Artıq mesaj yazmaq və məkan paylaşmaq mümkün deyil.</p></div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
-            <div style={styles.chatPanel}>
-              {(!selectedConversation || (chatFilter === 'active' ? selectedConversation.status === 'closed' : selectedConversation.status !== 'closed')) ? (
-                <div style={{ textAlign: 'center', marginTop: 40 }}><span style={{ fontSize: 40 }}>💬</span><p style={{ ...styles.mutedText, marginTop: 12 }}>{chatFilter === 'active' ? 'Göstəriləcək aktiv çat yoxdur.' : 'Göstəriləcək arxiv çat yoxdur.'}</p></div>
-              ) : (
-                <>
-                  {/* YENİ: Deal Təsdiqlə Xatırladıcı Banner Çatın Ən Üstündə */}
-                  {(() => {
-                    const chatReq = rideRequests.find(r => r.id === selectedConversation.request_id);
-                    if (chatReq && chatReq.status === 'accepted' && selectedConversationRide?.status === 'active' && !isRideExpired(selectedConversationRide)) {
-                      return (
-                        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', padding: 14, borderRadius: 12, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <p style={{ margin: 0, fontWeight: 800, color: '#92400e', fontSize: 14 }}>🤝 Razılaşma əldə olundu?</p>
-                            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#b45309' }}>Səfərin baş tutması üçün zəhmət olmasa təsdiqləyin.</p>
-                          </div>
-                          <button type="button" onClick={() => void handleConfirmDeal(chatReq)} style={{ ...styles.successButton, padding: '10px 18px' }} disabled={rideRequestLoading === chatReq.id}>
-                            {rideRequestLoading === chatReq.id ? 'Təsdiqlənir...' : '✅ Deal Təsdiqlə'}
-                          </button>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-
-                  <div style={styles.resultCard}>
-                    <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
-                    <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
-                    
-                    {/* YENİ: Başlanğıc və Son nöqtəyə Yol Göstər xüsusiyyəti (Google Maps API fix) */}
-                    <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-                      {selectedConversationRide?.origin_lat && (
-                        <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          📍 Başlanğıca get
-                        </a>
-                      )}
-                      {selectedConversationRide?.destination_lat && (
-                        <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          🏁 Son nöqtəyə get
-                        </a>
-                      )}
-                    </div>
-
-                    <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {selectedConversationRide ? `${selectedConversationRide.ride_date || '-'} / ${selectedConversationRide.departure_time}` : '-'}</p>
-
-                    {selectedConversationRide && driverProfilesMap[selectedConversationRide.driver_id]?.carBrand && (
-                      <p style={styles.infoRow}>
-                        <strong>Avtomobil:</strong> {driverProfilesMap[selectedConversationRide.driver_id].carBrand} ({driverProfilesMap[selectedConversationRide.driver_id].carColor}) 
-                        {' '}
-                        <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>
-                          {driverProfilesMap[selectedConversationRide.driver_id].licensePlate}
-                        </span>
-                      </p>
-                    )}
-
-                    <p style={styles.infoRow}><strong>Qiymət:</strong> {selectedConversationRide ? `${selectedConversationRide.price_per_seat} AZN` : '-'}</p>
-                    <p style={styles.infoRow}><strong>Status:</strong> {selectedConversation.status === 'closed' ? 'Arxivlənib (Bağlı)' : selectedConversation.status}</p>
-                    {selectedConversation.status !== 'closed' && (
-                      <div style={{ marginTop: 10 }}>
-                        <button type="button" onClick={() => void handleCloseConversation(selectedConversation.id)} style={styles.dangerButton}>🔒 Çatı Bağla</button>
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ height: 12 }} />
-                  {selectedConversationRide?.status === 'active' && selectedConversation.status !== 'closed' && (
-                    <LiveMap conversationId={selectedConversation.id} currentUserId={currentUser.driverId} isDriver={profile?.role === 'driver'} otherUserId={ currentUser.driverId === selectedConversation.driver_user_id ? selectedConversation.passenger_user_id : selectedConversation.driver_user_id } />
-                  )}
-                  <div style={styles.messageList}>
-                    {currentMessages.length === 0 ? (
-                      <p style={styles.mutedText}>Hələ mesaj yoxdur.</p>
-                    ) : (
-                      currentMessages.map((msg) => {
-                        const isMine = msg.sender_id === currentUser.driverId
-                        return (
-                          <div key={msg.id} style={isMine ? styles.myMessage : styles.otherMessage}>
-                            <div>{msg.message_text}</div>
-                            <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8 }}>{formatDateTime(msg.created_at)}</div>
-                          </div>
-                        )
-                      })
-                    )}
-                  </div>
-                  {selectedConversation.status !== 'closed' ? (
-                    <>
-                      <div style={styles.fieldWrap}>
-                        <label style={styles.label}>Mesaj</label>
-                        <textarea rows={3} value={chatInput} onChange={(e) => setChatInput(e.target.value)} style={styles.textarea} placeholder="Mesaj yaz..." />
-                      </div>
-                      <div style={styles.actionRow}>
-                        <button type="button" onClick={() => void handleSendMessage()} style={styles.primaryButton} disabled={messageSending}>{messageSending ? 'Göndərilir...' : 'Göndər'}</button>
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ marginTop: 16, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}><p style={{ margin: 0, fontWeight: 700, color: '#64748b' }}>🔒 Bu çat bağlanıb. Artıq mesaj yazmaq və məkan paylaşmaq mümkün deyil.</p></div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
+          )}
         </section>
       )}
 
@@ -1754,7 +1808,6 @@ export default function Home() {
 
           <form onSubmit={handleCreateOrUpdateProfile} style={styles.form}>
             
-            {/* 1. Hesabım (Şəxsi Məlumatlar) Akardionu */}
             <div style={{ border: '1px solid #cbd5e1', borderRadius: 14, overflow: 'hidden' }}>
               <button type="button" onClick={() => setProfileAccountOpen(!profileAccountOpen)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '16px 20px', border: 'none', borderBottom: profileAccountOpen ? '1px solid #cbd5e1' : 'none', fontWeight: 800, fontSize: 16, color: '#0f172a', cursor: 'pointer' }}>
                 <span>👤 Hesabım (Şəxsi Məlumatlar)</span>
@@ -1805,7 +1858,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* 2. Ünvanlarım Akardionu */}
             <div style={{ border: '1px solid #cbd5e1', borderRadius: 14, overflow: 'hidden' }}>
               <button type="button" onClick={() => setProfileAddressOpen(!profileAddressOpen)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '16px 20px', border: 'none', borderBottom: profileAddressOpen ? '1px solid #cbd5e1' : 'none', fontWeight: 800, fontSize: 16, color: '#0f172a', cursor: 'pointer' }}>
                 <span>📍 Ünvanlarım (Sürətli Seçim)</span>
@@ -1827,7 +1879,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* 3. Sürücü Məlumatları Akardionu */}
             <div style={{ border: '1px solid #cbd5e1', borderRadius: 14, overflow: 'hidden' }}>
               <button type="button" onClick={() => setProfileDriverOpen(!profileDriverOpen)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '16px 20px', border: 'none', borderBottom: profileDriverOpen ? '1px solid #cbd5e1' : 'none', fontWeight: 800, fontSize: 16, color: '#0f172a', cursor: 'pointer' }}>
                 <span>🚗 Sürücü Məlumatları</span>
