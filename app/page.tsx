@@ -2739,7 +2739,78 @@ const triggerVibration = (type: string = 'medium') => {
 
     setAdminLoadingId(null)
   }
+// ── FİLTERLƏMƏ VƏ HESABLAMA (useMemo) BLOKU ──
+  const filteredRides = useMemo(() => {
+    const current = getActiveUser()
+    const text = searchText.toLowerCase().trim()
 
+    return rides.filter((ride) => {
+      const rideOrigin = (ride.origin || '').toLowerCase()
+      const rideDestination = (ride.destination || '').toLowerCase()
+      const rideNotes = (ride.notes || '').toLowerCase()
+
+      const matchesText =
+        !text || rideOrigin.includes(text) || rideDestination.includes(text) || rideNotes.includes(text)
+
+      const matchesRole = filterRole === 'all' || (ride.role || 'driver') === filterRole
+      const matchesDate = !filterDate || (ride.ride_date || '') === filterDate
+      const notMine = ride.driver_id !== current.driverId
+      
+      const matchesWomenOnly = ride.women_only ? profile?.gender === 'female' : true
+      const rideUserGender = driverProfilesMap[ride.driver_id]?.gender
+      const matchesSearchGender = !filterGender || rideUserGender === filterGender
+
+      return matchesText && matchesRole && matchesSearchGender && matchesDate && notMine && matchesWomenOnly && ride.status === 'active'
+    })
+  }, [rides, searchText, filterRole, filterDate, isAdmin])
+
+  const incomingRideRequests = useMemo(() => {
+    return rideRequests.filter((item) => item.owner_id === currentUser.driverId)
+  }, [rideRequests, currentUser.driverId, isAdmin])
+
+  const outgoingRideRequests = useMemo(() => {
+    return rideRequests.filter((item) => item.requester_id === currentUser.driverId)
+  }, [rideRequests, currentUser.driverId, isAdmin])
+
+  const selectedConversation =
+    conversations.find((item) => item.id === selectedConversationId) || 
+    (isAdmin ? allConversationsAdmin.find((item) => item.id === selectedConversationId) : null) || 
+    null
+
+  const selectedConversationRide = selectedConversation?.ride || null
+
+  const currentMessages = useMemo(() => {
+    if (!selectedConversationId) return []
+    return messages.filter((item) => item.conversation_id === selectedConversationId)
+  }, [messages, selectedConversationId])
+
+  const adminUsersFiltered = useMemo(() => {
+    const q = adminGlobalSearch.toLowerCase().trim()
+    if (!q) return adminUsers
+    return adminUsers.filter((user) =>
+      [String(user.id), user.full_name || '', user.username || '', user.phone || '', user.bio || '']
+        .join(' ')
+        .toLowerCase()
+        .includes(q)
+    )
+  }, [adminUsers, adminGlobalSearch])
+
+  const adminReportsFiltered = useMemo(() => {
+    const q = adminGlobalSearch.toLowerCase().trim()
+    if (!q) return adminReports
+    return adminReports.filter((report) =>
+      [
+        String(report.id),
+        String(report.target_user_id || ''),
+        String(report.reporter_id),
+        report.reason || '',
+        report.details || '',
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(q)
+    )
+  }, [adminReports, adminGlobalSearch])
   if (!tgReady) {
     return (
       <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
