@@ -195,7 +195,7 @@ const styles: Record<string, React.CSSProperties> = {
   page: {
     maxWidth: 1280,
     margin: '0 auto',
-    padding: '20px 16px 120px', 
+    padding: '20px 16px 120px',
     fontFamily: 'Arial, sans-serif',
     background: '#f8fafc',
     minHeight: '100vh',
@@ -253,7 +253,7 @@ const styles: Record<string, React.CSSProperties> = {
   rejectedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fee2e2', color: '#991b1b' },
   fullBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#ede9fe', color: '#5b21b6' },
   completedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#d1fae5', color: '#065f46' },
-  warningBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef9c3', color: '#b45309' }, 
+  warningBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef9c3', color: '#b45309' },
   unreadBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 22, padding: '0 8px', borderRadius: 999, background: '#2563eb', color: '#ffffff', fontSize: 12, fontWeight: 800, marginLeft: 8 },
   chatLayout: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
   conversationList: { display: 'grid', gap: 12 },
@@ -377,14 +377,14 @@ export default function Home() {
   const [adminUsers, setAdminUsers] = useState<UserOverview[]>([])
   const [adminReports, setAdminReports] = useState<UserReport[]>([])
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([])
-  
+
   const [driverProfilesMap, setDriverProfilesMap] = useState<Record<number, { name: string, rating: string, gender: string, carBrand: string, carColor: string, licensePlate: string }>>({})
 
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [unreadTotal, setUnreadTotal] = useState(0)
 
   const selectedConversationIdRef = useRef<number | null>(null)
-  
+
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
@@ -418,7 +418,7 @@ export default function Home() {
   const [profileHomeAddress, setProfileHomeAddress] = useState('')
   const [profileWorkAddress, setProfileWorkAddress] = useState('')
   const [womenOnly, setWomenOnly] = useState(false)
-  
+
   const [carBrand, setCarBrand] = useState('')
   const [carColor, setCarColor] = useState('')
   const [licensePlate, setLicensePlate] = useState('')
@@ -481,7 +481,7 @@ export default function Home() {
     }
     prevUnreadRef.current = unreadTotal || 0;
   }, [unreadTotal]);
-  
+
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => { setMessage('') }, 3000)
@@ -507,10 +507,10 @@ export default function Home() {
   useEffect(() => { if (isAdmin) { void getAdminData(); } }, [isAdmin]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let rawInput = e.target.value.replace(/\D/g, ''); 
+    let rawInput = e.target.value.replace(/\D/g, '');
     if (!rawInput) { setProfilePhone(''); return; }
     if (rawInput.startsWith('0')) { rawInput = '994' + rawInput.substring(1); } else if (!rawInput.startsWith('994') && rawInput.length > 0) { rawInput = '994' + rawInput; }
-    rawInput = rawInput.substring(0, 12); 
+    rawInput = rawInput.substring(0, 12);
     let formatted = '+994';
     if (rawInput.length > 3) formatted += ' ' + rawInput.substring(3, 5);
     if (rawInput.length > 5) formatted += ' ' + rawInput.substring(5, 8);
@@ -574,7 +574,7 @@ export default function Home() {
 
   async function initializeData() {
     setMessage(''); setSelectedConversationId(null); setMessages([])
-    await Promise.all([ ensureUserRecord(), getProfile(), getRides(), getAllMyRides(), getRideRequests(), getConversations(false), getReviews(), isAdmin ? getAdminData() : Promise.resolve(), ])
+    await Promise.all([ensureUserRecord(), getProfile(), getRides(), getAllMyRides(), getRideRequests(), getConversations(false), getReviews(), isAdmin ? getAdminData() : Promise.resolve(),])
   }
 
   async function ensureUserRecord() {
@@ -602,13 +602,13 @@ export default function Home() {
     const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
     if (error) { console.error('Ride list error:', JSON.stringify(error, null, 2)); setMessage('Aktiv elanlar yüklənmədi.') } else {
       const rows = (data as Ride[]) || []
-      
+
       const validRows = rows.filter(r => !isRideExpired(r));
       setRides(validRows)
 
       const driverIds = [...new Set(validRows.map((r) => r.driver_id))]
       if (driverIds.length > 0) {
-          const [profilesRes, reviewsRes] = await Promise.all([
+        const [profilesRes, reviewsRes] = await Promise.all([
           supabase.from('profiles').select('id, full_name, username, gender, car_brand, car_color, license_plate').in('id', driverIds),
           supabase.from('reviews').select('reviewee_id, rating').in('reviewee_id', driverIds)
         ])
@@ -663,15 +663,15 @@ export default function Home() {
   async function getAdminData() {
     if (!isAdmin) return
     const [ridesRes, requestsRes, conversationsRes, messagesRes, reviewsRes, usersRes, reportsRes, auditRes] = await Promise.all([
-        supabase.from('ride_listings').select('*').order('created_at', { ascending: false }),
-        supabase.from('ride_requests').select('*').order('id', { ascending: false }),
-        supabase.from('conversations').select('*').order('updated_at', { ascending: false }),
-        supabase.from('messages').select('*').order('created_at', { ascending: false }),
-        supabase.from('reviews').select('*').order('id', { ascending: false }),
-        supabase.from('admin_user_overview').select('*').order('id', { ascending: false }),
-        supabase.from('user_reports').select('*').order('created_at', { ascending: false }),
-        supabase.from('admin_audit_logs').select('*').order('created_at', { ascending: false }).limit(200),
-      ])
+      supabase.from('ride_listings').select('*').order('created_at', { ascending: false }),
+      supabase.from('ride_requests').select('*').order('id', { ascending: false }),
+      supabase.from('conversations').select('*').order('updated_at', { ascending: false }),
+      supabase.from('messages').select('*').order('created_at', { ascending: false }),
+      supabase.from('reviews').select('*').order('id', { ascending: false }),
+      supabase.from('admin_user_overview').select('*').order('id', { ascending: false }),
+      supabase.from('user_reports').select('*').order('created_at', { ascending: false }),
+      supabase.from('admin_audit_logs').select('*').order('created_at', { ascending: false }).limit(200),
+    ])
 
     const ridesRows = (ridesRes.data as Ride[]) || []; const requestRows = (requestsRes.data as RideRequest[]) || []; const conversationRows = (conversationsRes.data as Conversation[]) || []; const messageRows = (messagesRes.data as Message[]) || []; const reviewRows = (reviewsRes.data as Review[]) || []; const userRows = (usersRes.data as UserOverview[]) || []; const reportRows = (reportsRes.data as UserReport[]) || []; const auditRows = (auditRes.data as AdminAuditLog[]) || []
     const rideMap = new Map(ridesRows.map((ride) => [ride.id, ride]))
@@ -709,9 +709,9 @@ export default function Home() {
             const newMap = { ...prev };
             pData.forEach(p => {
               if (!newMap[p.id]) {
-                 newMap[p.id] = { name: p.full_name || p.username || 'User', rating: '5.0', gender: p.gender || 'male', carBrand: p.car_brand || '', carColor: p.car_color || 'Qara', licensePlate: p.license_plate || '' };
+                newMap[p.id] = { name: p.full_name || p.username || 'User', rating: '5.0', gender: p.gender || 'male', carBrand: p.car_brand || '', carColor: p.car_color || 'Qara', licensePlate: p.license_plate || '' };
               } else {
-                 newMap[p.id].carBrand = p.car_brand || ''; newMap[p.id].carColor = p.car_color || 'Qara'; newMap[p.id].licensePlate = p.license_plate || '';
+                newMap[p.id].carBrand = p.car_brand || ''; newMap[p.id].carColor = p.car_color || 'Qara'; newMap[p.id].licensePlate = p.license_plate || '';
               }
             }); return newMap;
           });
@@ -743,7 +743,7 @@ export default function Home() {
     if (markRead) { await markConversationMessagesAsRead(conversationId); await getConversations(false) }
   }
 
-  async function logAdminAction( actionType: string, entityType: string, entityId: string, oldData: Record<string, unknown> | null = null, newData: Record<string, unknown> | null = null, note: string | null = null ) {
+  async function logAdminAction(actionType: string, entityType: string, entityId: string, oldData: Record<string, unknown> | null = null, newData: Record<string, unknown> | null = null, note: string | null = null) {
     if (!isAdmin) return
     await supabase.from('admin_audit_logs').insert({ admin_user_id: currentUser.driverId, action_type: actionType, entity_type: entityType, entity_id: entityId, old_data: oldData, new_data: newData, note, })
   }
@@ -751,7 +751,7 @@ export default function Home() {
   async function handleCreateOrUpdateProfile(e: React.FormEvent) {
     e.preventDefault(); setProfileSaving(true); setMessage('')
     const current = getActiveUser()
-    const safePhone = profilePhone || ''; const digitsOnly = safePhone.replace(/\D/g, ''); 
+    const safePhone = profilePhone || ''; const digitsOnly = safePhone.replace(/\D/g, '');
 
     if (digitsOnly.length !== 12) { setMessage('⚠️ Telefon nömrəsini tam daxil edin (Məs: +994 50 123 45 67)'); setProfileSaving(false); return }
 
@@ -787,7 +787,7 @@ export default function Home() {
 
     const duplicateActiveRide = myRides.find((ride) => {
       if (editingRideId && ride.id === editingRideId) return false
-      return ( normalizeText(ride.origin) === normalizeText(cleanOrigin) && normalizeText(ride.destination) === normalizeText(cleanDestination) && (ride.ride_date || '') === rideDate && ride.departure_time === departureTime && ride.status === 'active' )
+      return (normalizeText(ride.origin) === normalizeText(cleanOrigin) && normalizeText(ride.destination) === normalizeText(cleanDestination) && (ride.ride_date || '') === rideDate && ride.departure_time === departureTime && ride.status === 'active')
     })
 
     if (duplicateActiveRide) { setMessage('Bu marşrut, tarix və saat üçün artıq aktiv elan var.'); setSubmitting(false); return }
@@ -901,7 +901,7 @@ export default function Home() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: request.requester_id, text: `🔔 <b>YolDash: Müraciətiniz ${statusAz}!</b>\n\n<b>Marşrut:</b> ${request.ride?.origin || '-'} → ${request.ride?.destination || '-'}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' })
       });
-    } catch (_) {}
+    } catch (_) { }
 
     setRideRequestLoading(null)
   }
@@ -921,13 +921,13 @@ export default function Home() {
     if (rideError) { setMessage('Deal təsdiqlənmədi.'); setRideRequestLoading(null); return }
 
     setMessage(remainingSeats === 0 ? 'Deal təsdiqləndi, elan bağlandı.' : `Deal təsdiqləndi. Qalan yer: ${remainingSeats}`)
-    
+
     try {
       await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: request.requester_id, text: `🤝 <b>YolDash: Səfər (Deal) Təsdiqləndi!</b>\n\nSürücü sizinlə səfəri rəsmiləşdirdi. Xoş yollar!\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' })
       });
-    } catch (_) {}
+    } catch (_) { }
 
     await Promise.all([getRideRequests(), getRides(), getAllMyRides()])
     setRideRequestLoading(null)
@@ -960,7 +960,7 @@ export default function Home() {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: receiverId, text: `💬 <b>YolDash: Yeni mesajınız var!</b>\n\n<b>Kimdən:</b> ${profile?.full_name || profile?.username || 'İstifadəçi'}\n<b>Mesaj:</b> ${chatInput.trim()}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' })
           });
-        } catch (_) {}
+        } catch (_) { }
       }
 
       setChatInput(''); await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', selectedConversationId)
@@ -980,7 +980,7 @@ export default function Home() {
     if (comment.length > LIMITS.reviewCommentMax) { setMessage(`Review max ${LIMITS.reviewCommentMax} simvol.`); return }
 
     const revieweeId = req.owner_id === currentUser.driverId ? req.requester_id : req.owner_id
-    const existing = reviews.find((item) => item.request_id === req.id && item.reviewer_id === currentUser.driverId && item.reviewee_id === revieweeId )
+    const existing = reviews.find((item) => item.request_id === req.id && item.reviewer_id === currentUser.driverId && item.reviewee_id === revieweeId)
 
     if (existing) { setMessage('Bu request üçün artıq review yazmısan.'); return }
 
@@ -1141,7 +1141,7 @@ export default function Home() {
       const matchesRole = filterRole === 'all' || (ride.role || 'driver') === filterRole
       const matchesDate = !filterDate || (ride.ride_date || '') === filterDate
       const notMine = ride.driver_id !== current.driverId
-      
+
       const matchesWomenOnly = ride.women_only ? profile?.gender === 'female' : true
       const rideUserGender = driverProfilesMap[ride.driver_id]?.gender
       const matchesSearchGender = !filterGender || rideUserGender === filterGender
@@ -1169,13 +1169,13 @@ export default function Home() {
   const adminUsersFiltered = useMemo(() => {
     const q = adminGlobalSearch.toLowerCase().trim()
     if (!q) return adminUsers
-    return adminUsers.filter((user) => [String(user.id), user.full_name || '', user.username || '', user.phone || '', user.bio || ''].join(' ').toLowerCase().includes(q) )
+    return adminUsers.filter((user) => [String(user.id), user.full_name || '', user.username || '', user.phone || '', user.bio || ''].join(' ').toLowerCase().includes(q))
   }, [adminUsers, adminGlobalSearch])
 
   const adminReportsFiltered = useMemo(() => {
     const q = adminGlobalSearch.toLowerCase().trim()
     if (!q) return adminReports
-    return adminReports.filter((report) => [String(report.id), String(report.target_user_id || ''), String(report.reporter_id), report.reason || '', report.details || ''].join(' ').toLowerCase().includes(q) )
+    return adminReports.filter((report) => [String(report.id), String(report.target_user_id || ''), String(report.reporter_id), report.reason || '', report.details || ''].join(' ').toLowerCase().includes(q))
   }, [adminReports, adminGlobalSearch])
 
   if (!tgReady) {
@@ -1231,8 +1231,8 @@ export default function Home() {
             <div style={styles.statsGrid}>
               <div style={styles.statsCard}><p style={styles.statLabel}>Aktiv elanlarım</p><p style={styles.statValue}>{myRides.length}</p></div>
               <div style={styles.statsCard}><p style={styles.statLabel}>Tarixçədəki elanlar</p><p style={styles.statValue}>{historyRides.length}</p></div>
-             <div style={styles.statsCard}><p style={styles.statLabel}>Gələn aktiv müraciətlər</p><p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active' && !isRideExpired(x.ride)).length}</p></div>
-             <div style={styles.statsCard}><p style={styles.statLabel}>Oxunmamış mesajlar</p><p style={styles.statValue}>{unreadTotal}</p></div>
+              <div style={styles.statsCard}><p style={styles.statLabel}>Gələn aktiv müraciətlər</p><p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active' && !isRideExpired(x.ride)).length}</p></div>
+              <div style={styles.statsCard}><p style={styles.statLabel}>Oxunmamış mesajlar</p><p style={styles.statValue}>{unreadTotal}</p></div>
               <div style={styles.statsCard}><p style={styles.statLabel}>Reytinqim</p><p style={{ ...styles.statValue, color: '#eab308', fontSize: 18 }}>{renderStars(reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0')}</p></div>
             </div>
           </section>
@@ -1277,8 +1277,8 @@ export default function Home() {
             <form onSubmit={handleSubmitRide} style={styles.form}>
               {(profile?.home_address || profile?.work_address) && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                  {profile.home_address && <button type="button" onClick={() => { if(!origin) setOrigin(profile.home_address!); else if(!destination) setDestination(profile.home_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>}
-                  {profile.work_address && <button type="button" onClick={() => { if(!origin) setOrigin(profile.work_address!); else if(!destination) setDestination(profile.work_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>}
+                  {profile.home_address && <button type="button" onClick={() => { if (!origin) setOrigin(profile.home_address!); else if (!destination) setDestination(profile.home_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>}
+                  {profile.work_address && <button type="button" onClick={() => { if (!origin) setOrigin(profile.work_address!); else if (!destination) setDestination(profile.work_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>}
                 </div>
               )}
               <div style={styles.fieldWrap}><label style={styles.label}>Aktiv rol</label><input value={getRoleLabel(profile.role)} readOnly style={styles.input} /></div>
@@ -1356,7 +1356,7 @@ export default function Home() {
 
       {activeTab === 'search' && (
         <>
-         <section style={styles.sectionCard}>
+          <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Axtarış</h2>
             <div style={styles.form}>
               <div style={styles.fieldWrap}>
@@ -1402,18 +1402,18 @@ export default function Home() {
             {loading ? (
               <p style={styles.mutedText}>Yüklənir...</p>
             ) : filteredRides.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '2px dashed #cbd5e1', marginTop: 20 }}>
-                  <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-                  <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
-                  <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
-                  <button type="button" onClick={() => setActiveTab('create')} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
-                </div>
-              ) : (
-                <div style={styles.ridesGrid}>
+              <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '2px dashed #cbd5e1', marginTop: 20 }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+                <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
+                <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
+                <button type="button" onClick={() => setActiveTab('create')} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
+              </div>
+            ) : (
+              <div style={styles.ridesGrid}>
                 {filteredRides.map((ride) => (
                   <div key={ride.id} style={styles.resultCard}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{...styles.approvedBadge, margin: 0}}>Aktiv</div>
+                      <div style={{ ...styles.approvedBadge, margin: 0 }}>Aktiv</div>
                       {driverProfilesMap[ride.driver_id] && (
                         <div style={{ display: 'flex', gap: 10, background: '#f8fafc', padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }}>
                           <span style={{ fontWeight: 700, color: '#334155' }}>{driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}</span>
@@ -1422,7 +1422,7 @@ export default function Home() {
                       )}
                     </div>
                     <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
-                    
+
                     {driverProfilesMap[ride.driver_id]?.carBrand && (
                       <p style={styles.infoRow}>
                         <strong>Avtomobil:</strong> {driverProfilesMap[ride.driver_id].carBrand} ({driverProfilesMap[ride.driver_id].carColor})
@@ -1481,7 +1481,7 @@ export default function Home() {
                     return (
                       <div key={conv.id} style={{ ...(selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard), opacity: chatFilter === 'closed' ? 0.6 : 1 }} onClick={() => void handleOpenConversation(conv.id)}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                          <div style={chatFilter === 'closed' ? {...styles.badge, background: '#e2e8f0', color: '#64748b'} : styles.badge}>{chatFilter === 'closed' ? 'Bağlı' : 'Chat'} #{conv.id}</div>
+                          <div style={chatFilter === 'closed' ? { ...styles.badge, background: '#e2e8f0', color: '#64748b' } : styles.badge}>{chatFilter === 'closed' ? 'Bağlı' : 'Chat'} #{conv.id}</div>
                           {conv.unread_count && chatFilter === 'active' ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
                         </div>
                         <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}</p>
@@ -1504,7 +1504,7 @@ export default function Home() {
 
                     {selectedConversationRide && driverProfilesMap[selectedConversationRide.driver_id]?.carBrand && (
                       <p style={styles.infoRow}>
-                        <strong>Avtomobil:</strong> {driverProfilesMap[selectedConversationRide.driver_id].carBrand} ({driverProfilesMap[selectedConversationRide.driver_id].carColor}) 
+                        <strong>Avtomobil:</strong> {driverProfilesMap[selectedConversationRide.driver_id].carBrand} ({driverProfilesMap[selectedConversationRide.driver_id].carColor})
                         {' '}
                         <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>
                           {driverProfilesMap[selectedConversationRide.driver_id].licensePlate}
@@ -1522,7 +1522,7 @@ export default function Home() {
                   </div>
                   <div style={{ height: 12 }} />
                   {selectedConversationRide?.status === 'active' && selectedConversation.status !== 'closed' && (
-                    <LiveMap conversationId={selectedConversation.id} currentUserId={currentUser.driverId} isDriver={profile?.role === 'driver'} otherUserId={ currentUser.driverId === selectedConversation.driver_user_id ? selectedConversation.passenger_user_id : selectedConversation.driver_user_id } />
+                    <LiveMap conversationId={selectedConversation.id} currentUserId={currentUser.driverId} isDriver={profile?.role === 'driver'} otherUserId={currentUser.driverId === selectedConversation.driver_user_id ? selectedConversation.passenger_user_id : selectedConversation.driver_user_id} />
                   )}
                   <div style={styles.messageList}>
                     {currentMessages.length === 0 ? (
@@ -1782,7 +1782,7 @@ export default function Home() {
             <div style={styles.buttonRow}>
               <button type="submit" disabled={profileSaving} style={styles.primaryButton}>{profileSaving ? 'Yadda saxlanılır...' : profile ? 'Profili yenilə' : 'Profili yarat'}</button>
             </div>
-            
+
             <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
               <button type="button" onClick={() => { setActiveTab('history'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: '#f8fafc', color: '#334155', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
                 🕒 Keçmiş Səfərlərim (Tarixçə)
@@ -1800,7 +1800,7 @@ export default function Home() {
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Admin panel</h2>
             <div style={styles.chipRow}>
-              {[ { key: 'overview', label: 'Overview' }, { key: 'users', label: 'Users' }, { key: 'rides', label: 'Rides' }, { key: 'requests', label: 'Requests' }, { key: 'conversations', label: 'Conversations' }, { key: 'messages', label: 'Messages' }, { key: 'reviews', label: 'Reviews' }, { key: 'reports', label: 'Reports' }, { key: 'audit', label: 'Audit' }, ].map((item) => (
+              {[{ key: 'overview', label: 'Overview' }, { key: 'users', label: 'Users' }, { key: 'rides', label: 'Rides' }, { key: 'requests', label: 'Requests' }, { key: 'conversations', label: 'Conversations' }, { key: 'messages', label: 'Messages' }, { key: 'reviews', label: 'Reviews' }, { key: 'reports', label: 'Reports' }, { key: 'audit', label: 'Audit' },].map((item) => (
                 <button key={item.key} type="button" onClick={() => setAdminSection(item.key as AdminSection)} style={adminSection === item.key ? styles.chipAdmin : styles.chip}>{item.label}</button>
               ))}
             </div>
@@ -1817,7 +1817,7 @@ export default function Home() {
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #7c3aed' }}><p style={styles.statLabel}>⏳ Gözləyən müraciətlər</p><p style={{ ...styles.statValue, color: '#7c3aed' }}>{allRideRequestsAdmin.filter(r => r.status === 'pending').length}</p></div>
               </div>
               <div style={styles.statsGrid}>
-                {[ { label: 'Cəmi İstifadəçi', value: adminUsers.length, color: '#2563eb' }, { label: 'Cəmi Elan', value: allRidesAdmin.length, color: '#0891b2' }, { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' }, { label: 'Cəmi Mesaj', value: allMessagesAdmin.length, color: '#059669' }, { label: 'Cəmi Review', value: allReviewsAdmin.length, color: '#d97706' }, { label: 'Cəmi Report', value: adminReports.length, color: '#dc2626' }, ].map(item => (
+                {[{ label: 'Cəmi İstifadəçi', value: adminUsers.length, color: '#2563eb' }, { label: 'Cəmi Elan', value: allRidesAdmin.length, color: '#0891b2' }, { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' }, { label: 'Cəmi Mesaj', value: allMessagesAdmin.length, color: '#059669' }, { label: 'Cəmi Review', value: allReviewsAdmin.length, color: '#d97706' }, { label: 'Cəmi Report', value: adminReports.length, color: '#dc2626' },].map(item => (
                   <div key={item.label} style={styles.adminStatsCard}><p style={styles.statLabel}>{item.label}</p><p style={{ ...styles.statValue, color: item.color }}>{item.value}</p><div style={{ marginTop: 8, height: 5, borderRadius: 4, background: '#e2e8f0' }}><div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} /></div></div>
                 ))}
               </div>
@@ -1829,8 +1829,8 @@ export default function Home() {
                   <button type="button" onClick={() => setAdminSection('rides')} style={styles.closeButton}>🚗 Elanlar</button>
                   <button type="button" onClick={() => setAdminSection('requests')} style={styles.primaryButton}>⏳ Müraciətlər</button>
                   <button type="button" onClick={() => setAdminSection('conversations')} style={styles.successButton}>💬 Çatlar</button>
-                  <button type="button" onClick={() => setAdminSection('messages')} style={{...styles.ghostButton, borderColor: '#3b82f6', color: '#3b82f6'}}>✉️ Mesajlar</button>
-                  <button type="button" onClick={() => setAdminSection('reviews')} style={{...styles.ghostButton, borderColor: '#d97706', color: '#d97706'}}>⭐ Rəylər</button>
+                  <button type="button" onClick={() => setAdminSection('messages')} style={{ ...styles.ghostButton, borderColor: '#3b82f6', color: '#3b82f6' }}>✉️ Mesajlar</button>
+                  <button type="button" onClick={() => setAdminSection('reviews')} style={{ ...styles.ghostButton, borderColor: '#d97706', color: '#d97706' }}>⭐ Rəylər</button>
                   <button type="button" onClick={() => setAdminSection('audit')} style={styles.ghostButton}>📋 Audit log</button>
                   <button type="button" onClick={() => void getAdminData()} style={styles.secondaryButton}>🔄 Təzələ</button>
                 </div>
@@ -2039,15 +2039,15 @@ export default function Home() {
                 <h2 style={styles.sectionTitle}>Reviews</h2>
                 <div style={styles.ridesGrid}>
                   {allReviewsAdmin.map((item) => (
-                  <div key={item.id} style={styles.adminCard}>
-                    <div style={styles.adminBadge}>Review #{item.id}</div>
-                    <p style={styles.infoRow}><strong>Reviewer:</strong> {item.reviewer_id}</p>
-                    <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
-                    <p style={styles.infoRow}><strong>Rating:</strong> {item.rating}</p>
-                    <p style={styles.infoRow}><strong>Comment:</strong> {item.comment_text || '-'}</p>
-                    <div style={styles.actionRow}><button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>Edit</button><button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteReview(item)}>Delete</button></div>
-                  </div>
-                ))}
+                    <div key={item.id} style={styles.adminCard}>
+                      <div style={styles.adminBadge}>Review #{item.id}</div>
+                      <p style={styles.infoRow}><strong>Reviewer:</strong> {item.reviewer_id}</p>
+                      <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
+                      <p style={styles.infoRow}><strong>Rating:</strong> {item.rating}</p>
+                      <p style={styles.infoRow}><strong>Comment:</strong> {item.comment_text || '-'}</p>
+                      <div style={styles.actionRow}><button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>Edit</button><button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteReview(item)}>Delete</button></div>
+                    </div>
+                  ))}
                 </div>
               </section>
 
@@ -2076,8 +2076,8 @@ export default function Home() {
                     <p style={styles.infoRow}><strong>Target:</strong> {report.target_user_id || '-'}</p>
                     <p style={styles.infoRow}><strong>Reason:</strong> {report.reason}</p>
                     <p style={styles.infoRow}><strong>Details:</strong> {report.details || '-'}</p>
-                    <div style={styles.fieldWrap}><label style={styles.label}>Status</label><select value={adminReportStatusMap[report.id] || report.status} onChange={(e) => setAdminReportStatusMap((prev) => ({ ...prev, [report.id]: e.target.value as ReportStatus, })) } style={styles.select}><option value="open">open</option><option value="in_review">in_review</option><option value="resolved">resolved</option><option value="dismissed">dismissed</option></select></div>
-                    <div style={styles.fieldWrap}><label style={styles.label}>Admin note</label><textarea rows={3} value={adminReportNoteMap[report.id] || ''} onChange={(e) => setAdminReportNoteMap((prev) => ({ ...prev, [report.id]: e.target.value, })) } style={styles.textarea} /></div>
+                    <div style={styles.fieldWrap}><label style={styles.label}>Status</label><select value={adminReportStatusMap[report.id] || report.status} onChange={(e) => setAdminReportStatusMap((prev) => ({ ...prev, [report.id]: e.target.value as ReportStatus, }))} style={styles.select}><option value="open">open</option><option value="in_review">in_review</option><option value="resolved">resolved</option><option value="dismissed">dismissed</option></select></div>
+                    <div style={styles.fieldWrap}><label style={styles.label}>Admin note</label><textarea rows={3} value={adminReportNoteMap[report.id] || ''} onChange={(e) => setAdminReportNoteMap((prev) => ({ ...prev, [report.id]: e.target.value, }))} style={styles.textarea} /></div>
                     <div style={styles.actionRow}><button type="button" style={styles.primaryButton} disabled={adminLoadingId === report.id} onClick={() => void handleAdminUpdateReport(report)}>Update report</button></div>
                   </div>
                 ))}
