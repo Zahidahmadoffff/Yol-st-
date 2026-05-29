@@ -2330,6 +2330,12 @@ async function handleCloseConversation(conversationId: number) {
     }
   }
 
+    async function handleCreateReport() {
+    if (!reportTargetUserId.trim() || !reportReason.trim()) {
+      setMessage('Target user və reason məcburidir.')
+      return
+    }
+
     const targetUserIdNum = Number(reportTargetUserId)
     if (!Number.isFinite(targetUserIdNum)) {
       setMessage('Target user ID düzgün deyil.')
@@ -2364,7 +2370,6 @@ async function handleCloseConversation(conversationId: number) {
       if (isAdmin) await getAdminData()
     }
   }
-
   async function handleAdminToggleUser(user: UserOverview) {
     setAdminLoadingId(user.id)
 
