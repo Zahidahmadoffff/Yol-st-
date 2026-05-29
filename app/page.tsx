@@ -180,7 +180,6 @@ type AdminAuditLog = {
   created_at: string
 }
 
-
 const LIMITS = {
   messageMax: 1000,
   rideRequestMessageMax: 1000,
@@ -803,7 +802,7 @@ const triggerVibration = (type: string = 'medium') => {
 };
 
  export default function Home() {
-  const [isAdminMode, setIsAdminMode] = useState(false) // YENİ: Rejim idarəedici
+  const [isAdminMode, setIsAdminMode] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
   const [chatFilter, setChatFilter] = useState<'active' | 'closed'>('active')
   const [reqView, setReqView] = useState<'incoming' | 'outgoing'>('incoming')
@@ -925,14 +924,13 @@ const triggerVibration = (type: string = 'medium') => {
   const prevUnreadRef = useRef(0);
 
   useEffect(() => {
-    // Burada sadəcə unreadTotal rəqəmini istifadə edirik
     if (unreadTotal > prevUnreadRef.current) {
       setMessage('🔔 Yeni mesajınız var!');
       triggerVibration('medium');
     }
     prevUnreadRef.current = unreadTotal || 0;
   }, [unreadTotal]);
-    // ── Toast Bildirişlərinin Avtomatik Silinməsi (3 saniyə) ──
+  
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => {
@@ -965,44 +963,41 @@ const triggerVibration = (type: string = 'medium') => {
   }
 
   const currentUser = getActiveUser()
-  const isRealAdmin = currentUser.appRole === 'admin' // Əslində admindirmi?
-  const isAdmin = isRealAdmin && isAdminMode // Yalnız Admin rejimini açanda yetkili olacaq!
-  // ── ADMIN REJİMİNƏ KEÇƏNDƏ MƏLUMATLARI YÜKLƏYƏN GÖZƏTÇİ ──
+  const isRealAdmin = currentUser.appRole === 'admin'
+  const isAdmin = isRealAdmin && isAdminMode
+
   useEffect(() => {
     if (isAdmin) {
       void getAdminData();
     }
   }, [isAdmin]);
-// ── AĞILLI TELEFON NÖMRƏSİ FORMATI ──
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value;
 
-    // Əgər istifadəçi hər şeyi sildisə və ya prefixi (+994) tamamilə pozmağa çalışırsa, təmizlə
-    if (!input || (input.length < profilePhone.length && input.length <= 4)) {
+  // ── TAM VƏ SƏRT TELEFON NÖMRƏSİ FORMATI ──
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let rawInput = e.target.value.replace(/\D/g, ''); // Bütün boşluq və hərfləri silir
+
+    if (!rawInput) {
       setProfilePhone('');
       return;
     }
 
-    let numbers = input.replace(/\D/g, ''); // Yalnız rəqəmləri saxlayırıq
-
-    // Azərbaycan kodunu avtomatik bərpa edirik
-    if (numbers.startsWith('0')) {
-      numbers = '994' + numbers.substring(1);
-    } else if (!numbers.startsWith('994') && numbers.length > 0) {
-      numbers = '994' + numbers;
+    if (rawInput.startsWith('0')) {
+      rawInput = '994' + rawInput.substring(1);
+    } else if (!rawInput.startsWith('994') && rawInput.length > 0) {
+      rawInput = '994' + rawInput;
     }
 
-    numbers = numbers.substring(0, 12); // Maksimum uzunluğu kəsirik (994 + 9 rəqəm)
+    rawInput = rawInput.substring(0, 12); // Maksimum 12 rəqəm
 
-    // Vizual formata salırıq: +994 50 123 45 67
     let formatted = '+994';
-    if (numbers.length > 3) formatted += ' ' + numbers.substring(3, 5);
-    if (numbers.length > 5) formatted += ' ' + numbers.substring(5, 8);
-    if (numbers.length > 8) formatted += ' ' + numbers.substring(8, 10);
-    if (numbers.length > 10) formatted += ' ' + numbers.substring(10, 12);
+    if (rawInput.length > 3) formatted += ' ' + rawInput.substring(3, 5);
+    if (rawInput.length > 5) formatted += ' ' + rawInput.substring(5, 8);
+    if (rawInput.length > 8) formatted += ' ' + rawInput.substring(8, 10);
+    if (rawInput.length > 10) formatted += ' ' + rawInput.substring(10, 12);
 
     setProfilePhone(formatted);
   };
+
   function resetRideForm() {
     setEditingRideId(null)
     setOrigin('')
@@ -1177,17 +1172,16 @@ const triggerVibration = (type: string = 'medium') => {
       setSelectedConversationId(conversations[0].id)
     }
   }, [conversations, selectedConversationId, isAdmin])
+
   useEffect(() => {
     if (isAdmin) return
     if (!selectedConversationId) return
     void getMessages(selectedConversationId)
   }, [selectedConversationId, isAdmin])
-useEffect(() => {
-    // 1. Sürətli yenilənmə: Çat, Mesajlar və Müraciətlər üçün (10 saniyə)
-    const fastInterval = setInterval(() => {
-      // PRO OPTİMİZASİYA: Əgər istifadəçi başqa səhifədədirsə və ya telefon bloklanıbsa, boşuna serverə sorğu atma (Pulsuz limiti qoru)
-      if (document.hidden) return;
 
+  useEffect(() => {
+    const fastInterval = setInterval(() => {
+      if (document.hidden) return;
       getRideRequests();
       getConversations(true);
       getAllMyRides();
@@ -1196,7 +1190,6 @@ useEffect(() => {
       }
     }, 10000);
 
-    // 2. Yavaş yenilənmə: Axtarış və Ana Ekran elanları üçün (2 dəqiqə = 120000 ms)
     const slowInterval = setInterval(() => {
       if (document.hidden) return;
       getRides();
@@ -1207,6 +1200,7 @@ useEffect(() => {
       clearInterval(slowInterval);
     };
   }, []);
+
   async function initializeData() {
     setMessage('')
     setSelectedConversationId(null)
@@ -1233,7 +1227,6 @@ useEffect(() => {
       username: current.username,
       full_name: current.fullName,
     })
-
 
     const { data } = await supabase
       .from('profiles').select('id,role').eq('id', current.driverId).maybeSingle()
@@ -1310,7 +1303,6 @@ useEffect(() => {
       const rows = (data as Ride[]) || []
       setRides(rows)
 
-      // Sürücü adı və reytinqini çəkmək üçün məntiq
       const driverIds = [...new Set(rows.map((r) => r.driver_id))]
       if (driverIds.length > 0) {
           const [profilesRes, reviewsRes] = await Promise.all([
@@ -1342,8 +1334,6 @@ useEffect(() => {
 
   async function getAllMyRides() {
     const current = getActiveUser()
-
-    
     const { data, error } = await supabase
       .from('ride_listings')
       .select('*')
@@ -1363,8 +1353,6 @@ useEffect(() => {
 
   async function getRideRequests() {
     const current = getActiveUser()
-
-    
     const { data, error } = await supabase
       .from('ride_requests')
       .select('*')
@@ -1395,8 +1383,6 @@ useEffect(() => {
 
   async function getReviews() {
     const current = getActiveUser()
-
-    
     const { data, error } = await supabase
       .from('reviews')
       .select('*')
@@ -1499,7 +1485,6 @@ useEffect(() => {
 
   async function markConversationMessagesAsRead(conversationId: number) {
     const current = getActiveUser()
-    // DƏYİŞİKLİK: Əgər sən istifadəçi rejimindəsənsə, sənə adi adam kimi baxıb mesajı "oxundu" edəcək!
     if (isAdmin) return
 
     await supabase
@@ -1512,8 +1497,6 @@ useEffect(() => {
 
   async function getConversations(preserveSelection = true) {
     const current = getActiveUser()
-
-    
     const { data, error } = await supabase
       .from('conversations')
       .select('*')
@@ -1617,6 +1600,7 @@ useEffect(() => {
     })
   }
 
+  // ── PROFİLİN YADDA SAXLANILMASI VƏ SƏRT VALIDASİYA ──
   async function handleCreateOrUpdateProfile(e: React.FormEvent) {
     e.preventDefault()
     setProfileSaving(true)
@@ -1624,16 +1608,19 @@ useEffect(() => {
 
     const current = getActiveUser()
 
-    if (!profilePhone.trim()) {
-      setMessage('Telefon nömrəsi məcburidir.')
+    const safePhone = profilePhone || '';
+    const digitsOnly = safePhone.replace(/\D/g, ''); 
+
+    if (digitsOnly.length !== 12) {
+      setMessage('⚠️ Telefon nömrəsini tam daxil edin (Məs: +994 50 123 45 67)')
       setProfileSaving(false)
-      return
+      return 
     }
 
     const effectiveRole = profile ? profile.role : initialRole
 
     if (effectiveRole === 'driver' && (!carBrand.trim() || !licensePlate.trim())) {
-      setMessage('Sürücü üçün avtomobil markası və nömrə məcburidir.')
+      setMessage('⚠️ Sürücü üçün avtomobil markası və nömrə məcburidir.')
       setProfileSaving(false)
       return
     }
@@ -1648,7 +1635,6 @@ useEffect(() => {
       home_address: profileHomeAddress.trim() || null,
       work_address: profileWorkAddress.trim() || null,
       role: effectiveRole,
-      // DƏYİŞİKLİK BURADADIR: Artıq rolundan asılı olmayaraq maşın məlumatı yadda saxlanılacaq
       car_brand: carBrand.trim() || null,
       license_plate: licensePlate.trim() || null,
       last_seen_at: new Date().toISOString(),
@@ -1659,13 +1645,13 @@ useEffect(() => {
     if (error) {
       setMessage('Profil yadda saxlanmadı.')
     } else {
-      setMessage('Profil yadda saxlanıldı.')
+      setMessage('✅ Profil yadda saxlanıldı.')
       await getProfile()
     }
     setProfileSaving(false)
   }
 
-   async function handleSubmitRide(e: React.FormEvent) {
+  async function handleSubmitRide(e: React.FormEvent) {
     triggerVibration('medium');
     e.preventDefault()
     triggerVibration('heavy');
@@ -1673,8 +1659,6 @@ useEffect(() => {
     setMessage('')
 
     const current = getActiveUser()
-
-    // Admin bloku silinib, admin də elan verə bilər
 
     if (!profile) {
       setMessage('Əvvəl profil yaratmaq lazımdır.')
@@ -1792,10 +1776,10 @@ useEffect(() => {
         await initializeData()
         setActiveTab('dashboard')
         if (!error) {
-  setMessage('🎉 Elanınız uğurla yerləşdirildi!');
-} else {
-  setMessage('Xəta baş verdi');
-}
+          setMessage('🎉 Elanınız uğurla yerləşdirildi!');
+        } else {
+          setMessage('Xəta baş verdi');
+        }
       }
     }
 
@@ -1895,8 +1879,6 @@ useEffect(() => {
 
   async function handleCreateRideRequest(ride: Ride) {
     const current = getActiveUser()
-
-    
     if (!profile) {
       setMessage('Əvvəl profil yaratmaq lazımdır.')
       return
@@ -1969,7 +1951,6 @@ useEffect(() => {
       setMessage('Müraciət göndərildi. ✅')
       setRequestMessageMap((prev) => ({ ...prev, [ride.id]: '' }))
       setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: '1' }))
-      // Elan sahibinə Telegram bot bildirişi göndər
       try {
         await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, {
           method: 'POST',
@@ -1980,7 +1961,7 @@ useEffect(() => {
             parse_mode: 'HTML',
           }),
         })
-      } catch (_) { /* Bot bildirişi ixtiyaridir */ }
+      } catch (_) { }
       await getRideRequests()
       setActiveTab('requests')
     }
@@ -2117,7 +2098,8 @@ useEffect(() => {
     await getConversations(false)
     setActiveTab('chat')
   }
-async function handleCloseConversation(conversationId: number) {
+
+  async function handleCloseConversation(conversationId: number) {
     const confirmed = window.confirm('Bu çatı bağlamaq və arxivə atmaq istədiyinizə əminsiniz?');
     if (!confirmed) return;
 
@@ -2139,6 +2121,7 @@ async function handleCloseConversation(conversationId: number) {
       }
     }
   }
+
   async function handleSendMessage() {
     if (!selectedConversationId) {
       setMessage('Əvvəl chat seç.')
@@ -2179,7 +2162,6 @@ async function handleCloseConversation(conversationId: number) {
   }
 
   async function handleCreateReview() {
-   
     if (!reviewTargetRequestId) {
       setMessage('Əvvəl request seç.')
       return
@@ -2238,7 +2220,7 @@ async function handleCloseConversation(conversationId: number) {
       await getReviews()
     }
   }
-// ── SOS / TƏCİLİ YARDIM FUNKSİYASI ──
+
   async function handleSOS() {
     const confirmed = window.confirm(
       '🚨 DİQQƏT! 🚨\n\nTəhlükəli vəziyyətdəsiniz?\n\nBu düyməni təsdiqləsəniz, sistem administratoruna TƏCİLİ HƏYƏCAN (SOS) siqnalı göndəriləcək və telefonunuz avtomatik Polisə (102) zəng edəcək. Davam edilsin?'
@@ -2247,7 +2229,6 @@ async function handleCloseConversation(conversationId: number) {
 
     const current = getActiveUser();
 
-    // Adminə dərhal açıq və təcili report göndəririk
     await supabase.from('user_reports').insert({
       reporter_id: current.driverId || 0,
       target_user_id: null,
@@ -2257,12 +2238,9 @@ async function handleCloseConversation(conversationId: number) {
     });
 
     alert('SOS siqnalı adminə göndərildi!\nİndi Polisə (102) yönləndirilirsiniz...');
-    
-    // Telefonun zəng bölməsini (102) avtomatik açır
     window.location.href = 'tel:102';
   }
-  // ── Rol dəyişdirmə (sürücü ↔ sərnişin) ───────────────────────────────
-  // ── Rol dəyişdirmə (sürücü ↔ sərnişin) ───────────────────────────────
+
   async function handleCreateSupport(e: React.FormEvent) {
     e.preventDefault()
     setSupportLoading(true)
@@ -2281,7 +2259,6 @@ async function handleCloseConversation(conversationId: number) {
       return
     }
 
-    // Spam / Flood yoxlaması (Son 24 saat)
     const yesterday = new Date()
     yesterday.setHours(yesterday.getHours() - 24)
     
@@ -2317,7 +2294,6 @@ async function handleCloseConversation(conversationId: number) {
     setSupportLoading(false)
   }
 
-  // ── Rol dəyişdirmə (sürücü ↔ sərnişin) ───────────────────────────────
   async function handleSwitchRole() {
     if (!profile) {
       setMessage('Əvvəl profil yaratmaq lazımdır.')
@@ -2326,7 +2302,6 @@ async function handleCloseConversation(conversationId: number) {
 
     const newRole: UserRole = profile.role === 'driver' ? 'passenger' : 'driver'
 
-    // YENİ ƏLAVƏ: Sürücüyə keçirsə və maşın məlumatı yoxdursa, profilə yönləndir
     if (newRole === 'driver' && (!profile.car_brand || !profile.license_plate)) {
       setMessage('Sürücü olmaq üçün əvvəlcə profil bölməsində avtomobilinizin markasını və nömrəsini daxil edin.')
       setActiveTab('profile')
@@ -2421,7 +2396,7 @@ async function handleCloseConversation(conversationId: number) {
 
     setAdminLoadingId(null)
   }
-// YENİ ƏLAVƏ: İstifadəçini tamamilə silmək
+
   async function handleAdminDeleteUser(user: UserOverview) {
     const confirmed = window.confirm(`DİQQƏT! ${user.full_name || user.username} adlı istifadəçini tamamilə silmək istəyirsiniz? Bu əməliyyat geri qaytarıla bilməz!`);
     if (!confirmed) return;
@@ -2440,6 +2415,7 @@ async function handleCloseConversation(conversationId: number) {
 
     setAdminLoadingId(null);
   }
+
   async function handleAdminUpdateReport(report: UserReport) {
     setAdminLoadingId(report.id)
 
@@ -2764,83 +2740,7 @@ async function handleCloseConversation(conversationId: number) {
     setAdminLoadingId(null)
   }
 
-  const filteredRides = useMemo(() => {
-    const current = getActiveUser()
-    const text = searchText.toLowerCase().trim()
-
-    return rides.filter((ride) => {
-      const rideOrigin = (ride.origin || '').toLowerCase()
-      const rideDestination = (ride.destination || '').toLowerCase()
-      const rideNotes = (ride.notes || '').toLowerCase()
-
-      const matchesText =
-        !text || rideOrigin.includes(text) || rideDestination.includes(text) || rideNotes.includes(text)
-
-      const matchesRole = filterRole === 'all' || (ride.role || 'driver') === filterRole
-      const matchesDate = !filterDate || (ride.ride_date || '') === filterDate
-      const notMine = ride.driver_id !== current.driverId
-      
-      // Qadınlara özəl (Məxfilik)
-      const matchesWomenOnly = ride.women_only ? profile?.gender === 'female' : true
-
-      // Axtarış zamanı seçilən Cins filteri
-      const rideUserGender = driverProfilesMap[ride.driver_id]?.gender
-      const matchesSearchGender = !filterGender || rideUserGender === filterGender
-
-      return matchesText && matchesRole && matchesSearchGender && matchesDate && notMine && matchesWomenOnly && ride.status === 'active'
-    })
-  }, [rides, searchText, filterRole, filterDate, isAdmin])
-
-  const incomingRideRequests = useMemo(() => {
-    return rideRequests.filter((item) => item.owner_id === currentUser.driverId)
-  }, [rideRequests, currentUser.driverId, isAdmin])
-
-  const outgoingRideRequests = useMemo(() => {
-    return rideRequests.filter((item) => item.requester_id === currentUser.driverId)
-  }, [rideRequests, currentUser.driverId, isAdmin])
-
-  const selectedConversation =
-    conversations.find((item) => item.id === selectedConversationId) || 
-    (isAdmin ? allConversationsAdmin.find((item) => item.id === selectedConversationId) : null) || 
-    null
-
-  const selectedConversationRide = selectedConversation?.ride || null
-
-  const currentMessages = useMemo(() => {
-    if (!selectedConversationId) return []
-    return messages.filter((item) => item.conversation_id === selectedConversationId)
-  }, [messages, selectedConversationId])
-
-  const adminUsersFiltered = useMemo(() => {
-    const q = adminGlobalSearch.toLowerCase().trim()
-    if (!q) return adminUsers
-    return adminUsers.filter((user) =>
-      [String(user.id), user.full_name || '', user.username || '', user.phone || '', user.bio || '']
-        .join(' ')
-        .toLowerCase()
-        .includes(q)
-    )
-  }, [adminUsers, adminGlobalSearch])
-
-  const adminReportsFiltered = useMemo(() => {
-    const q = adminGlobalSearch.toLowerCase().trim()
-    if (!q) return adminReports
-    return adminReports.filter((report) =>
-      [
-        String(report.id),
-        String(report.target_user_id || ''),
-        String(report.reporter_id),
-        report.reason || '',
-        report.details || '',
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(q)
-    )
-  }, [adminReports, adminGlobalSearch])
-  // Telegram yüklənməyibsə loading göstər
   if (!tgReady) {
-
     return (
       <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <div style={{ textAlign: 'center', padding: 40 }}>
@@ -2852,7 +2752,6 @@ async function handleCloseConversation(conversationId: number) {
     )
   }
 
-  // Telegram-da deyilsə xəbərdarlıq göstər
   if (tgReady && !currentUser.driverId) {
     return (
       <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -2916,14 +2815,10 @@ async function handleCloseConversation(conversationId: number) {
         </div>
       </div>
 
-
-
       <div style={styles.topTabs}>
         {(isAdminMode ? [
-          // Yalnız Admin rejimində görünəcək tək tab
           { key: 'admin', label: '👑 Admin Paneli' }
         ] : [
-          // İstifadəçi rejimində görünəcək tablar
           { key: 'dashboard', label: 'Dashboard' },
           { key: 'create', label: 'Elan ver' },
           { key: 'search', label: 'Axtarış' },
@@ -2952,34 +2847,27 @@ async function handleCloseConversation(conversationId: number) {
         ))}
       </div>
 
-      {message && <div style={isAdmin ? styles.adminMessage : styles.message}>{message}</div>}
-
       {activeTab === 'dashboard' && (
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Dashboard</h2>
-
             <div style={styles.statsGrid}>
               <div style={styles.statsCard}>
                 <p style={styles.statLabel}>Aktiv elanlarım</p>
                 <p style={styles.statValue}>{myRides.length}</p>
               </div>
-
               <div style={styles.statsCard}>
                 <p style={styles.statLabel}>Tarixçədəki elanlar</p>
                 <p style={styles.statValue}>{historyRides.length}</p>
               </div>
-
              <div style={styles.statsCard}>
                 <p style={styles.statLabel}>Gələn aktiv müraciətlər</p>
                 <p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length}</p>
               </div>
-
              <div style={styles.statsCard}>
                 <p style={styles.statLabel}>Oxunmamış mesajlar</p>
                 <p style={styles.statValue}>{unreadTotal}</p>
               </div>
-
               <div style={styles.statsCard}>
                 <p style={styles.statLabel}>Reytinqim</p>
                 <p style={{ ...styles.statValue, color: '#eab308' }}>
@@ -2989,61 +2877,35 @@ async function handleCloseConversation(conversationId: number) {
             </div>
           </section>
 
-          {(true) && (
-            <section style={styles.sectionCard}>
-              <h2 style={styles.sectionTitle}>Mənim aktiv elanlarım</h2>
+          <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>Mənim aktiv elanlarım</h2>
+            {myRides.length === 0 ? (
+              <p style={styles.mutedText}>Aktiv elanın yoxdur.</p>
+            ) : (
+              <div style={styles.ridesGrid}>
+                {myRides.map((ride) => (
+                  <div key={ride.id} style={styles.myRideCard}>
+                    <div style={getRideBadgeStyle(ride.status)}>{getRideStatusLabel(ride.status)}</div>
+                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
+                    <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
+                    <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
+                    <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
+                    <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
+                    <p style={styles.infoRow}><strong>Qalan yer:</strong> {ride.seats}</p>
+                    <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
+                    {ride.notes && <p style={styles.infoRow}><strong>Qeyd:</strong> {ride.notes}</p>}
 
-              {myRides.length === 0 ? (
-                <p style={styles.mutedText}>Aktiv elanın yoxdur.</p>
-              ) : (
-                <div style={styles.ridesGrid}>
-                  {myRides.map((ride) => (
-                    <div key={ride.id} style={styles.myRideCard}>
-                      <div style={getRideBadgeStyle(ride.status)}>{getRideStatusLabel(ride.status)}</div>
-                      <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
-                      <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
-                      <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
-                      <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
-                      <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
-                      <p style={styles.infoRow}><strong>Qalan yer:</strong> {ride.seats}</p>
-                      <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
-                      {ride.notes && <p style={styles.infoRow}><strong>Qeyd:</strong> {ride.notes}</p>}
-
-                      <div style={styles.actionRow}>
-                        <button type="button" onClick={() => handleEditRide(ride)} style={styles.warningButton}>
-                          Redaktə et
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleCloseRide(ride.id)}
-                          style={styles.closeButton}
-                          disabled={rideActionLoading === ride.id}
-                        >
-                          Elanı bağla
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleCompleteRide(ride.id)}
-                          style={styles.successButton}
-                          disabled={rideActionLoading === ride.id}
-                        >
-                          Tamamlandı
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleDeleteRide(ride.id)}
-                          style={styles.dangerButton}
-                          disabled={rideActionLoading === ride.id}
-                        >
-                          Ləğv et
-                        </button>
-                      </div>
+                    <div style={styles.actionRow}>
+                      <button type="button" onClick={() => handleEditRide(ride)} style={styles.warningButton}>Redaktə et</button>
+                      <button type="button" onClick={() => void handleCloseRide(ride.id)} style={styles.closeButton} disabled={rideActionLoading === ride.id}>Elanı bağla</button>
+                      <button type="button" onClick={() => void handleCompleteRide(ride.id)} style={styles.successButton} disabled={rideActionLoading === ride.id}>Tamamlandı</button>
+                      <button type="button" onClick={() => void handleDeleteRide(ride.id)} style={styles.dangerButton} disabled={rideActionLoading === ride.id}>Ləğv et</button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </>
       )}
 
@@ -3054,7 +2916,6 @@ async function handleCloseConversation(conversationId: number) {
             <p style={styles.mutedText}>Əvvəl profil yaratmaq lazımdır.</p>
           ) : (
             <form onSubmit={handleSubmitRide} style={styles.form}>
-            {/* Sürətli ünvanlar (Elan yaratmaq üçün) */}
               {(profile?.home_address || profile?.work_address) && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
                   {profile.home_address && (
@@ -3073,92 +2934,27 @@ async function handleCloseConversation(conversationId: number) {
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Haradan</label>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    value={origin}
-                    onChange={(e) => setOrigin(e.target.value)}
-                    required
-                    style={{ ...styles.input, flex: 1 }}
-                    placeholder="Məkan adı yazın və ya xəritədən seçin"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { setLocationPickerTarget('origin'); setLocationPickerOpen(true) }}
-                    style={{ ...styles.secondaryButton, padding: '12px 14px', whiteSpace: 'nowrap' }}
-                  >
-                    🗺️ Xəritə
-                  </button>
+                  <input value={origin} onChange={(e) => setOrigin(e.target.value)} required style={{ ...styles.input, flex: 1 }} placeholder="Məkan adı yazın və ya xəritədən seçin" />
+                  <button type="button" onClick={() => { setLocationPickerTarget('origin'); setLocationPickerOpen(true) }} style={{ ...styles.secondaryButton, padding: '12px 14px', whiteSpace: 'nowrap' }}>🗺️ Xəritə</button>
                 </div>
-                {originLat && (
-                  <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>
-                    📍 {originLat.toFixed(5)}, {originLng?.toFixed(5)}
-                  </p>
-                )}
+                {originLat && <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>📍 {originLat.toFixed(5)}, {originLng?.toFixed(5)}</p>}
               </div>
 
-              {/* Yerdəyişmə (Swap) Düyməsi */}
               <div style={{ display: 'flex', justifyContent: 'center', margin: '-4px 0', position: 'relative', zIndex: 10 }}>
-                <button
-                  type="button"
-                  title="Haradan və Hara yerlərini dəyiş"
-                  onClick={() => {
-                    // Mətnlərin və koordinatların yerini dəyişirik
-                    const tOrg = origin; const tLat = originLat; const tLng = originLng;
-                    setOrigin(destination); setOriginLat(destLat); setOriginLng(destLng);
-                    setDestination(tOrg); setDestLat(tLat); setDestLng(tLng);
-                  }}
-                  style={{
-                    background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '50%',
-                    width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: 'pointer', fontSize: 18, color: '#2563eb', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                  }}
-                >
-                  ⇅
-                </button>
+                <button type="button" title="Haradan və Hara yerlərini dəyiş" onClick={() => { const tOrg = origin; const tLat = originLat; const tLng = originLng; setOrigin(destination); setOriginLat(destLat); setOriginLng(destLng); setDestination(tOrg); setDestLat(tLat); setDestLng(tLng); }} style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '50%', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#2563eb', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>⇅</button>
               </div>
 
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Hara</label>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    required
-                    style={{ ...styles.input, flex: 1 }}
-                    placeholder="Məkan adı yazın və ya xəritədən seçin"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { setLocationPickerTarget('destination'); setLocationPickerOpen(true) }}
-                    style={{ ...styles.secondaryButton, padding: '12px 14px', whiteSpace: 'nowrap' }}
-                  >
-                    🗺️ Xəritə
-                  </button>
+                  <input value={destination} onChange={(e) => setDestination(e.target.value)} required style={{ ...styles.input, flex: 1 }} placeholder="Məkan adı yazın və ya xəritədən seçin" />
+                  <button type="button" onClick={() => { setLocationPickerTarget('destination'); setLocationPickerOpen(true) }} style={{ ...styles.secondaryButton, padding: '12px 14px', whiteSpace: 'nowrap' }}>🗺️ Xəritə</button>
                 </div>
-                {destLat && (
-                  <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>
-                    📍 {destLat.toFixed(5)}, {destLng?.toFixed(5)}
-                  </p>
-                )}
+                {destLat && <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>📍 {destLat.toFixed(5)}, {destLng?.toFixed(5)}</p>}
               </div>
 
-              {/* ── LocationPicker Modal ── */}
               {locationPickerOpen && (
-                <LocationPicker
-                  title={locationPickerTarget === 'origin' ? 'Haradan — başlanğıc nöqtəsi' : 'Hara — son nöqtə'}
-                  onClose={() => setLocationPickerOpen(false)}
-                  onSelect={(lat, lng, address) => {
-                    if (locationPickerTarget === 'origin') {
-                      setOrigin(address)
-                      setOriginLat(lat)
-                      setOriginLng(lng)
-                    } else {
-                      setDestination(address)
-                      setDestLat(lat)
-                      setDestLng(lng)
-                    }
-                    setLocationPickerOpen(false)
-                  }}
-                />
+                <LocationPicker title={locationPickerTarget === 'origin' ? 'Haradan — başlanğıc nöqtəsi' : 'Hara — son nöqtə'} onClose={() => setLocationPickerOpen(false)} onSelect={(lat, lng, address) => { if (locationPickerTarget === 'origin') { setOrigin(address); setOriginLat(lat); setOriginLng(lng); } else { setDestination(address); setDestLat(lat); setDestLng(lng); } setLocationPickerOpen(false); }} />
               )}
 
               <div style={styles.twoColumnGrid}>
@@ -3204,27 +3000,14 @@ async function handleCloseConversation(conversationId: number) {
 
               {profile?.gender === 'female' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#fdf4ff', border: '1px solid #f0abfc', borderRadius: 12, marginTop: 4, marginBottom: 14 }}>
-                  <input 
-                    type="checkbox" 
-                    id="womenOnly" 
-                    checked={womenOnly} 
-                    onChange={(e) => setWomenOnly(e.target.checked)} 
-                    style={{ width: 18, height: 18, accentColor: '#d946ef', cursor: 'pointer' }} 
-                  />
-                  <label htmlFor="womenOnly" style={{ fontSize: 14, fontWeight: 700, color: '#a21caf', cursor: 'pointer', margin: 0 }}>
-                    🌸 Yalnız qadınlar üçün (Kişilər bu elanı axtarışda görə bilməyəcək)
-                  </label>
+                  <input type="checkbox" id="womenOnly" checked={womenOnly} onChange={(e) => setWomenOnly(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#d946ef', cursor: 'pointer' }} />
+                  <label htmlFor="womenOnly" style={{ fontSize: 14, fontWeight: 700, color: '#a21caf', cursor: 'pointer', margin: 0 }}>🌸 Yalnız qadınlar üçün (Kişilər bu elanı axtarışda görə bilməyəcək)</label>
                 </div>
               )}
 
               <div style={styles.buttonRow}>
-                <button type="submit" disabled={submitting} style={styles.primaryButton}>
-                  {submitting ? 'Göndərilir...' : editingRideId ? 'Yenilə' : 'Elanı əlavə et'}
-                </button>
-
-                <button type="button" onClick={resetRideForm} style={styles.cancelButton}>
-                  Formu təmizlə
-                </button>
+                <button type="submit" disabled={submitting} style={styles.primaryButton}>{submitting ? 'Göndərilir...' : editingRideId ? 'Yenilə' : 'Elanı əlavə et'}</button>
+                <button type="button" onClick={resetRideForm} style={styles.cancelButton}>Formu təmizlə</button>
               </div>
             </form>
           )}
@@ -3235,19 +3018,12 @@ async function handleCloseConversation(conversationId: number) {
         <>
          <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Axtarış</h2>
-
             <div style={styles.form}>
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Axtarış</label>
-                <input
-                  placeholder="Haradan, hara və ya qeyd üzrə axtar"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  style={styles.input}
-                />
+                <input placeholder="Haradan, hara və ya qeyd üzrə axtar" value={searchText} onChange={(e) => setSearchText(e.target.value)} style={styles.input} />
               </div>
 
-              {/* Sürətli ünvanlar (Axtarış üçün) */}
               {(profile?.home_address || profile?.work_address) && (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {profile.home_address && (
@@ -3285,29 +3061,14 @@ async function handleCloseConversation(conversationId: number) {
               </div>
 
               <div style={styles.buttonRow}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchText('')
-                    setFilterRole('all')
-                    setFilterGender('')
-                    setFilterDate('')
-                  }}
-                  style={styles.secondaryButton}
-                >
-                  Filteri sıfırla
-                </button>
-
-                <button type="button" onClick={() => void initializeData()} style={styles.ghostButton}>
-                  Yenilə
-                </button>
+                <button type="button" onClick={() => { setSearchText(''); setFilterRole('all'); setFilterGender(''); setFilterDate(''); }} style={styles.secondaryButton}>Filteri sıfırla</button>
+                <button type="button" onClick={() => void initializeData()} style={styles.ghostButton}>Yenilə</button>
               </div>
             </div>
           </section>
 
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Aktiv elanlar</h2>
-
             {loading ? (
               <p style={styles.mutedText}>Yüklənir...</p>
             ) : filteredRides.length === 0 ? (
@@ -3315,13 +3076,7 @@ async function handleCloseConversation(conversationId: number) {
                   <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
                   <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
                   <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
-                  <button 
-                    type="button" 
-                    onClick={() => setActiveTab('create')} 
-                    style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
-                  >
-                    🚀 İlk Elanı Sən Yarat!
-                  </button>
+                  <button type="button" onClick={() => setActiveTab('create')} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
                 </div>
               ) : (
                 <div style={styles.ridesGrid}>
@@ -3349,46 +3104,16 @@ async function handleCloseConversation(conversationId: number) {
 
                     <div style={styles.fieldWrap}>
                       <label style={styles.label}>Müraciət mesajı</label>
-                      <textarea
-                        rows={2}
-                        value={requestMessageMap[ride.id] || ''}
-                        onChange={(e) =>
-                          setRequestMessageMap((prev) => ({
-                            ...prev,
-                            [ride.id]: e.target.value,
-                          }))
-                        }
-                        style={styles.textarea}
-                        placeholder="Qısa mesaj yaz"
-                      />
+                      <textarea rows={2} value={requestMessageMap[ride.id] || ''} onChange={(e) => setRequestMessageMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.textarea} placeholder="Qısa mesaj yaz" />
                     </div>
 
                     <div style={styles.fieldWrap}>
                       <label style={styles.label}>Neçə yer / nəfər</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max={ride.seats}
-                        value={requestSeatsMap[ride.id] || '1'}
-                        onChange={(e) =>
-                          setRequestSeatsMap((prev) => ({
-                            ...prev,
-                            [ride.id]: e.target.value,
-                          }))
-                        }
-                        style={styles.input}
-                      />
+                      <input type="number" min="1" max={ride.seats} value={requestSeatsMap[ride.id] || '1'} onChange={(e) => setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.input} />
                     </div>
 
                     <div style={styles.actionRow}>
-                      <button
-                        type="button"
-                        onClick={() => void handleCreateRideRequest(ride)}
-                        style={styles.primaryButton}
-                        disabled={rideRequestLoading === ride.id}
-                      >
-                        {rideRequestLoading === ride.id ? 'Göndərilir...' : 'Müraciət et'}
-                      </button>
+                      <button type="button" onClick={() => void handleCreateRideRequest(ride)} style={styles.primaryButton} disabled={rideRequestLoading === ride.id}>{rideRequestLoading === ride.id ? 'Göndərilir...' : 'Müraciət et'}</button>
                     </div>
                   </div>
                 ))}
@@ -3401,80 +3126,35 @@ async function handleCloseConversation(conversationId: number) {
       {activeTab === 'requests' && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Müraciətlər</h2>
-
-          {/* --- SƏVİYYƏ 1: GƏLƏNLƏR VƏ GÖNDƏRİLƏNLƏR TABLARI --- */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => { setReqView('incoming'); setReqStatus('active'); }}
-              style={reqView === 'incoming' ? styles.primaryButton : styles.ghostButton}
-            >
-              📥 Gələnlər ({incomingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})
-            </button>
-            <button
-              type="button"
-              onClick={() => { setReqView('outgoing'); setReqStatus('active'); }}
-              style={reqView === 'outgoing' ? styles.primaryButton : styles.ghostButton}
-            >
-              📤 Göndərdiklərim ({outgoingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})
-            </button>
+            <button type="button" onClick={() => { setReqView('incoming'); setReqStatus('active'); }} style={reqView === 'incoming' ? styles.primaryButton : styles.ghostButton}>📥 Gələnlər ({incomingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})</button>
+            <button type="button" onClick={() => { setReqView('outgoing'); setReqStatus('active'); }} style={reqView === 'outgoing' ? styles.primaryButton : styles.ghostButton}>📤 Göndərdiklərim ({outgoingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})</button>
           </div>
-
-          {/* --- SƏVİYYƏ 2: AKTİV VƏ ARXİV TABLARI --- */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
-            <button
-              type="button"
-              onClick={() => setReqStatus('active')}
-              style={reqStatus === 'active' ? styles.chipActive : styles.chip}
-            >
-              🟢 Aktiv
-            </button>
-            <button
-              type="button"
-              onClick={() => setReqStatus('archived')}
-              style={reqStatus === 'archived' ? styles.chipActive : styles.chip}
-            >
-              🗄️ Arxiv
-            </button>
+            <button type="button" onClick={() => setReqStatus('active')} style={reqStatus === 'active' ? styles.chipActive : styles.chip}>🟢 Aktiv</button>
+            <button type="button" onClick={() => setReqStatus('archived')} style={reqStatus === 'archived' ? styles.chipActive : styles.chip}>🗄️ Arxiv</button>
           </div>
-
-          {/* --- MƏLUMATLARIN (KARTLARIN) GÖSTƏRİLMƏSİ --- */}
           <div style={styles.ridesGrid}>
             {(() => {
-              // Hazırkı müraciət siyahısını təyin edirik
               const currentList = reqView === 'incoming' ? incomingRideRequests : outgoingRideRequests;
-              
-              // Müraciətin "Aktiv" olub-olmadığını yoxlayan məntiq
               const isReqActive = (req: any) => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active');
-              
-              // Siyahını filterdən keçiririk
               const filteredList = currentList.filter(req => reqStatus === 'active' ? isReqActive(req) : !isReqActive(req));
-
-              // Əgər siyahı boşdursa
               if (filteredList.length === 0) {
                 return (
                   <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 10px', background: '#f8fafc', borderRadius: 16, border: '1px dashed #cbd5e1' }}>
                     <span style={{ fontSize: 40 }}>{reqStatus === 'active' ? '📬' : '🗄️'}</span>
-                    <p style={{ ...styles.mutedText, marginTop: 12, fontWeight: 600 }}>
-                      {reqStatus === 'active' ? 'Göstəriləcək aktiv müraciət yoxdur.' : 'Arxiv boşdur.'}
-                    </p>
+                    <p style={{ ...styles.mutedText, marginTop: 12, fontWeight: 600 }}>{reqStatus === 'active' ? 'Göstəriləcək aktiv müraciət yoxdur.' : 'Arxiv boşdur.'}</p>
                   </div>
                 );
               }
-
-              // Siyahı dolu isə kartları çəkirik
               return filteredList.map((item) => (
                 <div key={item.id} style={{ ...styles.resultCard, opacity: reqStatus === 'archived' ? 0.65 : 1 }}>
                   <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
-                  <p style={styles.infoRow}>
-                    <strong>Rol:</strong> {getRoleLabel(reqView === 'incoming' ? item.requester_role : item.owner_role)}
-                  </p>
+                  <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(reqView === 'incoming' ? item.requester_role : item.owner_role)}</p>
                   <p style={styles.infoRow}><strong>İstənən yer:</strong> {item.seats_requested}</p>
                   {item.message_text && <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text}</p>}
                   {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
                   <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
-
-                  {/* DÜYMƏLƏR - YALNIZ "GƏLƏNLƏR" VƏ "AKTİV" BÖLMƏSİNDƏ GÖRÜNÜR */}
                   {reqView === 'incoming' && reqStatus === 'active' && (
                     <>
                       {item.status === 'pending' && item.ride?.status === 'active' && (
@@ -3496,36 +3176,16 @@ async function handleCloseConversation(conversationId: number) {
           </div>
         </section>
       )}
+
       {activeTab === 'chat' && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Chat</h2>
-
           <div style={styles.chatLayout}>
             <div>
-              {/* YENİ: Üzən Filtr Düymələri */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                <button 
-                  onClick={() => {
-                    setChatFilter('active');
-                    const firstActive = conversations.find(c => c.status !== 'closed');
-                    setSelectedConversationId(firstActive ? firstActive.id : null);
-                  }} 
-                  style={chatFilter === 'active' ? styles.chipActive : styles.chip}
-                >
-                  🟢 Aktiv ({conversations.filter(c => c.status !== 'closed').length})
-                </button>
-                <button 
-                  onClick={() => {
-                    setChatFilter('closed');
-                    const firstClosed = conversations.find(c => c.status === 'closed');
-                    setSelectedConversationId(firstClosed ? firstClosed.id : null);
-                  }} 
-                  style={chatFilter === 'closed' ? styles.chipActive : styles.chip}
-                >
-                  🗄️ Arxiv ({conversations.filter(c => c.status === 'closed').length})
-                </button>
+                <button onClick={() => { setChatFilter('active'); const firstActive = conversations.find(c => c.status !== 'closed'); setSelectedConversationId(firstActive ? firstActive.id : null); }} style={chatFilter === 'active' ? styles.chipActive : styles.chip}>🟢 Aktiv ({conversations.filter(c => c.status !== 'closed').length})</button>
+                <button onClick={() => { setChatFilter('closed'); const firstClosed = conversations.find(c => c.status === 'closed'); setSelectedConversationId(firstClosed ? firstClosed.id : null); }} style={chatFilter === 'closed' ? styles.chipActive : styles.chip}>🗄️ Arxiv ({conversations.filter(c => c.status === 'closed').length})</button>
               </div>
-
               <div style={styles.conversationList}>
                 {conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').length === 0 ? (
                   <p style={styles.mutedText}>{chatFilter === 'active' ? 'Aktiv chat yoxdur.' : 'Arxiv boşdur.'}</p>
@@ -3533,15 +3193,9 @@ async function handleCloseConversation(conversationId: number) {
                   conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').map((conv) => {
                     const ride = conv.ride
                     return (
-                      <div
-                        key={conv.id}
-                        style={{ ...(selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard), opacity: chatFilter === 'closed' ? 0.6 : 1 }}
-                        onClick={() => void handleOpenConversation(conv.id)}
-                      >
+                      <div key={conv.id} style={{ ...(selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard), opacity: chatFilter === 'closed' ? 0.6 : 1 }} onClick={() => void handleOpenConversation(conv.id)}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                          <div style={chatFilter === 'closed' ? {...styles.badge, background: '#e2e8f0', color: '#64748b'} : styles.badge}>
-                            {chatFilter === 'closed' ? 'Bağlı' : 'Chat'} #{conv.id}
-                          </div>
+                          <div style={chatFilter === 'closed' ? {...styles.badge, background: '#e2e8f0', color: '#64748b'} : styles.badge}>{chatFilter === 'closed' ? 'Bağlı' : 'Chat'} #{conv.id}</div>
                           {conv.unread_count && chatFilter === 'active' ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
                         </div>
                         <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}</p>
@@ -3552,107 +3206,54 @@ async function handleCloseConversation(conversationId: number) {
                 )}
               </div>
             </div>
-
             <div style={styles.chatPanel}>
               {(!selectedConversation || (chatFilter === 'active' ? selectedConversation.status === 'closed' : selectedConversation.status !== 'closed')) ? (
-                <div style={{ textAlign: 'center', marginTop: 40 }}>
-                  <span style={{ fontSize: 40 }}>💬</span>
-                  <p style={{ ...styles.mutedText, marginTop: 12 }}>
-                    {chatFilter === 'active' ? 'Göstəriləcək aktiv çat yoxdur.' : 'Göstəriləcək arxiv çat yoxdur.'}
-                  </p>
-                </div>
+                <div style={{ textAlign: 'center', marginTop: 40 }}><span style={{ fontSize: 40 }}>💬</span><p style={{ ...styles.mutedText, marginTop: 12 }}>{chatFilter === 'active' ? 'Göstəriləcək aktiv çat yoxdur.' : 'Göstəriləcək arxiv çat yoxdur.'}</p></div>
               ) : (
                 <>
                   <div style={styles.resultCard}>
                     <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
-                    <p style={styles.infoRow}>
-                      <strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}
-                    </p>
-                    <p style={styles.infoRow}>
-                      <strong>Tarix/Saat:</strong> {selectedConversationRide ? `${selectedConversationRide.ride_date || '-'} / ${selectedConversationRide.departure_time}` : '-'}
-                    </p>
-                    <p style={styles.infoRow}>
-                      <strong>Qiymət:</strong> {selectedConversationRide ? `${selectedConversationRide.price_per_seat} AZN` : '-'}
-                    </p>
-                    <p style={styles.infoRow}>
-                      <strong>Status:</strong> {selectedConversation.status === 'closed' ? 'Arxivlənib (Bağlı)' : selectedConversation.status}
-                    </p>
+                    <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
+                    <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {selectedConversationRide ? `${selectedConversationRide.ride_date || '-'} / ${selectedConversationRide.departure_time}` : '-'}</p>
+                    <p style={styles.infoRow}><strong>Qiymət:</strong> {selectedConversationRide ? `${selectedConversationRide.price_per_seat} AZN` : '-'}</p>
+                    <p style={styles.infoRow}><strong>Status:</strong> {selectedConversation.status === 'closed' ? 'Arxivlənib (Bağlı)' : selectedConversation.status}</p>
                     {selectedConversation.status !== 'closed' && (
                       <div style={{ marginTop: 10 }}>
-                        <button 
-                          type="button" 
-                          onClick={() => void handleCloseConversation(selectedConversation.id)} 
-                          style={styles.dangerButton}
-                        >
-                          🔒 Çatı Bağla
-                        </button>
+                        <button type="button" onClick={() => void handleCloseConversation(selectedConversation.id)} style={styles.dangerButton}>🔒 Çatı Bağla</button>
                       </div>
                     )}
                   </div>
-
                   <div style={{ height: 12 }} />
-
-                  {/* ── Canlı Xəritə — yalnız aktiv elanda VƏ aktiv çatda ── */}
                   {selectedConversationRide?.status === 'active' && selectedConversation.status !== 'closed' && (
-                    <LiveMap
-                      conversationId={selectedConversation.id}
-                      currentUserId={currentUser.driverId}
-                      isDriver={profile?.role === 'driver'}
-                      otherUserId={
-                        currentUser.driverId === selectedConversation.driver_user_id
-                          ? selectedConversation.passenger_user_id
-                          : selectedConversation.driver_user_id
-                      }
-                    />
+                    <LiveMap conversationId={selectedConversation.id} currentUserId={currentUser.driverId} isDriver={profile?.role === 'driver'} otherUserId={ currentUser.driverId === selectedConversation.driver_user_id ? selectedConversation.passenger_user_id : selectedConversation.driver_user_id } />
                   )}
-
                   <div style={styles.messageList}>
                     {currentMessages.length === 0 ? (
                       <p style={styles.mutedText}>Hələ mesaj yoxdur.</p>
                     ) : (
                       currentMessages.map((msg) => {
                         const isMine = msg.sender_id === currentUser.driverId
-
                         return (
                           <div key={msg.id} style={isMine ? styles.myMessage : styles.otherMessage}>
                             <div>{msg.message_text}</div>
-                            <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8 }}>
-                              {formatDateTime(msg.created_at)}
-                            </div>
+                            <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8 }}>{formatDateTime(msg.created_at)}</div>
                           </div>
                         )
                       })
                     )}
                   </div>
-
                   {selectedConversation.status !== 'closed' ? (
                     <>
                       <div style={styles.fieldWrap}>
                         <label style={styles.label}>Mesaj</label>
-                        <textarea
-                          rows={3}
-                          value={chatInput}
-                          onChange={(e) => setChatInput(e.target.value)}
-                          style={styles.textarea}
-                          placeholder="Mesaj yaz..."
-                        />
+                        <textarea rows={3} value={chatInput} onChange={(e) => setChatInput(e.target.value)} style={styles.textarea} placeholder="Mesaj yaz..." />
                       </div>
-
                       <div style={styles.actionRow}>
-                        <button
-                          type="button"
-                          onClick={() => void handleSendMessage()}
-                          style={styles.primaryButton}
-                          disabled={messageSending}
-                        >
-                          {messageSending ? 'Göndərilir...' : 'Göndər'}
-                        </button>
+                        <button type="button" onClick={() => void handleSendMessage()} style={styles.primaryButton} disabled={messageSending}>{messageSending ? 'Göndərilir...' : 'Göndər'}</button>
                       </div>
                     </>
                   ) : (
-                    <div style={{ marginTop: 16, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}>
-                      <p style={{ margin: 0, fontWeight: 700, color: '#64748b' }}>🔒 Bu çat bağlanıb. Artıq mesaj yazmaq və məkan paylaşmaq mümkün deyil.</p>
-                    </div>
+                    <div style={{ marginTop: 16, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}><p style={{ margin: 0, fontWeight: 700, color: '#64748b' }}>🔒 Bu çat bağlanıb. Artıq mesaj yazmaq və məkan paylaşmaq mümkün deyil.</p></div>
                   )}
                 </>
               )}
@@ -3668,32 +3269,23 @@ async function handleCloseConversation(conversationId: number) {
             <div style={styles.form}>
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Təsdiqlənmiş müraciət seç</label>
-                <select
-                  value={reviewTargetRequestId ?? ''}
-                  onChange={(e) => setReviewTargetRequestId(e.target.value ? Number(e.target.value) : null)}
-                  style={styles.select}
-                >
+                <select value={reviewTargetRequestId ?? ''} onChange={(e) => setReviewTargetRequestId(e.target.value ? Number(e.target.value) : null)} style={styles.select}>
                   <option value="">Seç</option>
                   {rideRequests.filter((item) => item.status === 'accepted').map((item) => (
-                    <option key={item.id} value={item.id}>
-                      #{item.id} - {item.ride?.origin || '-'} → {item.ride?.destination || '-'}
-                    </option>
+                    <option key={item.id} value={item.id}>#{item.id} - {item.ride?.origin || '-'} → {item.ride?.destination || '-'}</option>
                   ))}
                 </select>
               </div>
-
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Reytinq (1-5)</label>
                 <select value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} style={styles.select}>
                   <option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
                 </select>
               </div>
-
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Rəy (Gizli qalacaq)</label>
                 <textarea rows={3} value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={styles.textarea} placeholder="Səfər barədə fikirlərini yaz..." />
               </div>
-
               <div style={styles.actionRow}>
                 <button type="button" onClick={() => void handleCreateReview()} style={styles.primaryButton}>Review göndər</button>
               </div>
@@ -3702,7 +3294,6 @@ async function handleCloseConversation(conversationId: number) {
 
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Elan tarixçəsi</h2>
-
             {historyRides.length === 0 ? (
               <p style={styles.mutedText}>Tarixçədə elan yoxdur.</p>
             ) : (
@@ -3730,36 +3321,17 @@ async function handleCloseConversation(conversationId: number) {
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Dəstək və Əlaqə</h2>
           <p style={styles.mutedText}>Təklif, istək və ya şikayətlərinizi bizə göndərin. Müraciətləriniz birbaşa adminə çatdırılacaq.</p>
-          
           <form onSubmit={handleCreateSupport} style={styles.form}>
             <div style={styles.fieldWrap}>
               <label style={styles.label}>E-poçt (Email) ünvanınız</label>
-              <input
-                type="email"
-                required
-                value={supportEmail}
-                onChange={(e) => setSupportEmail(e.target.value)}
-                style={styles.input}
-                placeholder="Məs: adiniz@mail.com"
-              />
+              <input type="email" required value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} style={styles.input} placeholder="Məs: adiniz@mail.com" />
             </div>
-
             <div style={styles.fieldWrap}>
               <label style={styles.label}>Müraciətiniz (Təklif, Şikayət və s.)</label>
-              <textarea
-                rows={4}
-                required
-                value={supportMessage}
-                onChange={(e) => setSupportMessage(e.target.value)}
-                style={styles.textarea}
-                placeholder="Mesajınızı buraya yazın..."
-              />
+              <textarea rows={4} required value={supportMessage} onChange={(e) => setSupportMessage(e.target.value)} style={styles.textarea} placeholder="Mesajınızı buraya yazın..." />
             </div>
-
             <div style={styles.actionRow}>
-              <button type="submit" disabled={supportLoading} style={styles.primaryButton}>
-                {supportLoading ? 'Göndərilir...' : 'Göndər'}
-              </button>
+              <button type="submit" disabled={supportLoading} style={styles.primaryButton}>{supportLoading ? 'Göndərilir...' : 'Göndər'}</button>
             </div>
           </form>
         </section>
@@ -3769,134 +3341,88 @@ async function handleCloseConversation(conversationId: number) {
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>{profile ? 'Profil idarəetməsi' : 'Profil yarat'}</h2>
 
-          {/* ── Rol dəyişdirmə kartı ── */}
           {profile && (
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '16px 18px', marginBottom: 18,
-              background: profile.role === 'driver' ? '#eff6ff' : '#f0fdf4',
-              border: `1px solid ${profile.role === 'driver' ? '#bfdbfe' : '#bbf7d0'}`,
-              borderRadius: 14,
-            }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', marginBottom: 18, background: profile.role === 'driver' ? '#eff6ff' : '#f0fdf4', border: `1px solid ${profile.role === 'driver' ? '#bfdbfe' : '#bbf7d0'}`, borderRadius: 14, }}>
               <div>
-                <p style={{ margin: 0, fontWeight: 800, fontSize: 16 }}>
-                  {profile.role === 'driver' ? '🚗 Sürücü rejimi' : '🧑‍✈️ Sərnişin rejimi'}
-                </p>
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>
-                  {profile.role === 'driver'
-                    ? 'Sən hal-hazırda elan verib sərnişin götürürsən'
-                    : 'Sən hal-hazırda sürücü axtarırsın'}
-                </p>
+                <p style={{ margin: 0, fontWeight: 800, fontSize: 16 }}>{profile.role === 'driver' ? '🚗 Sürücü rejimi' : '🧑‍✈️ Sərnişin rejimi'}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>{profile.role === 'driver' ? 'Sən hal-hazırda elan verib sərnişin götürürsən' : 'Sən hal-hazırda sürücü axtarırsın'}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => void handleSwitchRole()}
-                style={{
-                  padding: '10px 16px',
-                  background: profile.role === 'driver' ? '#16a34a' : '#2563eb',
-                  color: '#fff', border: 'none', borderRadius: 10,
-                  cursor: 'pointer', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap',
-                }}
-              >
-                {profile.role === 'driver' ? '→ Sərnişinə keç' : '→ Sürücüyə keç'}
-              </button>
+              <button type="button" onClick={() => void handleSwitchRole()} style={{ padding: '10px 16px', background: profile.role === 'driver' ? '#16a34a' : '#2563eb', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', }}>{profile.role === 'driver' ? '→ Sərnişinə keç' : '→ Sürücüyə keç'}</button>
             </div>
           )}
 
-          {false ? (
-            <p style={styles.mutedText}>Admin user üçün profil formu istifadə edilmir.</p>
-          ) : (
-            <form onSubmit={handleCreateOrUpdateProfile} style={styles.form}>
+          <form onSubmit={handleCreateOrUpdateProfile} style={styles.form}>
+            <div style={styles.fieldWrap}>
+              <label style={styles.label}>Ad soyad</label>
+              <input value={profileFullName} onChange={(e) => setProfileFullName(e.target.value)} style={styles.input} />
+            </div>
+            <div style={styles.twoColumnGrid}>
               <div style={styles.fieldWrap}>
-                <label style={styles.label}>Ad soyad</label>
-                <input value={profileFullName} onChange={(e) => setProfileFullName(e.target.value)} style={styles.input} />
+                <label style={styles.label}>Username</label>
+                <input value={profileUsername} onChange={(e) => setProfileUsername(e.target.value)} style={styles.input} />
               </div>
-
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Telefon</label>
+                <input type="tel" value={profilePhone} onChange={handlePhoneChange} style={{ ...styles.input, letterSpacing: '1px', fontWeight: 600, color: '#1e293b' }} placeholder="+994 50 123 45 67" required />
+              </div>
+            </div>
+            <div style={styles.twoColumnGrid}>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Cins</label>
+                <select value={profileGender} onChange={(e) => setProfileGender(e.target.value as 'male' | 'female')} style={styles.select}>
+                  <option value="male">Kişi</option>
+                  <option value="female">Qadın</option>
+                </select>
+              </div>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Bio</label>
+                <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={1} style={styles.textarea} placeholder="Özünüz haqqında qısa..." />
+              </div>
+            </div>
+            <div style={{ marginTop: 10, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+              <p style={{ margin: '0 0 12px', fontWeight: 700, color: '#334155' }}>📍 Sürətli Ünvanlarım (Axtarış və elan üçün)</p>
               <div style={styles.twoColumnGrid}>
                 <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Username</label>
-                  <input value={profileUsername} onChange={(e) => setProfileUsername(e.target.value)} style={styles.input} />
+                  <label style={styles.label}>🏠 Ev ünvanı</label>
+                  <input value={profileHomeAddress} onChange={(e) => setProfileHomeAddress(e.target.value)} style={styles.input} placeholder="Məs: 20 Yanvar metrosu" />
                 </div>
-
                 <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Telefon</label>
-                  <input 
-                    type="tel"
-                    value={profilePhone} 
-                    onChange={handlePhoneChange} 
-                    style={{ ...styles.input, letterSpacing: '1px', fontWeight: 600, color: '#1e293b' }} 
-                    placeholder="+994 50 123 45 67"
-                    required 
-                  />
+                  <label style={styles.label}>💼 İş/Universitet ünvanı</label>
+                  <input value={profileWorkAddress} onChange={(e) => setProfileWorkAddress(e.target.value)} style={styles.input} placeholder="Məs: Gənclik Mall" />
                 </div>
               </div>
-
+            </div>
+            {!profile ? (
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>İlkin rol</label>
+                <select value={initialRole} onChange={(e) => setInitialRole(e.target.value as UserRole)} style={styles.select}>
+                  <option value="driver">Sürücü</option>
+                  <option value="passenger">Sərnişin</option>
+                </select>
+              </div>
+            ) : (
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Aktiv rol</label>
+                <input value={getRoleLabel(profile.role)} readOnly style={styles.input} />
+              </div>
+            )}
+            <div style={{ marginTop: 10, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+              <p style={{ margin: '0 0 12px', fontWeight: 700, color: '#334155' }}>🚗 Sürücü Məlumatları (Sürücü roluna keçmək istəyənlər üçün məcburidir)</p>
               <div style={styles.twoColumnGrid}>
                 <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Cins</label>
-                  <select value={profileGender} onChange={(e) => setProfileGender(e.target.value as 'male' | 'female')} style={styles.select}>
-                    <option value="male">Kişi</option>
-                    <option value="female">Qadın</option>
-                  </select>
+                  <label style={styles.label}>Avtomobil markası</label>
+                  <input value={carBrand} onChange={(e) => setCarBrand(e.target.value)} style={styles.input} placeholder="Məs: Toyota Prius" />
                 </div>
                 <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Bio</label>
-                  <textarea value={profileBio} onChange={(e) => setProfileBio(e.target.value)} rows={1} style={styles.textarea} placeholder="Özünüz haqqında qısa..." />
+                  <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
+                  <input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} style={styles.input} placeholder="Məs: 99-XX-999" />
                 </div>
               </div>
-
-              <div style={{ marginTop: 10, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                <p style={{ margin: '0 0 12px', fontWeight: 700, color: '#334155' }}>📍 Sürətli Ünvanlarım (Axtarış və elan üçün)</p>
-                <div style={styles.twoColumnGrid}>
-                  <div style={styles.fieldWrap}>
-                    <label style={styles.label}>🏠 Ev ünvanı</label>
-                    <input value={profileHomeAddress} onChange={(e) => setProfileHomeAddress(e.target.value)} style={styles.input} placeholder="Məs: 20 Yanvar metrosu" />
-                  </div>
-                  <div style={styles.fieldWrap}>
-                    <label style={styles.label}>💼 İş/Universitet ünvanı</label>
-                    <input value={profileWorkAddress} onChange={(e) => setProfileWorkAddress(e.target.value)} style={styles.input} placeholder="Məs: Gənclik Mall" />
-                  </div>
-                </div>
-              </div>
-
-              {!profile ? (
-                <div style={styles.fieldWrap}>
-                  <label style={styles.label}>İlkin rol</label>
-                  <select value={initialRole} onChange={(e) => setInitialRole(e.target.value as UserRole)} style={styles.select}>
-                    <option value="driver">Sürücü</option>
-                    <option value="passenger">Sərnişin</option>
-                  </select>
-                </div>
-              ) : (
-                <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Aktiv rol</label>
-                  <input value={getRoleLabel(profile.role)} readOnly style={styles.input} />
-                </div>
-              )}
-
-              {/* Avtomobil məlumatları hər kəsə açıqdır ki, sərnişin rahatlıqla maşınını yazıb sürücü ola bilsin */}
-              <div style={{ marginTop: 10, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-                <p style={{ margin: '0 0 12px', fontWeight: 700, color: '#334155' }}>🚗 Sürücü Məlumatları (Sürücü roluna keçmək istəyənlər üçün məcburidir)</p>
-                <div style={styles.twoColumnGrid}>
-                  <div style={styles.fieldWrap}>
-                    <label style={styles.label}>Avtomobil markası</label>
-                    <input value={carBrand} onChange={(e) => setCarBrand(e.target.value)} style={styles.input} placeholder="Məs: Toyota Prius" />
-                  </div>
-
-                  <div style={styles.fieldWrap}>
-                    <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
-                    <input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} style={styles.input} placeholder="Məs: 99-XX-999" />
-                  </div>
-                </div>
-              </div>
-
-              <div style={styles.buttonRow}>
-                <button type="submit" disabled={profileSaving} style={styles.primaryButton}>
-                  {profileSaving ? 'Yadda saxlanılır...' : profile ? 'Profili yenilə' : 'Profili yarat'}
-                </button>
-              </div>
-            </form>
-          )}
+            </div>
+            <div style={styles.buttonRow}>
+              <button type="submit" disabled={profileSaving} style={styles.primaryButton}>{profileSaving ? 'Yadda saxlanılır...' : profile ? 'Profili yenilə' : 'Profili yarat'}</button>
+            </div>
+          </form>
         </section>
       )}
 
@@ -3904,7 +3430,6 @@ async function handleCloseConversation(conversationId: number) {
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Admin panel</h2>
-
             <div style={styles.chipRow}>
               {[
                 { key: 'overview', label: 'Overview' },
@@ -3917,61 +3442,36 @@ async function handleCloseConversation(conversationId: number) {
                 { key: 'reports', label: 'Reports' },
                 { key: 'audit', label: 'Audit' },
               ].map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => setAdminSection(item.key as AdminSection)}
-                  style={adminSection === item.key ? styles.chipAdmin : styles.chip}
-                >
-                  {item.label}
-                </button>
+                <button key={item.key} type="button" onClick={() => setAdminSection(item.key as AdminSection)} style={adminSection === item.key ? styles.chipAdmin : styles.chip}>{item.label}</button>
               ))}
             </div>
-
             <div style={styles.fieldWrap}>
               <label style={styles.label}>Admin search</label>
-              <input
-                value={adminGlobalSearch}
-                onChange={(e) => setAdminGlobalSearch(e.target.value)}
-                style={styles.input}
-                placeholder="User, report, id, səbəb..."
-              />
+              <input value={adminGlobalSearch} onChange={(e) => setAdminGlobalSearch(e.target.value)} style={styles.input} placeholder="User, report, id, səbəb..." />
             </div>
           </section>
 
           {adminSection === 'overview' && (
             <section style={styles.sectionCard}>
               <h2 style={styles.sectionTitle}>Overview</h2>
-
-              {/* ── Kritik göstəricilər (rəngli xəbərdarlıqlar) ── */}
               <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px,1fr))', marginBottom: 20 }}>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #dc2626', background: adminReports.filter(r => r.status === 'open').length > 0 ? '#fff5f5' : '#faf5ff' }}>
                   <p style={styles.statLabel}>🔴 Açıq reportlar</p>
-                  <p style={{ ...styles.statValue, color: adminReports.filter(r => r.status === 'open').length > 0 ? '#dc2626' : '#0f172a' }}>
-                    {adminReports.filter(r => r.status === 'open').length}
-                  </p>
+                  <p style={{ ...styles.statValue, color: adminReports.filter(r => r.status === 'open').length > 0 ? '#dc2626' : '#0f172a' }}>{adminReports.filter(r => r.status === 'open').length}</p>
                 </div>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #f59e0b' }}>
                   <p style={styles.statLabel}>🔒 Bloklanmış</p>
-                  <p style={{ ...styles.statValue, color: '#f59e0b' }}>
-                    {adminUsers.filter(u => u.is_blocked).length}
-                  </p>
+                  <p style={{ ...styles.statValue, color: '#f59e0b' }}>{adminUsers.filter(u => u.is_blocked).length}</p>
                 </div>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #2563eb' }}>
                   <p style={styles.statLabel}>🚗 Aktiv elanlar</p>
-                  <p style={{ ...styles.statValue, color: '#2563eb' }}>
-                    {allRidesAdmin.filter(r => r.status === 'active').length}
-                  </p>
+                  <p style={{ ...styles.statValue, color: '#2563eb' }}>{allRidesAdmin.filter(r => r.status === 'active').length}</p>
                 </div>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #7c3aed' }}>
                   <p style={styles.statLabel}>⏳ Gözləyən müraciətlər</p>
-                  <p style={{ ...styles.statValue, color: '#7c3aed' }}>
-                    {allRideRequestsAdmin.filter(r => r.status === 'pending').length}
-                  </p>
+                  <p style={{ ...styles.statValue, color: '#7c3aed' }}>{allRideRequestsAdmin.filter(r => r.status === 'pending').length}</p>
                 </div>
               </div>
-
-              {/* ── Ümumi statistika progress bar ilə ── */}
               <div style={styles.statsGrid}>
                 {[
                   { label: 'Cəmi İstifadəçi', value: adminUsers.length, color: '#2563eb' },
@@ -3985,64 +3485,32 @@ async function handleCloseConversation(conversationId: number) {
                     <p style={styles.statLabel}>{item.label}</p>
                     <p style={{ ...styles.statValue, color: item.color }}>{item.value}</p>
                     <div style={{ marginTop: 8, height: 5, borderRadius: 4, background: '#e2e8f0' }}>
-                      <div style={{
-                        height: '100%',
-                        borderRadius: 4,
-                        background: item.color,
-                        width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`,
-                        transition: 'width 0.6s ease',
-                      }} />
+                      <div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} />
                     </div>
                   </div>
                 ))}
               </div>
-
-              {/* ── Sürətli hərəkət düymələri ── */}
               <div style={{ marginTop: 20, padding: 16, background: '#faf5ff', borderRadius: 14, border: '1px solid #e9d5ff' }}>
                 <p style={{ margin: '0 0 12px', fontWeight: 800, color: '#6d28d9', fontSize: 15 }}>⚡ Sürətli hərəkətlər</p>
                 <div style={styles.buttonRow}>
-                  <button type="button" onClick={() => setAdminSection('reports')} style={{ ...styles.dangerButton, opacity: adminReports.filter(r => r.status === 'open').length === 0 ? 0.5 : 1 }}>
-                    🔴 Reportlar ({adminReports.filter(r => r.status === 'open').length})
-                  </button>
-                  <button type="button" onClick={() => setAdminSection('users')} style={styles.warningButton}>
-                    👥 İstifadəçilər
-                  </button>
-                  <button type="button" onClick={() => setAdminSection('rides')} style={styles.closeButton}>
-                    🚗 Elanlar
-                  </button>
-                  <button type="button" onClick={() => setAdminSection('requests')} style={styles.primaryButton}>
-                    ⏳ Müraciətlər
-                  </button>
-                  <button type="button" onClick={() => setAdminSection('conversations')} style={styles.successButton}>
-                    💬 Çatlar
-                  </button>
-                  <button type="button" onClick={() => setAdminSection('messages')} style={{...styles.ghostButton, borderColor: '#3b82f6', color: '#3b82f6'}}>
-                    ✉️ Mesajlar
-                  </button>
-                  <button type="button" onClick={() => setAdminSection('reviews')} style={{...styles.ghostButton, borderColor: '#d97706', color: '#d97706'}}>
-                    ⭐ Rəylər
-                  </button>
-                  <button type="button" onClick={() => setAdminSection('audit')} style={styles.ghostButton}>
-                    📋 Audit log
-                  </button>
-                  <button type="button" onClick={() => void getAdminData()} style={styles.secondaryButton}>
-                    🔄 Təzələ
-                  </button>
+                  <button type="button" onClick={() => setAdminSection('reports')} style={{ ...styles.dangerButton, opacity: adminReports.filter(r => r.status === 'open').length === 0 ? 0.5 : 1 }}>🔴 Reportlar ({adminReports.filter(r => r.status === 'open').length})</button>
+                  <button type="button" onClick={() => setAdminSection('users')} style={styles.warningButton}>👥 İstifadəçilər</button>
+                  <button type="button" onClick={() => setAdminSection('rides')} style={styles.closeButton}>🚗 Elanlar</button>
+                  <button type="button" onClick={() => setAdminSection('requests')} style={styles.primaryButton}>⏳ Müraciətlər</button>
+                  <button type="button" onClick={() => setAdminSection('conversations')} style={styles.successButton}>💬 Çatlar</button>
+                  <button type="button" onClick={() => setAdminSection('messages')} style={{...styles.ghostButton, borderColor: '#3b82f6', color: '#3b82f6'}}>✉️ Mesajlar</button>
+                  <button type="button" onClick={() => setAdminSection('reviews')} style={{...styles.ghostButton, borderColor: '#d97706', color: '#d97706'}}>⭐ Rəylər</button>
+                  <button type="button" onClick={() => setAdminSection('audit')} style={styles.ghostButton}>📋 Audit log</button>
+                  <button type="button" onClick={() => void getAdminData()} style={styles.secondaryButton}>🔄 Təzələ</button>
                 </div>
               </div>
-
-              {/* ── Son audit fəaliyyəti (son 5) ── */}
               {adminAuditLogs.length > 0 && (
                 <div style={{ marginTop: 20 }}>
                   <p style={{ fontWeight: 800, fontSize: 15, marginBottom: 10, color: '#334155' }}>🕐 Son fəaliyyət</p>
                   <div style={{ display: 'grid', gap: 8 }}>
                     {adminAuditLogs.slice(0, 5).map(log => (
                       <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 13 }}>
-                        <span>
-                          <strong style={{ color: '#7c3aed' }}>{log.action_type}</strong>
-                          {' · '}{log.entity_type}
-                          {log.note ? ` · ${log.note}` : ''}
-                        </span>
+                        <span><strong style={{ color: '#7c3aed' }}>{log.action_type}</strong>{' · '}{log.entity_type}{log.note ? ` · ${log.note}` : ''}</span>
                         <span style={{ color: '#64748b', whiteSpace: 'nowrap', marginLeft: 12 }}>{formatDateTime(log.created_at)}</span>
                       </div>
                     ))}
@@ -4055,7 +3523,6 @@ async function handleCloseConversation(conversationId: number) {
           {adminSection === 'users' && (
             <section style={styles.sectionCard}>
               <h2 style={styles.sectionTitle}>Users</h2>
-
               <div style={styles.ridesGrid}>
                 {adminUsersFiltered.map((user) => (
                   <div key={user.id} style={styles.adminCard}>
@@ -4069,36 +3536,13 @@ async function handleCloseConversation(conversationId: number) {
                     <p style={styles.infoRow}><strong>Blocked:</strong> {adminUserBlockedMap[user.id] ? 'Bəli' : 'Xeyr'}</p>
                     <p style={styles.infoRow}><strong>Avg rating:</strong> {user.avg_rating || 0}</p>
                     <p style={styles.infoRow}><strong>Active rides:</strong> {user.active_rides}</p>
-
                     <div style={styles.fieldWrap}>
                       <label style={styles.label}>Admin note</label>
-                      <textarea
-                        rows={3}
-                        value={adminUserNoteMap[user.id] || ''}
-                        onChange={(e) =>
-                          setAdminUserNoteMap((prev) => ({ ...prev, [user.id]: e.target.value }))
-                        }
-                        style={styles.textarea}
-                      />
+                      <textarea rows={3} value={adminUserNoteMap[user.id] || ''} onChange={(e) => setAdminUserNoteMap((prev) => ({ ...prev, [user.id]: e.target.value }))} style={styles.textarea} />
                     </div>
-
                     <div style={styles.actionRow}>
-                      <button
-                        type="button"
-                        style={adminUserBlockedMap[user.id] ? styles.successButton : styles.warningButton}
-                        disabled={adminLoadingId === user.id}
-                        onClick={() => void handleAdminToggleUser(user)}
-                      >
-                        {adminUserBlockedMap[user.id] ? 'Blokdan çıxar' : 'Blokla'}
-                      </button>
-                      <button
-                        type="button"
-                        style={styles.dangerButton}
-                        disabled={adminLoadingId === user.id}
-                        onClick={() => void handleAdminDeleteUser(user)}
-                      >
-                        Tamamilə Sil
-                      </button>
+                      <button type="button" style={adminUserBlockedMap[user.id] ? styles.successButton : styles.warningButton} disabled={adminLoadingId === user.id} onClick={() => void handleAdminToggleUser(user)}>{adminUserBlockedMap[user.id] ? 'Blokdan çıxar' : 'Blokla'}</button>
+                      <button type="button" style={styles.dangerButton} disabled={adminLoadingId === user.id} onClick={() => void handleAdminDeleteUser(user)}>Tamamilə Sil</button>
                     </div>
                   </div>
                 ))}
@@ -4110,16 +3554,13 @@ async function handleCloseConversation(conversationId: number) {
             <>
               <section style={styles.sectionCard}>
                 <h2 style={styles.sectionTitle}>Rides</h2>
-
                 {['active', 'full', 'completed', 'cancelled'].map((status) => {
                   const group = allRidesAdmin.filter((r) => r.status === status)
                   if (group.length === 0) return null
                   const title = status === 'active' ? '🟢 Aktiv' : status === 'full' ? '🔒 Bağlı (Full)' : status === 'completed' ? '✅ Tamamlanmış' : '❌ Ləğv edilmiş'
                   return (
                     <div key={status} style={{ marginBottom: 28 }}>
-                      <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>
-                        {title} ({group.length})
-                      </h3>
+                      <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>{title} ({group.length})</h3>
                       <div style={styles.ridesGrid}>
                         {group.map((ride) => (
                           <div key={ride.id} style={styles.adminCard}>
@@ -4130,19 +3571,9 @@ async function handleCloseConversation(conversationId: number) {
                             <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {ride.ride_date || '-'} / {ride.departure_time}</p>
                             <p style={styles.infoRow}><strong>Seats:</strong> {ride.seats}</p>
                             <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat}</p>
-
                             <div style={styles.actionRow}>
-                              <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRide(ride)}>
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                style={styles.dangerButton}
-                                disabled={adminLoadingId === ride.id}
-                                onClick={() => void handleAdminDeleteRide(ride)}
-                              >
-                                Delete
-                              </button>
+                              <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRide(ride)}>Edit</button>
+                              <button type="button" style={styles.dangerButton} disabled={adminLoadingId === ride.id} onClick={() => void handleAdminDeleteRide(ride)}>Delete</button>
                             </div>
                           </div>
                         ))}
@@ -4155,7 +3586,6 @@ async function handleCloseConversation(conversationId: number) {
               {adminEditingRideId && (
                 <section style={styles.sectionCard}>
                   <h2 style={styles.sectionTitle}>Ride edit</h2>
-
                   <div style={styles.form}>
                     <input value={adminRideOrigin} onChange={(e) => setAdminRideOrigin(e.target.value)} style={styles.input} />
                     <input value={adminRideDestination} onChange={(e) => setAdminRideDestination(e.target.value)} style={styles.input} />
@@ -4164,20 +3594,12 @@ async function handleCloseConversation(conversationId: number) {
                     <input type="number" value={adminRideSeats} onChange={(e) => setAdminRideSeats(e.target.value)} style={styles.input} />
                     <input type="number" value={adminRidePrice} onChange={(e) => setAdminRidePrice(e.target.value)} style={styles.input} />
                     <select value={adminRideStatus} onChange={(e) => setAdminRideStatus(e.target.value as RideStatus)} style={styles.select}>
-                      <option value="active">active</option>
-                      <option value="full">full</option>
-                      <option value="cancelled">cancelled</option>
-                      <option value="completed">completed</option>
+                      <option value="active">active</option><option value="full">full</option><option value="cancelled">cancelled</option><option value="completed">completed</option>
                     </select>
                     <textarea value={adminRideNotes} onChange={(e) => setAdminRideNotes(e.target.value)} rows={3} style={styles.textarea} />
-
                     <div style={styles.actionRow}>
-                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveRide()}>
-                        Save ride
-                      </button>
-                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingRideId(null)}>
-                        Cancel
-                      </button>
+                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveRide()}>Save ride</button>
+                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingRideId(null)}>Cancel</button>
                     </div>
                   </div>
                 </section>
@@ -4189,16 +3611,13 @@ async function handleCloseConversation(conversationId: number) {
             <>
               <section style={styles.sectionCard}>
                 <h2 style={styles.sectionTitle}>Requests</h2>
-
                 {['pending', 'accepted', 'rejected', 'cancelled'].map((status) => {
                   const group = allRideRequestsAdmin.filter((r) => r.status === status)
                   if (group.length === 0) return null
                   const title = status === 'pending' ? '⏳ Gözləyən' : status === 'accepted' ? '✅ Qəbul edilmiş' : status === 'rejected' ? '🚫 Rədd edilmiş' : '❌ Ləğv edilmiş'
                   return (
                     <div key={status} style={{ marginBottom: 28 }}>
-                      <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>
-                        {title} ({group.length})
-                      </h3>
+                      <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>{title} ({group.length})</h3>
                       <div style={styles.ridesGrid}>
                         {group.map((item) => (
                           <div key={item.id} style={styles.adminCard}>
@@ -4209,19 +3628,9 @@ async function handleCloseConversation(conversationId: number) {
                             <p style={styles.infoRow}><strong>Owner:</strong> {item.owner_id}</p>
                             <p style={styles.infoRow}><strong>Seats:</strong> {item.seats_requested}</p>
                             <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
-
                             <div style={styles.actionRow}>
-                              <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRequest(item)}>
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                style={styles.dangerButton}
-                                disabled={adminLoadingId === item.id}
-                                onClick={() => void handleAdminDeleteRequest(item)}
-                              >
-                                Delete
-                              </button>
+                              <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRequest(item)}>Edit</button>
+                              <button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteRequest(item)}>Delete</button>
                             </div>
                           </div>
                         ))}
@@ -4234,24 +3643,15 @@ async function handleCloseConversation(conversationId: number) {
               {adminEditingRequestId && (
                 <section style={styles.sectionCard}>
                   <h2 style={styles.sectionTitle}>Request edit</h2>
-
                   <div style={styles.form}>
                     <select value={adminRequestStatus} onChange={(e) => setAdminRequestStatus(e.target.value as RideRequestStatus)} style={styles.select}>
-                      <option value="pending">pending</option>
-                      <option value="accepted">accepted</option>
-                      <option value="rejected">rejected</option>
-                      <option value="cancelled">cancelled</option>
+                      <option value="pending">pending</option><option value="accepted">accepted</option><option value="rejected">rejected</option><option value="cancelled">cancelled</option>
                     </select>
                     <input type="number" value={adminRequestSeats} onChange={(e) => setAdminRequestSeats(e.target.value)} style={styles.input} />
                     <textarea value={adminRequestMessage} onChange={(e) => setAdminRequestMessage(e.target.value)} rows={3} style={styles.textarea} />
-
                     <div style={styles.actionRow}>
-                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveRequest()}>
-                        Save request
-                      </button>
-                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingRequestId(null)}>
-                        Cancel
-                      </button>
+                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveRequest()}>Save request</button>
+                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingRequestId(null)}>Cancel</button>
                     </div>
                   </div>
                 </section>
@@ -4262,16 +3662,13 @@ async function handleCloseConversation(conversationId: number) {
           {adminSection === 'conversations' && (
             <section style={styles.sectionCard}>
               <h2 style={styles.sectionTitle}>Conversations</h2>
-
               {['active', 'closed'].map((status) => {
                 const group = allConversationsAdmin.filter((c) => c.status === status)
                 if (group.length === 0) return null
                 const title = status === 'active' ? '🟢 Aktiv Çatlar' : '🔒 Arxiv (Bağlı)'
                 return (
                   <div key={status} style={{ marginBottom: 28 }}>
-                    <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>
-                      {title} ({group.length})
-                    </h3>
+                    <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>{title} ({group.length})</h3>
                     <div style={styles.ridesGrid}>
                       {group.map((conv) => (
                         <div key={conv.id} style={styles.adminCard}>
@@ -4282,15 +3679,8 @@ async function handleCloseConversation(conversationId: number) {
                           <p style={styles.infoRow}><strong>Passenger:</strong> {conv.passenger_user_id}</p>
                           <p style={styles.infoRow}><strong>Status:</strong> {conv.status}</p>
                           <p style={styles.infoRow}><strong>Updated:</strong> {formatDateTime(conv.updated_at)}</p>
-
                           <div style={styles.actionRow}>
-                            <button
-                              type="button"
-                              style={styles.primaryButton}
-                              onClick={() => void handleOpenConversation(conv.id)}
-                            >
-                              Çata daxil ol
-                            </button>
+                            <button type="button" style={styles.primaryButton} onClick={() => void handleOpenConversation(conv.id)}>Çata daxil ol</button>
                           </div>
                         </div>
                       ))}
@@ -4304,7 +3694,6 @@ async function handleCloseConversation(conversationId: number) {
             <>
               <section style={styles.sectionCard}>
                 <h2 style={styles.sectionTitle}>Messages</h2>
-
                 <div style={styles.ridesGrid}>
                   {allMessagesAdmin.map((item) => (
                     <div key={item.id} style={styles.adminCard}>
@@ -4313,19 +3702,9 @@ async function handleCloseConversation(conversationId: number) {
                       <p style={styles.infoRow}><strong>Sender:</strong> {item.sender_id}</p>
                       <p style={styles.infoRow}><strong>Text:</strong> {item.message_text}</p>
                       <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
-
                       <div style={styles.actionRow}>
-                        <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditMessage(item)}>
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          style={styles.dangerButton}
-                          disabled={adminLoadingId === item.id}
-                          onClick={() => void handleAdminDeleteMessage(item)}
-                        >
-                          Delete
-                        </button>
+                        <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditMessage(item)}>Edit</button>
+                        <button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteMessage(item)}>Delete</button>
                       </div>
                     </div>
                   ))}
@@ -4335,17 +3714,11 @@ async function handleCloseConversation(conversationId: number) {
               {adminEditingMessageId && (
                 <section style={styles.sectionCard}>
                   <h2 style={styles.sectionTitle}>Message edit</h2>
-
                   <div style={styles.form}>
                     <textarea value={adminMessageText} onChange={(e) => setAdminMessageText(e.target.value)} rows={4} style={styles.textarea} />
-
                     <div style={styles.actionRow}>
-                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveMessage()}>
-                        Save message
-                      </button>
-                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingMessageId(null)}>
-                        Cancel
-                      </button>
+                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveMessage()}>Save message</button>
+                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingMessageId(null)}>Cancel</button>
                     </div>
                   </div>
                 </section>
@@ -4357,7 +3730,6 @@ async function handleCloseConversation(conversationId: number) {
             <>
               <section style={styles.sectionCard}>
                 <h2 style={styles.sectionTitle}>Reviews</h2>
-
                 <div style={styles.ridesGrid}>
                   {allReviewsAdmin.map((item) => (
                   <div key={item.id} style={styles.adminCard}>
@@ -4366,19 +3738,9 @@ async function handleCloseConversation(conversationId: number) {
                     <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
                     <p style={styles.infoRow}><strong>Rating:</strong> {item.rating}</p>
                     <p style={styles.infoRow}><strong>Comment:</strong> {item.comment_text || '-'}</p>
-
                     <div style={styles.actionRow}>
-                      <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        style={styles.dangerButton}
-                        disabled={adminLoadingId === item.id}
-                        onClick={() => void handleAdminDeleteReview(item)}
-                      >
-                        Delete
-                      </button>
+                      <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>Edit</button>
+                      <button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteReview(item)}>Delete</button>
                     </div>
                   </div>
                 ))}
@@ -4388,25 +3750,14 @@ async function handleCloseConversation(conversationId: number) {
               {adminEditingReviewId && (
                 <section style={styles.sectionCard}>
                   <h2 style={styles.sectionTitle}>Review edit</h2>
-
                   <div style={styles.form}>
                     <select value={adminReviewRating} onChange={(e) => setAdminReviewRating(e.target.value)} style={styles.select}>
-                      <option value="5">5</option>
-                      <option value="4">4</option>
-                      <option value="3">3</option>
-                      <option value="2">2</option>
-                      <option value="1">1</option>
+                      <option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
                     </select>
-
                     <textarea value={adminReviewComment} onChange={(e) => setAdminReviewComment(e.target.value)} rows={4} style={styles.textarea} />
-
                     <div style={styles.actionRow}>
-                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveReview()}>
-                        Save review
-                      </button>
-                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingReviewId(null)}>
-                        Cancel
-                      </button>
+                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveReview()}>Save review</button>
+                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingReviewId(null)}>Cancel</button>
                     </div>
                   </div>
                 </section>
@@ -4417,7 +3768,6 @@ async function handleCloseConversation(conversationId: number) {
           {adminSection === 'reports' && (
             <section style={styles.sectionCard}>
               <h2 style={styles.sectionTitle}>Reports</h2>
-
               <div style={styles.ridesGrid}>
                 {adminReportsFiltered.map((report) => (
                   <div key={report.id} style={styles.adminCard}>
@@ -4427,50 +3777,18 @@ async function handleCloseConversation(conversationId: number) {
                     <p style={styles.infoRow}><strong>Target:</strong> {report.target_user_id || '-'}</p>
                     <p style={styles.infoRow}><strong>Reason:</strong> {report.reason}</p>
                     <p style={styles.infoRow}><strong>Details:</strong> {report.details || '-'}</p>
-
                     <div style={styles.fieldWrap}>
                       <label style={styles.label}>Status</label>
-                      <select
-                        value={adminReportStatusMap[report.id] || report.status}
-                        onChange={(e) =>
-                          setAdminReportStatusMap((prev) => ({
-                            ...prev,
-                            [report.id]: e.target.value as ReportStatus,
-                          }))
-                        }
-                        style={styles.select}
-                      >
-                        <option value="open">open</option>
-                        <option value="in_review">in_review</option>
-                        <option value="resolved">resolved</option>
-                        <option value="dismissed">dismissed</option>
+                      <select value={adminReportStatusMap[report.id] || report.status} onChange={(e) => setAdminReportStatusMap((prev) => ({ ...prev, [report.id]: e.target.value as ReportStatus, })) } style={styles.select}>
+                        <option value="open">open</option><option value="in_review">in_review</option><option value="resolved">resolved</option><option value="dismissed">dismissed</option>
                       </select>
                     </div>
-
                     <div style={styles.fieldWrap}>
                       <label style={styles.label}>Admin note</label>
-                      <textarea
-                        rows={3}
-                        value={adminReportNoteMap[report.id] || ''}
-                        onChange={(e) =>
-                          setAdminReportNoteMap((prev) => ({
-                            ...prev,
-                            [report.id]: e.target.value,
-                          }))
-                        }
-                        style={styles.textarea}
-                      />
+                      <textarea rows={3} value={adminReportNoteMap[report.id] || ''} onChange={(e) => setAdminReportNoteMap((prev) => ({ ...prev, [report.id]: e.target.value, })) } style={styles.textarea} />
                     </div>
-
                     <div style={styles.actionRow}>
-                      <button
-                        type="button"
-                        style={styles.primaryButton}
-                        disabled={adminLoadingId === report.id}
-                        onClick={() => void handleAdminUpdateReport(report)}
-                      >
-                        Update report
-                      </button>
+                      <button type="button" style={styles.primaryButton} disabled={adminLoadingId === report.id} onClick={() => void handleAdminUpdateReport(report)}>Update report</button>
                     </div>
                   </div>
                 ))}
@@ -4481,30 +3799,17 @@ async function handleCloseConversation(conversationId: number) {
           {adminSection === 'audit' && (
             <section style={styles.sectionCard}>
               <h2 style={styles.sectionTitle}>Audit log</h2>
-
               <div style={styles.tableWrap}>
                 <table style={styles.table}>
                   <thead>
                     <tr>
-                      <th style={styles.th}>ID</th>
-                      <th style={styles.th}>Admin</th>
-                      <th style={styles.th}>Action</th>
-                      <th style={styles.th}>Entity</th>
-                      <th style={styles.th}>Entity ID</th>
-                      <th style={styles.th}>Note</th>
-                      <th style={styles.th}>Tarix</th>
+                      <th style={styles.th}>ID</th><th style={styles.th}>Admin</th><th style={styles.th}>Action</th><th style={styles.th}>Entity</th><th style={styles.th}>Entity ID</th><th style={styles.th}>Note</th><th style={styles.th}>Tarix</th>
                     </tr>
                   </thead>
                   <tbody>
                     {adminAuditLogs.map((log) => (
                       <tr key={log.id}>
-                        <td style={styles.td}>{log.id}</td>
-                        <td style={styles.td}>{log.admin_user_id}</td>
-                        <td style={styles.td}>{log.action_type}</td>
-                        <td style={styles.td}>{log.entity_type}</td>
-                        <td style={styles.td}>{log.entity_id}</td>
-                        <td style={styles.td}>{log.note || '-'}</td>
-                        <td style={styles.td}>{formatDateTime(log.created_at)}</td>
+                        <td style={styles.td}>{log.id}</td><td style={styles.td}>{log.admin_user_id}</td><td style={styles.td}>{log.action_type}</td><td style={styles.td}>{log.entity_type}</td><td style={styles.td}>{log.entity_id}</td><td style={styles.td}>{log.note || '-'}</td><td style={styles.td}>{formatDateTime(log.created_at)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -4524,29 +3829,14 @@ async function handleCloseConversation(conversationId: number) {
             }
           `}</style>
           <div style={{
-            position: 'fixed',
-            bottom: '40px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: message.includes('xəta') || message.includes('tapılmadı') || message.includes('doldurun') ? '#ef4444' : '#10b981',
-            color: '#ffffff',
-            padding: '12px 24px',
-            borderRadius: '50px',
-            fontSize: '14px',
-            fontWeight: 600,
-            boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            animation: 'slideUpFade 0.4s ease-out forwards',
-            whiteSpace: 'normal',
-            width: '90%',
-            maxWidth: '400px',
-            textAlign: 'center',
-            lineHeight: '1.4'
+            position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
+            background: message.includes('xəta') || message.includes('tapılmadı') || message.includes('doldurun') || message.includes('⚠️') ? '#ef4444' : '#10b981',
+            color: '#ffffff', padding: '12px 24px', borderRadius: '50px', fontSize: '14px', fontWeight: 600,
+            boxShadow: '0 8px 20px rgba(0,0,0,0.2)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '8px',
+            animation: 'slideUpFade 0.4s ease-out forwards', whiteSpace: 'normal', width: '90%', maxWidth: '400px',
+            textAlign: 'center', lineHeight: '1.4'
           }}>
-            {message.includes('xəta') || message.includes('tapılmadı') || message.includes('doldurun') || message.includes('Yalnız 1') || message.includes('artıq 1') ? '⚠️' : '✅'} {message}
+            {message}
           </div>
         </>
       )}
