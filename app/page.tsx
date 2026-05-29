@@ -68,7 +68,7 @@ type Profile = {
   work_address?: string | null
   car_brand: string | null
   license_plate: string | null
-  car_color?: string | null
+  car_color?: string | null // YENİ: Rəng
   is_blocked?: boolean
   admin_note?: string | null
   last_seen_at?: string | null
@@ -791,7 +791,6 @@ function getReportStatusLabel(status: ReportStatus) {
   return 'Açıq'
 }
 
-// ── Telegram Haptic Feedback (Titrəmə) Optimizasiyası ──
 const triggerVibration = (type: string = 'medium') => {
   try {
     if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) {
@@ -802,7 +801,7 @@ const triggerVibration = (type: string = 'medium') => {
   }
 };
 
- export default function Home() {
+export default function Home() {
   const [isAdminMode, setIsAdminMode] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
   const [chatFilter, setChatFilter] = useState<'active' | 'closed'>('active')
@@ -829,6 +828,8 @@ const triggerVibration = (type: string = 'medium') => {
   const [adminUsers, setAdminUsers] = useState<UserOverview[]>([])
   const [adminReports, setAdminReports] = useState<UserReport[]>([])
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([])
+  
+  // YENİ: Maşın məlumatlarını da əlavə edirik
   const [driverProfilesMap, setDriverProfilesMap] = useState<Record<number, { name: string, rating: string, gender: string, carBrand: string, carColor: string, licensePlate: string }>>({})
 
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
@@ -869,9 +870,10 @@ const triggerVibration = (type: string = 'medium') => {
   const [profileHomeAddress, setProfileHomeAddress] = useState('')
   const [profileWorkAddress, setProfileWorkAddress] = useState('')
   const [womenOnly, setWomenOnly] = useState(false)
+  
   const [carBrand, setCarBrand] = useState('')
+  const [carColor, setCarColor] = useState('') // YENİ: Rəng
   const [licensePlate, setLicensePlate] = useState('')
-  const [carColor, setCarColor] = useState('')
 
   const [searchText, setSearchText] = useState('')
   const [filterRole, setFilterRole] = useState('all')
@@ -921,7 +923,6 @@ const triggerVibration = (type: string = 'medium') => {
   const [adminEditingReviewId, setAdminEditingReviewId] = useState<number | null>(null)
   const [adminReviewRating, setAdminReviewRating] = useState('5')
   const [adminReviewComment, setAdminReviewComment] = useState('')
-// ── YENİ MESAJ GÖZƏTÇİSİ ──
 
   const prevUnreadRef = useRef(0);
 
@@ -941,7 +942,6 @@ const triggerVibration = (type: string = 'medium') => {
       return () => clearTimeout(timer)
     }
   }, [message])
-  
 
   function getActiveUser() {
     if (typeof window === 'undefined') {
@@ -976,7 +976,7 @@ const triggerVibration = (type: string = 'medium') => {
 
   // ── TAM VƏ SƏRT TELEFON NÖMRƏSİ FORMATI ──
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let rawInput = e.target.value.replace(/\D/g, ''); // Bütün boşluq və hərfləri silir
+    let rawInput = e.target.value.replace(/\D/g, ''); 
 
     if (!rawInput) {
       setProfilePhone('');
@@ -989,7 +989,7 @@ const triggerVibration = (type: string = 'medium') => {
       rawInput = '994' + rawInput;
     }
 
-    rawInput = rawInput.substring(0, 12); // Maksimum 12 rəqəm
+    rawInput = rawInput.substring(0, 12); 
 
     let formatted = '+994';
     if (rawInput.length > 3) formatted += ' ' + rawInput.substring(3, 5);
@@ -1013,23 +1013,11 @@ const triggerVibration = (type: string = 'medium') => {
     setDestLat(null); setDestLng(null)
   }
 
-  function setToday() {
-    setRideDate(toDateInputValue(new Date()))
-  }
-
-  function setTomorrow() {
-    setRideDate(toDateInputValue(addDays(new Date(), 1)))
-  }
-
-  function setPlusTwoDays() {
-    setRideDate(toDateInputValue(addDays(new Date(), 2)))
-  }
-
-  function setNowTime() {
-    const now = roundToNextMinutes(new Date(), 5)
-    setDepartureTime(toTimeInputValue(now))
-  }
-
+  function setToday() { setRideDate(toDateInputValue(new Date())) }
+  function setTomorrow() { setRideDate(toDateInputValue(addDays(new Date(), 1))) }
+  function setPlusTwoDays() { setRideDate(toDateInputValue(addDays(new Date(), 2))) }
+  function setNowTime() { setDepartureTime(toTimeInputValue(roundToNextMinutes(new Date(), 5))) }
+  
   function setPlus30Min() {
     const d = new Date()
     d.setMinutes(d.getMinutes() + 30)
@@ -1042,9 +1030,7 @@ const triggerVibration = (type: string = 'medium') => {
     setDepartureTime(toTimeInputValue(roundToNextMinutes(d, 5)))
   }
 
-  function setPresetTime(value: string) {
-    setDepartureTime(value)
-  }
+  function setPresetTime(value: string) { setDepartureTime(value) }
 
   function getRequestBadgeStyle(status: RideRequestStatus) {
     if (status === 'accepted') return styles.approvedBadge
@@ -1081,79 +1067,51 @@ const triggerVibration = (type: string = 'medium') => {
     const activeUserId = getActiveUser().driverId
 
     const channels = [
-      supabase
-        .channel(`messages-live-${activeUserId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async () => {
+      supabase.channel(`messages-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async () => {
           const currentSelectedId = selectedConversationIdRef.current
-          if (currentSelectedId && !isAdmin) {
-            await getMessages(currentSelectedId, false)
-          }
+          if (currentSelectedId && !isAdmin) { await getMessages(currentSelectedId, false) }
           await getConversations(false)
           if (isAdmin) await getAdminData()
-        })
-        .subscribe(),
+        }).subscribe(),
 
-      supabase
-        .channel(`ride-requests-live-${activeUserId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, async () => {
+      supabase.channel(`ride-requests-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, async () => {
           await getRideRequests()
           await getAllMyRides()
           if (isAdmin) await getAdminData()
-        })
-        .subscribe(),
+        }).subscribe(),
 
-      supabase
-        .channel(`conversations-live-${activeUserId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, async () => {
+      supabase.channel(`conversations-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, async () => {
           await getConversations(false)
           if (isAdmin) await getAdminData()
-        })
-        .subscribe(),
+        }).subscribe(),
 
-      supabase
-        .channel(`ride-listings-live-${activeUserId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_listings' }, async () => {
+      supabase.channel(`ride-listings-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'ride_listings' }, async () => {
           await getRides()
           await getAllMyRides()
           if (isAdmin) await getAdminData()
-        })
-        .subscribe(),
+        }).subscribe(),
 
-      supabase
-        .channel(`reviews-live-${activeUserId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, async () => {
+      supabase.channel(`reviews-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, async () => {
           await getReviews()
           if (isAdmin) await getAdminData()
-        })
-        .subscribe(),
+        }).subscribe(),
 
-      supabase
-        .channel(`reports-live-${activeUserId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_reports' }, async () => {
+      supabase.channel(`reports-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'user_reports' }, async () => {
           if (isAdmin) await getAdminData()
-        })
-        .subscribe(),
+        }).subscribe(),
 
-      supabase
-        .channel(`profiles-live-${activeUserId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, async () => {
+      supabase.channel(`profiles-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, async () => {
           await getProfile()
           if (isAdmin) await getAdminData()
-        })
-        .subscribe(),
+        }).subscribe(),
 
-      supabase
-        .channel(`audit-live-${activeUserId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_audit_logs' }, async () => {
+      supabase.channel(`audit-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'admin_audit_logs' }, async () => {
           if (isAdmin) await getAdminData()
-        })
-        .subscribe(),
+        }).subscribe(),
     ]
 
     return () => {
-      channels.forEach((channel) => {
-        void supabase.removeChannel(channel)
-      })
+      channels.forEach((channel) => { void supabase.removeChannel(channel) })
     }
   }, [isAdmin])
 
@@ -1187,9 +1145,7 @@ const triggerVibration = (type: string = 'medium') => {
       getRideRequests();
       getConversations(true);
       getAllMyRides();
-      if (selectedConversationIdRef.current) {
-        getMessages(selectedConversationIdRef.current, false);
-      }
+      if (selectedConversationIdRef.current) { getMessages(selectedConversationIdRef.current, false); }
     }, 10000);
 
     const slowInterval = setInterval(() => {
@@ -1224,36 +1180,22 @@ const triggerVibration = (type: string = 'medium') => {
     const current = getActiveUser()
     if (!current.driverId) return
 
-    await supabase.from('users').upsert({
-      id: current.driverId,
-      username: current.username,
-      full_name: current.fullName,
-    })
+    await supabase.from('users').upsert({ id: current.driverId, username: current.username, full_name: current.fullName })
 
-    const { data } = await supabase
-      .from('profiles').select('id,role').eq('id', current.driverId).maybeSingle()
+    const { data } = await supabase.from('profiles').select('id,role').eq('id', current.driverId).maybeSingle()
 
     if (!data) {
       await supabase.from('profiles').insert({
-        id: current.driverId,
-        full_name: current.fullName,
-        username: current.username,
-        role: 'passenger' as UserRole,
-        is_blocked: false,
-        admin_note: null,
-        last_seen_at: new Date().toISOString(),
+        id: current.driverId, full_name: current.fullName, username: current.username, role: 'passenger' as UserRole,
+        is_blocked: false, admin_note: null, last_seen_at: new Date().toISOString(),
       })
     } else {
-      await supabase
-        .from('profiles')
-        .update({ last_seen_at: new Date().toISOString() })
-        .eq('id', current.driverId)
+      await supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', current.driverId)
     }
   }
 
   async function getProfile() {
     const current = getActiveUser()
-
     const { data, error } = await supabase.from('profiles').select('*').eq('id', current.driverId).maybeSingle()
 
     if (error) {
@@ -1271,9 +1213,11 @@ const triggerVibration = (type: string = 'medium') => {
       setProfileGender(p.gender || 'male')
       setProfileHomeAddress(p.home_address || '')
       setProfileWorkAddress(p.work_address || '')
+      
       setCarBrand(p.car_brand || '')
       setLicensePlate(p.license_plate || '')
-      setCarColor(p.car_color || (p.role === 'driver' ? 'Qara' : ''))
+      setCarColor(p.car_color || (p.role === 'driver' ? 'Qara' : '')) // YENİ: Rəng default olaraq Qara
+      
       setInitialRole(p.role || 'passenger')
     } else {
       setProfile(null)
@@ -1286,18 +1230,16 @@ const triggerVibration = (type: string = 'medium') => {
       setProfileWorkAddress('')
       setCarBrand('')
       setLicensePlate('')
+      setCarColor('')
       setInitialRole('passenger')
     }
   }
 
+  // BURA YENİLƏNDİ: Axtarışda maşın məlumatları
   async function getRides() {
     setLoading(true)
 
-    const { data, error } = await supabase
-      .from('ride_listings')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
 
     if (error) {
       console.error('Ride list error:', JSON.stringify(error, null, 2))
@@ -1309,7 +1251,6 @@ const triggerVibration = (type: string = 'medium') => {
       const driverIds = [...new Set(rows.map((r) => r.driver_id))]
       if (driverIds.length > 0) {
           const [profilesRes, reviewsRes] = await Promise.all([
-          // BURA YENİLƏNDİ: Maşın məlumatları da çəkilir
           supabase.from('profiles').select('id, full_name, username, gender, car_brand, car_color, license_plate').in('id', driverIds),
           supabase.from('reviews').select('reviewee_id, rating').in('reviewee_id', driverIds)
         ])
@@ -1329,7 +1270,7 @@ const triggerVibration = (type: string = 'medium') => {
             rating: avgRating,
             gender: p.gender || 'male',
             carBrand: p.car_brand || '',
-            carColor: p.car_color || 'Qara', // Default olaraq Qara
+            carColor: p.car_color || 'Qara',
             licensePlate: p.license_plate || ''
           }
         })
@@ -1341,16 +1282,9 @@ const triggerVibration = (type: string = 'medium') => {
 
   async function getAllMyRides() {
     const current = getActiveUser()
-    const { data, error } = await supabase
-      .from('ride_listings')
-      .select('*')
-      .eq('driver_id', current.driverId)
-      .order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('ride_listings').select('*').eq('driver_id', current.driverId).order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('My rides error:', JSON.stringify(error, null, 2))
-      return
-    }
+    if (error) { console.error('My rides error:', JSON.stringify(error, null, 2)); return }
 
     const rows = (data as Ride[]) || []
     setAllMyRides(rows)
@@ -1360,16 +1294,9 @@ const triggerVibration = (type: string = 'medium') => {
 
   async function getRideRequests() {
     const current = getActiveUser()
-    const { data, error } = await supabase
-      .from('ride_requests')
-      .select('*')
-      .or(`requester_id.eq.${current.driverId},owner_id.eq.${current.driverId}`)
-      .order('id', { ascending: false })
+    const { data, error } = await supabase.from('ride_requests').select('*').or(`requester_id.eq.${current.driverId},owner_id.eq.${current.driverId}`).order('id', { ascending: false })
 
-    if (error) {
-      console.error('Ride requests error:', JSON.stringify(error, null, 2))
-      return
-    }
+    if (error) { console.error('Ride requests error:', JSON.stringify(error, null, 2)); return }
 
     const rows = (data as RideRequest[]) || []
     const rideIds = [...new Set(rows.map((x) => x.ride_id).filter(Boolean))]
@@ -1380,26 +1307,14 @@ const triggerVibration = (type: string = 'medium') => {
       rideMap = new Map(((ridesData as Ride[]) || []).map((ride) => [ride.id, ride]))
     }
 
-    setRideRequests(
-      rows.map((item) => ({
-        ...item,
-        ride: rideMap.get(item.ride_id) || null,
-      }))
-    )
+    setRideRequests(rows.map((item) => ({ ...item, ride: rideMap.get(item.ride_id) || null })))
   }
 
   async function getReviews() {
     const current = getActiveUser()
-    const { data, error } = await supabase
-      .from('reviews')
-      .select('*')
-      .or(`reviewer_id.eq.${current.driverId},reviewee_id.eq.${current.driverId}`)
-      .order('id', { ascending: false })
+    const { data, error } = await supabase.from('reviews').select('*').or(`reviewer_id.eq.${current.driverId},reviewee_id.eq.${current.driverId}`).order('id', { ascending: false })
 
-    if (error) {
-      console.error('Reviews error:', JSON.stringify(error, null, 2))
-      return
-    }
+    if (error) { console.error('Reviews error:', JSON.stringify(error, null, 2)); return }
 
     const rows = (data as Review[]) || []
     const rideIds = [...new Set(rows.map((x) => x.ride_id).filter(Boolean))] as string[]
@@ -1410,12 +1325,7 @@ const triggerVibration = (type: string = 'medium') => {
       rideMap = new Map(((ridesData as Ride[]) || []).map((ride) => [ride.id, ride]))
     }
 
-    setReviews(
-      rows.map((item) => ({
-        ...item,
-        ride: item.ride_id ? rideMap.get(item.ride_id) || null : null,
-      }))
-    )
+    setReviews(rows.map((item) => ({ ...item, ride: item.ride_id ? rideMap.get(item.ride_id) || null : null })))
   }
 
   async function getAdminData() {
@@ -1445,26 +1355,10 @@ const triggerVibration = (type: string = 'medium') => {
     const rideMap = new Map(ridesRows.map((ride) => [ride.id, ride]))
 
     setAllRidesAdmin(ridesRows)
-    setAllRideRequestsAdmin(
-      requestRows.map((item) => ({
-        ...item,
-        ride: rideMap.get(item.ride_id) || null,
-      }))
-    )
-    setAllConversationsAdmin(
-      conversationRows.map((item) => ({
-        ...item,
-        ride: rideMap.get(item.ride_id) || null,
-        unread_count: 0,
-      }))
-    )
+    setAllRideRequestsAdmin(requestRows.map((item) => ({ ...item, ride: rideMap.get(item.ride_id) || null })))
+    setAllConversationsAdmin(conversationRows.map((item) => ({ ...item, ride: rideMap.get(item.ride_id) || null, unread_count: 0 })))
     setAllMessagesAdmin(messageRows)
-    setAllReviewsAdmin(
-      reviewRows.map((item) => ({
-        ...item,
-        ride: item.ride_id ? rideMap.get(item.ride_id) || null : null,
-      }))
-    )
+    setAllReviewsAdmin(reviewRows.map((item) => ({ ...item, ride: item.ride_id ? rideMap.get(item.ride_id) || null : null })))
     setAdminUsers(userRows)
     setAdminReports(reportRows)
     setAdminAuditLogs(auditRows)
@@ -1474,15 +1368,8 @@ const triggerVibration = (type: string = 'medium') => {
     const reportStatusMap: Record<number, ReportStatus> = {}
     const reportNoteMap: Record<number, string> = {}
 
-    userRows.forEach((user) => {
-      userBlockedMap[user.id] = user.is_blocked
-      userNoteMap[user.id] = user.admin_note || ''
-    })
-
-    reportRows.forEach((report) => {
-      reportStatusMap[report.id] = report.status
-      reportNoteMap[report.id] = report.admin_note || ''
-    })
+    userRows.forEach((user) => { userBlockedMap[user.id] = user.is_blocked; userNoteMap[user.id] = user.admin_note || '' })
+    reportRows.forEach((report) => { reportStatusMap[report.id] = report.status; reportNoteMap[report.id] = report.admin_note || '' })
 
     setAdminUserBlockedMap(userBlockedMap)
     setAdminUserNoteMap(userNoteMap)
@@ -1494,26 +1381,15 @@ const triggerVibration = (type: string = 'medium') => {
     const current = getActiveUser()
     if (isAdmin) return
 
-    await supabase
-      .from('messages')
-      .update({ is_read: true })
-      .eq('conversation_id', conversationId)
-      .eq('is_read', false)
-      .neq('sender_id', current.driverId)
+    await supabase.from('messages').update({ is_read: true }).eq('conversation_id', conversationId).eq('is_read', false).neq('sender_id', current.driverId)
   }
 
+  // BURA YENİLƏNDİ: Çatda maşının dövlət nömrəsini göstərmək üçün
   async function getConversations(preserveSelection = true) {
     const current = getActiveUser()
-    const { data, error } = await supabase
-      .from('conversations')
-      .select('*')
-      .or(`driver_user_id.eq.${current.driverId},passenger_user_id.eq.${current.driverId}`)
-      .order('updated_at', { ascending: false })
+    const { data, error } = await supabase.from('conversations').select('*').or(`driver_user_id.eq.${current.driverId},passenger_user_id.eq.${current.driverId}`).order('updated_at', { ascending: false })
 
-    if (error) {
-      console.error('Conversations error:', JSON.stringify(error, null, 2))
-      return
-    }
+    if (error) { console.error('Conversations error:', JSON.stringify(error, null, 2)); return }
 
     const rows = (data as Conversation[]) || []
     const rideIds = [...new Set(rows.map((x) => x.ride_id).filter(Boolean))]
@@ -1523,7 +1399,6 @@ const triggerVibration = (type: string = 'medium') => {
       const { data: ridesData } = await supabase.from('ride_listings').select('*').in('id', rideIds)
       rideMap = new Map(((ridesData as Ride[]) || []).map((ride) => [ride.id, ride]))
 
-      // BURA YENİLƏNDİ: Çatdakı sürücülərin maşın (nömrə) məlumatlarını arxa planda çəkirik
       const driverIds = [...new Set(((ridesData as Ride[]) || []).map(r => r.driver_id))];
       if (driverIds.length > 0) {
         const { data: pData } = await supabase.from('profiles').select('id, full_name, username, gender, car_brand, car_color, license_plate').in('id', driverIds);
@@ -1555,11 +1430,7 @@ const triggerVibration = (type: string = 'medium') => {
       }
     }
 
-    const enriched = rows.map((item) => ({
-      ...item,
-      ride: rideMap.get(item.ride_id) || null,
-      unread_count: unreadMap.get(item.id) || 0,
-    }))
+    const enriched = rows.map((item) => ({ ...item, ride: rideMap.get(item.ride_id) || null, unread_count: unreadMap.get(item.id) || 0 }))
 
     setConversations(enriched)
     setUnreadTotal(enriched.reduce((sum, item) => sum + (item.unread_count || 0), 0))
@@ -1575,22 +1446,13 @@ const triggerVibration = (type: string = 'medium') => {
     const currentSelectedId = selectedConversationIdRef.current
     const selectedStillExists = enriched.some((item) => item.id === currentSelectedId)
 
-    if (currentSelectedId === null || !selectedStillExists) {
-      setSelectedConversationId(enriched[0].id)
-    }
+    if (currentSelectedId === null || !selectedStillExists) { setSelectedConversationId(enriched[0].id) }
   }
 
   async function getMessages(conversationId: number, markRead = true) {
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
+    const { data, error } = await supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true })
 
-    if (error) {
-      console.error('Messages error:', JSON.stringify(error, null, 2))
-      return
-    }
+    if (error) { console.error('Messages error:', JSON.stringify(error, null, 2)); return }
 
     setMessages((data as Message[]) || [])
 
@@ -1600,35 +1462,18 @@ const triggerVibration = (type: string = 'medium') => {
     }
   }
 
-  async function logAdminAction(
-    actionType: string,
-    entityType: string,
-    entityId: string,
-    oldData: Record<string, unknown> | null = null,
-    newData: Record<string, unknown> | null = null,
-    note: string | null = null
-  ) {
+  async function logAdminAction( actionType: string, entityType: string, entityId: string, oldData: Record<string, unknown> | null = null, newData: Record<string, unknown> | null = null, note: string | null = null ) {
     if (!isAdmin) return
-
-    await supabase.from('admin_audit_logs').insert({
-      admin_user_id: currentUser.driverId,
-      action_type: actionType,
-      entity_type: entityType,
-      entity_id: entityId,
-      old_data: oldData,
-      new_data: newData,
-      note,
-    })
+    await supabase.from('admin_audit_logs').insert({ admin_user_id: currentUser.driverId, action_type: actionType, entity_type: entityType, entity_id: entityId, old_data: oldData, new_data: newData, note, })
   }
 
-  // ── PROFİLİN YADDA SAXLANILMASI VƏ SƏRT VALIDASİYA ──
+  // BURA YENİLƏNDİ: Sərt nömrə və rəng yoxlaması
   async function handleCreateOrUpdateProfile(e: React.FormEvent) {
     e.preventDefault()
     setProfileSaving(true)
     setMessage('')
 
     const current = getActiveUser()
-
     const safePhone = profilePhone || '';
     const digitsOnly = safePhone.replace(/\D/g, ''); 
 
@@ -1658,347 +1503,122 @@ const triggerVibration = (type: string = 'medium') => {
       role: effectiveRole,
       car_brand: carBrand.trim() || null,
       license_plate: licensePlate.trim() || null,
-      car_color: carColor.trim() || 'Qara', // YENİ ƏLAVƏ
+      car_color: carColor.trim() || 'Qara',
       last_seen_at: new Date().toISOString(),
     }
 
     const { error } = await supabase.from('profiles').upsert(payload)
 
-    if (error) {
-      setMessage('Profil yadda saxlanmadı.')
-    } else {
-      setMessage('✅ Profil yadda saxlanıldı.')
-      await getProfile()
-    }
+    if (error) { setMessage('Profil yadda saxlanmadı.') } else { setMessage('✅ Profil yadda saxlanıldı.'); await getProfile() }
     setProfileSaving(false)
   }
-    if (profile.is_blocked) {
-      setMessage('Profil bloklandığı üçün elan yarada bilməzsən.')
-      setSubmitting(false)
-      return
-    }
 
-    const cleanOrigin = origin.trim()
-    const cleanDestination = destination.trim()
-    const cleanNotes = notes.trim()
+  async function handleSubmitRide(e: React.FormEvent) {
+    triggerVibration('medium'); e.preventDefault(); triggerVibration('heavy');
+    setSubmitting(true); setMessage('')
 
-    if (!cleanOrigin || !cleanDestination) {
-      setMessage('Haradan və hara məcburidir.')
-      setSubmitting(false)
-      return
-    }
+    const current = getActiveUser()
 
-    if (cleanNotes.length > LIMITS.notesMax) {
-      setMessage(`Qeyd maksimum ${LIMITS.notesMax} simvol ola bilər.`)
-      setSubmitting(false)
-      return
-    }
+    if (!profile) { setMessage('Əvvəl profil yaratmaq lazımdır.'); setSubmitting(false); return }
+    if (profile.is_blocked) { setMessage('Profil bloklandığı üçün elan yarada bilməzsən.'); setSubmitting(false); return }
 
-    const seatsNumber = Number(seats)
-    const priceNumber = Number(pricePerSeat)
+    const cleanOrigin = origin.trim(); const cleanDestination = destination.trim(); const cleanNotes = notes.trim()
 
-    if (!Number.isFinite(seatsNumber) || seatsNumber < 1 || seatsNumber > 20) {
-      setMessage('Yer sayı 1-20 arası olmalıdır.')
-      setSubmitting(false)
-      return
-    }
+    if (!cleanOrigin || !cleanDestination) { setMessage('Haradan və hara məcburidir.'); setSubmitting(false); return }
+    if (cleanNotes.length > LIMITS.notesMax) { setMessage(`Qeyd maksimum ${LIMITS.notesMax} simvol ola bilər.`); setSubmitting(false); return }
 
-    if (!Number.isFinite(priceNumber) || priceNumber < 0) {
-      setMessage('Qiymət düzgün daxil edilməlidir.')
-      setSubmitting(false)
-      return
-    }
+    const seatsNumber = Number(seats); const priceNumber = Number(pricePerSeat)
+
+    if (!Number.isFinite(seatsNumber) || seatsNumber < 1 || seatsNumber > 20) { setMessage('Yer sayı 1-20 arası olmalıdır.'); setSubmitting(false); return }
+    if (!Number.isFinite(priceNumber) || priceNumber < 0) { setMessage('Qiymət düzgün daxil edilməlidir.'); setSubmitting(false); return }
 
     const duplicateActiveRide = myRides.find((ride) => {
       if (editingRideId && ride.id === editingRideId) return false
-
-      return (
-        normalizeText(ride.origin) === normalizeText(cleanOrigin) &&
-        normalizeText(ride.destination) === normalizeText(cleanDestination) &&
-        (ride.ride_date || '') === rideDate &&
-        ride.departure_time === departureTime &&
-        ride.status === 'active'
-      )
+      return ( normalizeText(ride.origin) === normalizeText(cleanOrigin) && normalizeText(ride.destination) === normalizeText(cleanDestination) && (ride.ride_date || '') === rideDate && ride.departure_time === departureTime && ride.status === 'active' )
     })
 
-    if (duplicateActiveRide) {
-      setMessage('Bu marşrut, tarix və saat üçün artıq aktiv elan var.')
-      setSubmitting(false)
-      return
-    }
+    if (duplicateActiveRide) { setMessage('Bu marşrut, tarix və saat üçün artıq aktiv elan var.'); setSubmitting(false); return }
 
     if (editingRideId) {
-      const { error } = await supabase
-        .from('ride_listings')
-        .update({
-          role: profile.role,
-          origin: cleanOrigin,
-          destination: cleanDestination,
-          ride_date: rideDate,
-          departure_time: departureTime,
-          seats: seatsNumber,
-          price_per_seat: priceNumber,
-          women_only: womenOnly,
-          notes: cleanNotes || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', editingRideId)
-
-      if (error) {
-        console.error('Edit ride error:', JSON.stringify(error, null, 2))
-        setMessage('Elan yenilənmədi.')
-      } else {
-        setMessage('Elan yeniləndi.')
-        resetRideForm()
-        await initializeData()
-        setActiveTab('dashboard')
-      }
+      const { error } = await supabase.from('ride_listings').update({ role: profile.role, origin: cleanOrigin, destination: cleanDestination, ride_date: rideDate, departure_time: departureTime, seats: seatsNumber, price_per_seat: priceNumber, women_only: womenOnly, notes: cleanNotes || null, updated_at: new Date().toISOString(), }).eq('id', editingRideId)
+      if (error) { console.error('Edit error:', error); setMessage('Elan yenilənmədi.') } else { setMessage('Elan yeniləndi.'); resetRideForm(); await initializeData(); setActiveTab('dashboard') }
     } else {
-      const { error } = await supabase.from('ride_listings').insert({
-        driver_id: current.driverId,
-        role: profile.role,
-        origin: cleanOrigin,
-        destination: cleanDestination,
-        origin_lat: originLat,
-        origin_lng: originLng,
-        destination_lat: destLat,
-        destination_lng: destLng,
-        ride_date: rideDate,
-        departure_time: departureTime,
-        seats: seatsNumber,
-        price_per_seat: priceNumber,
-        is_recurring: false,
-        women_only: womenOnly,
-        notes: cleanNotes || null,
-        status: 'active',
-      })
-
-      if (error) {
-        console.error('Insert ride error:', JSON.stringify(error, null, 2))
-        setMessage('Elan əlavə olunmadı.')
-      } else {
-        setMessage('Elan əlavə olundu.')
-        resetRideForm()
-        await initializeData()
-        setActiveTab('dashboard')
-        if (!error) {
-          setMessage('🎉 Elanınız uğurla yerləşdirildi!');
-        } else {
-          setMessage('Xəta baş verdi');
-        }
-      }
+      const { error } = await supabase.from('ride_listings').insert({ driver_id: current.driverId, role: profile.role, origin: cleanOrigin, destination: cleanDestination, origin_lat: originLat, origin_lng: originLng, destination_lat: destLat, destination_lng: destLng, ride_date: rideDate, departure_time: departureTime, seats: seatsNumber, price_per_seat: priceNumber, is_recurring: false, women_only: womenOnly, notes: cleanNotes || null, status: 'active', })
+      if (error) { console.error('Insert error:', error); setMessage('Elan əlavə olunmadı.') } else { setMessage('🎉 Elanınız uğurla yerləşdirildi!'); resetRideForm(); await initializeData(); setActiveTab('dashboard') }
     }
-
     setSubmitting(false)
   }
 
   function handleEditRide(ride: Ride) {
-    setEditingRideId(ride.id)
-    setOrigin(ride.origin || '')
-    setDestination(ride.destination || '')
-    setRideDate(ride.ride_date || '')
-    setDepartureTime(ride.departure_time || '')
-    setSeats(String(ride.seats ?? 1))
-    setPricePerSeat(String(ride.price_per_seat ?? ''))
-    setNotes(ride.notes || '')
-    setWomenOnly(ride.women_only || false)
-    setActiveTab('create')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setEditingRideId(ride.id); setOrigin(ride.origin || ''); setDestination(ride.destination || ''); setRideDate(ride.ride_date || ''); setDepartureTime(ride.departure_time || ''); setSeats(String(ride.seats ?? 1)); setPricePerSeat(String(ride.price_per_seat ?? '')); setNotes(ride.notes || ''); setWomenOnly(ride.women_only || false);
+    setActiveTab('create'); window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function handleDeleteRide(rideId: string) {
-    const confirmed = window.confirm('Bu elanı ləğv etmək istəyirsən?')
-    if (!confirmed) return
-
+    if (!window.confirm('Bu elanı ləğv etmək istəyirsən?')) return
     setRideActionLoading(rideId)
-
-    const { error } = await supabase
-      .from('ride_listings')
-      .update({
-        status: 'cancelled',
-        closed_reason: 'driver_cancelled',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', rideId)
-
-    if (error) {
-      setMessage('Elan ləğv edilmədi.')
-    } else {
-      setMessage('Elan ləğv edildi.')
-      if (editingRideId === rideId) resetRideForm()
-      await initializeData()
-    }
-
+    const { error } = await supabase.from('ride_listings').update({ status: 'cancelled', closed_reason: 'driver_cancelled', updated_at: new Date().toISOString() }).eq('id', rideId)
+    if (error) { setMessage('Elan ləğv edilmədi.') } else { setMessage('Elan ləğv edildi.'); if (editingRideId === rideId) resetRideForm(); await initializeData() }
     setRideActionLoading(null)
   }
 
   async function handleCloseRide(rideId: string) {
-    const confirmed = window.confirm('Bu elanı bağlamaq istəyirsən?')
-    if (!confirmed) return
-
+    if (!window.confirm('Bu elanı bağlamaq istəyirsən?')) return
     setRideActionLoading(rideId)
-
-    const { error } = await supabase
-      .from('ride_listings')
-      .update({
-        status: 'full',
-        closed_reason: 'manually_closed',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', rideId)
-
-    if (error) {
-      setMessage('Elan bağlanmadı.')
-    } else {
-      setMessage('Elan bağlandı.')
-      await initializeData()
-    }
-
+    const { error } = await supabase.from('ride_listings').update({ status: 'full', closed_reason: 'manually_closed', updated_at: new Date().toISOString() }).eq('id', rideId)
+    if (error) { setMessage('Elan bağlanmadı.') } else { setMessage('Elan bağlandı.'); await initializeData() }
     setRideActionLoading(null)
   }
 
   async function handleCompleteRide(rideId: string) {
-    const confirmed = window.confirm('Bu elanı tamamlandı kimi işarələmək istəyirsən?')
-    if (!confirmed) return
-
+    if (!window.confirm('Bu elanı tamamlandı kimi işarələmək istəyirsən?')) return
     setRideActionLoading(rideId)
-
-    const { error } = await supabase
-      .from('ride_listings')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        closed_reason: 'completed',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', rideId)
-
-    if (error) {
-      setMessage('Elan tamamlanmadı.')
-    } else {
-      setMessage('Elan tamamlandı.')
-      await initializeData()
-    }
-
+    const { error } = await supabase.from('ride_listings').update({ status: 'completed', completed_at: new Date().toISOString(), closed_reason: 'completed', updated_at: new Date().toISOString() }).eq('id', rideId)
+    if (error) { setMessage('Elan tamamlanmadı.') } else { setMessage('Elan tamamlandı.'); await initializeData() }
     setRideActionLoading(null)
   }
 
   async function handleCreateRideRequest(ride: Ride) {
     const current = getActiveUser()
-    if (!profile) {
-      setMessage('Əvvəl profil yaratmaq lazımdır.')
-      return
-    }
-
-    if (profile.is_blocked) {
-      setMessage('Profil bloklandığı üçün müraciət göndərə bilməzsən.')
-      return
-    }
-
-    if (ride.driver_id === current.driverId) {
-      setMessage('Öz elanına müraciət edə bilməzsən.')
-      return
-    }
-
-    if (ride.status !== 'active') {
-      setMessage('Bu elan artıq aktiv deyil.')
-      return
-    }
+    if (!profile) { setMessage('Əvvəl profil yaratmaq lazımdır.'); return }
+    if (profile.is_blocked) { setMessage('Profil bloklandığı üçün müraciət göndərə bilməzsən.'); return }
+    if (ride.driver_id === current.driverId) { setMessage('Öz elanına müraciət edə bilməzsən.'); return }
+    if (ride.status !== 'active') { setMessage('Bu elan artıq aktiv deyil.'); return }
 
     const requestMessage = (requestMessageMap[ride.id] || '').trim()
     const requestedSeats = Number(requestSeatsMap[ride.id] || '1')
 
-    if (requestMessage.length > LIMITS.rideRequestMessageMax) {
-      setMessage(`Müraciət mesajı maksimum ${LIMITS.rideRequestMessageMax} simvol ola bilər.`)
-      return
-    }
+    if (requestMessage.length > LIMITS.rideRequestMessageMax) { setMessage(`Mesaj max ${LIMITS.rideRequestMessageMax} simvol.`); return }
+    if (!Number.isFinite(requestedSeats) || requestedSeats < 1 || requestedSeats > 20) { setMessage('Yer sayı 1-20 arası olmalıdır.'); return }
+    if (requestedSeats > ride.seats) { setMessage(`Maksimum ${ride.seats} yer qalıb.`); return }
 
-    if (!Number.isFinite(requestedSeats) || requestedSeats < 1 || requestedSeats > 20) {
-      setMessage('Yer sayı 1-20 arası olmalıdır.')
-      return
-    }
-
-    if (requestedSeats > ride.seats) {
-      setMessage(`Maksimum ${ride.seats} yer qalıb.`)
-      return
-    }
-
-    const existingPending = rideRequests.find(
-      (item) =>
-        item.ride_id === ride.id &&
-        item.requester_id === current.driverId &&
-        (item.status === 'pending' || item.status === 'accepted')
-    )
-
-    if (existingPending) {
-      setMessage('Bu elana artıq aktiv müraciətin var.')
-      return
-    }
+    const existingPending = rideRequests.find((item) => item.ride_id === ride.id && item.requester_id === current.driverId && (item.status === 'pending' || item.status === 'accepted'))
+    if (existingPending) { setMessage('Bu elana artıq aktiv müraciətin var.'); return }
 
     setRideRequestLoading(ride.id)
 
-    const requesterRole = profile.role
-    const ownerRole = ride.role === 'driver' ? 'driver' : 'passenger'
+    const requesterRole = profile.role; const ownerRole = ride.role === 'driver' ? 'driver' : 'passenger'
 
-    const { error } = await supabase.from('ride_requests').insert({
-      ride_id: ride.id,
-      requester_id: current.driverId,
-      owner_id: ride.driver_id,
-      requester_role: requesterRole,
-      owner_role: ownerRole,
-      message_text: requestMessage || null,
-      seats_requested: requestedSeats,
-      status: 'pending',
-    })
+    const { error } = await supabase.from('ride_requests').insert({ ride_id: ride.id, requester_id: current.driverId, owner_id: ride.driver_id, requester_role: requesterRole, owner_role: ownerRole, message_text: requestMessage || null, seats_requested: requestedSeats, status: 'pending' })
 
-    if (error) {
-      setMessage('Müraciət göndərilmədi.')
-    } else {
+    if (error) { setMessage('Müraciət göndərilmədi.') } else {
       setMessage('Müraciət göndərildi. ✅')
       setRequestMessageMap((prev) => ({ ...prev, [ride.id]: '' }))
       setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: '1' }))
-      try {
-        await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: ride.driver_id,
-            text: `🚗 YolDash: Yeni müraciət!\n\nMarşrut: ${ride.origin} → ${ride.destination}\nTarix: ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`,
-            parse_mode: 'HTML',
-          }),
-        })
-      } catch (_) { }
-      await getRideRequests()
-      setActiveTab('requests')
+      try { await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ride.driver_id, text: `🚗 YolDash: Yeni müraciət!\n\nMarşrut: ${ride.origin} → ${ride.destination}\nTarix: ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' }) }) } catch (_) { }
+      await getRideRequests(); setActiveTab('requests')
     }
-
     setRideRequestLoading(null)
   }
 
   async function ensureConversationForRequest(request: RideRequestWithRide) {
-    const { data: existingConversation } = await supabase
-      .from('conversations')
-      .select('*')
-      .eq('request_id', request.id)
-      .maybeSingle()
-
+    const { data: existingConversation } = await supabase.from('conversations').select('*').eq('request_id', request.id).maybeSingle()
     if (existingConversation) return (existingConversation as Conversation).id
 
     const driverUserId = request.owner_role === 'driver' ? request.owner_id : request.requester_id
     const passengerUserId = request.owner_role === 'passenger' ? request.owner_id : request.requester_id
 
-    const { data: newConversation, error: conversationError } = await supabase
-      .from('conversations')
-      .insert({
-        ride_id: request.ride_id,
-        request_id: request.id,
-        driver_user_id: driverUserId,
-        passenger_user_id: passengerUserId,
-        status: 'active',
-        updated_at: new Date().toISOString(),
-      })
-      .select('*')
-      .single()
+    const { data: newConversation, error: conversationError } = await supabase.from('conversations').insert({ ride_id: request.ride_id, request_id: request.id, driver_user_id: driverUserId, passenger_user_id: passengerUserId, status: 'active', updated_at: new Date().toISOString() }).select('*').single()
 
     if (conversationError) return null
     return (newConversation as Conversation).id
@@ -2006,37 +1626,14 @@ const triggerVibration = (type: string = 'medium') => {
 
   async function handleRideRequestDecision(request: RideRequestWithRide, decision: 'accepted' | 'rejected') {
     setRideRequestLoading(request.id)
+    const { error } = await supabase.from('ride_requests').update({ status: decision, updated_at: new Date().toISOString() }).eq('id', request.id)
 
-    const { error } = await supabase
-      .from('ride_requests')
-      .update({
-        status: decision,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', request.id)
-
-    if (error) {
-      setMessage('Müraciət statusu yenilənmədi.')
-      setRideRequestLoading(null)
-      return
-    }
+    if (error) { setMessage('Status yenilənmədi.'); setRideRequestLoading(null); return }
 
     if (decision === 'accepted') {
       const finalConversationId = await ensureConversationForRequest(request)
-
-      if (!finalConversationId) {
-        setMessage('Chat açıla bilmədi.')
-        setRideRequestLoading(null)
-        return
-      }
-
-      await supabase
-        .from('conversations')
-        .update({
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', finalConversationId)
-
+      if (!finalConversationId) { setMessage('Chat açıla bilmədi.'); setRideRequestLoading(null); return }
+      await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', finalConversationId)
       setSelectedConversationId(finalConversationId)
       setMessage('Müraciət qəbul edildi. Chat açıldı.')
       await Promise.all([getRideRequests(), getConversations(true), getRides(), getAllMyRides()])
@@ -2045,53 +1642,23 @@ const triggerVibration = (type: string = 'medium') => {
       setMessage('Müraciət rədd edildi.')
       await getRideRequests()
     }
-
     setRideRequestLoading(null)
   }
 
   async function handleConfirmDeal(request: RideRequestWithRide) {
     const ride = allMyRides.find((item) => item.id === request.ride_id)
-
-    if (!ride) {
-      setMessage('Elan tapılmadı.')
-      return
-    }
-
-    if (ride.status !== 'active') {
-      setMessage('Elan artıq aktiv deyil.')
-      return
-    }
-
-    if (request.status !== 'accepted') {
-      setMessage('Əvvəlcə müraciət qəbul edilməlidir.')
-      return
-    }
-
-    if (request.seats_requested > ride.seats) {
-      setMessage(`Kifayət qədər yer yoxdur. Qalan yer: ${ride.seats}`)
-      return
-    }
+    if (!ride) { setMessage('Elan tapılmadı.'); return }
+    if (ride.status !== 'active') { setMessage('Elan aktiv deyil.'); return }
+    if (request.status !== 'accepted') { setMessage('Əvvəlcə müraciət qəbul edilməlidir.'); return }
+    if (request.seats_requested > ride.seats) { setMessage(`Kifayət qədər yer yoxdur. Qalan: ${ride.seats}`); return }
 
     setRideRequestLoading(request.id)
-
     const remainingSeats = Math.max(0, ride.seats - request.seats_requested)
     const nextStatus: RideStatus = remainingSeats === 0 ? 'full' : 'active'
 
-    const { error: rideError } = await supabase
-      .from('ride_listings')
-      .update({
-        seats: remainingSeats,
-        status: nextStatus,
-        closed_reason: remainingSeats === 0 ? 'matched' : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', request.ride_id)
+    const { error: rideError } = await supabase.from('ride_listings').update({ seats: remainingSeats, status: nextStatus, closed_reason: remainingSeats === 0 ? 'matched' : null, updated_at: new Date().toISOString() }).eq('id', request.ride_id)
 
-    if (rideError) {
-      setMessage('Deal təsdiqlənmədi.')
-      setRideRequestLoading(null)
-      return
-    }
+    if (rideError) { setMessage('Deal təsdiqlənmədi.'); setRideRequestLoading(null); return }
 
     setMessage(remainingSeats === 0 ? 'Deal təsdiqləndi, elan bağlandı.' : `Deal təsdiqləndi. Qalan yer: ${remainingSeats}`)
     await Promise.all([getRideRequests(), getRides(), getAllMyRides()])
@@ -2106,646 +1673,189 @@ const triggerVibration = (type: string = 'medium') => {
   }
 
   async function handleCloseConversation(conversationId: number) {
-    const confirmed = window.confirm('Bu çatı bağlamaq və arxivə atmaq istədiyinizə əminsiniz?');
-    if (!confirmed) return;
-
-    const { error } = await supabase
-      .from('conversations')
-      .update({ 
-        status: 'closed', 
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', conversationId);
-
-    if (error) {
-      setMessage('Çat bağlanmadı.');
-    } else {
-      setMessage('Çat bağlandı və arxivləndi.');
-      await getConversations(true);
-      if (selectedConversationId === conversationId) {
-        setSelectedConversationId(null);
-      }
-    }
+    if (!window.confirm('Bu çatı bağlamaq və arxivə atmaq istədiyinizə əminsiniz?')) return;
+    const { error } = await supabase.from('conversations').update({ status: 'closed', updated_at: new Date().toISOString() }).eq('id', conversationId);
+    if (error) { setMessage('Çat bağlanmadı.'); } else { setMessage('Çat bağlandı.'); await getConversations(true); if (selectedConversationId === conversationId) { setSelectedConversationId(null); } }
   }
 
   async function handleSendMessage() {
-    if (!selectedConversationId) {
-      setMessage('Əvvəl chat seç.')
-      return
-    }
-
+    if (!selectedConversationId) { setMessage('Əvvəl chat seç.'); return }
     if (!chatInput.trim()) return
-    if (chatInput.trim().length > LIMITS.messageMax) {
-      setMessage(`Mesaj maksimum ${LIMITS.messageMax} simvol ola bilər.`)
-      return
-    }
+    if (chatInput.trim().length > LIMITS.messageMax) { setMessage(`Mesaj max ${LIMITS.messageMax} simvol.`); return }
 
     setMessageSending(true)
+    const { error } = await supabase.from('messages').insert({ conversation_id: selectedConversationId, sender_id: currentUser.driverId, message_text: chatInput.trim(), is_read: false })
 
-    const { error } = await supabase.from('messages').insert({
-      conversation_id: selectedConversationId,
-      sender_id: currentUser.driverId,
-      message_text: chatInput.trim(),
-      is_read: false,
-    })
-
-    if (error) {
-      setMessage('Mesaj göndərilmədi.')
-    } else {
-      setChatInput('')
-      await supabase
-        .from('conversations')
-        .update({
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', selectedConversationId)
-
-      await getMessages(selectedConversationId, false)
-      await getConversations(false)
+    if (error) { setMessage('Mesaj göndərilmədi.') } else {
+      setChatInput(''); await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', selectedConversationId)
+      await getMessages(selectedConversationId, false); await getConversations(false)
     }
-
     setMessageSending(false)
   }
 
   async function handleCreateReview() {
-    if (!reviewTargetRequestId) {
-      setMessage('Əvvəl request seç.')
-      return
-    }
-
+    if (!reviewTargetRequestId) { setMessage('Əvvəl request seç.'); return }
     const req = rideRequests.find((item) => item.id === reviewTargetRequestId)
-
-    if (!req) {
-      setMessage('Request tapılmadı.')
-      return
-    }
+    if (!req) { setMessage('Request tapılmadı.'); return }
 
     const rating = Number(reviewRating)
-    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-      setMessage('Reytinq 1-5 arası olmalıdır.')
-      return
-    }
-
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) { setMessage('Reytinq 1-5 arası olmalıdır.'); return }
     const comment = reviewComment.trim()
-    if (comment.length > LIMITS.reviewCommentMax) {
-      setMessage(`Review mətni maksimum ${LIMITS.reviewCommentMax} simvol ola bilər.`)
-      return
-    }
+    if (comment.length > LIMITS.reviewCommentMax) { setMessage(`Review max ${LIMITS.reviewCommentMax} simvol.`); return }
 
     const revieweeId = req.owner_id === currentUser.driverId ? req.requester_id : req.owner_id
+    const existing = reviews.find((item) => item.request_id === req.id && item.reviewer_id === currentUser.driverId && item.reviewee_id === revieweeId )
 
-    const existing = reviews.find(
-      (item) =>
-        item.request_id === req.id &&
-        item.reviewer_id === currentUser.driverId &&
-        item.reviewee_id === revieweeId
-    )
+    if (existing) { setMessage('Bu request üçün artıq review yazmısan.'); return }
 
-    if (existing) {
-      setMessage('Bu request üçün artıq review yazmısan.')
-      return
-    }
+    const { error } = await supabase.from('reviews').insert({ ride_id: req.ride_id, conversation_id: null, request_id: req.id, reviewer_id: currentUser.driverId, reviewee_id: revieweeId, rating, comment_text: comment || null })
 
-    const { error } = await supabase.from('reviews').insert({
-      ride_id: req.ride_id,
-      conversation_id: null,
-      request_id: req.id,
-      reviewer_id: currentUser.driverId,
-      reviewee_id: revieweeId,
-      rating,
-      comment_text: comment || null,
-    })
-
-    if (error) {
-      setMessage('Review göndərilmədi.')
-    } else {
-      setMessage('Review göndərildi.')
-      setReviewTargetRequestId(null)
-      setReviewRating('5')
-      setReviewComment('')
-      await getReviews()
-    }
+    if (error) { setMessage('Review göndərilmədi.') } else { setMessage('Review göndərildi.'); setReviewTargetRequestId(null); setReviewRating('5'); setReviewComment(''); await getReviews() }
   }
 
   async function handleSOS() {
-    const confirmed = window.confirm(
-      '🚨 DİQQƏT! 🚨\n\nTəhlükəli vəziyyətdəsiniz?\n\nBu düyməni təsdiqləsəniz, sistem administratoruna TƏCİLİ HƏYƏCAN (SOS) siqnalı göndəriləcək və telefonunuz avtomatik Polisə (102) zəng edəcək. Davam edilsin?'
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm('🚨 DİQQƏT! 🚨\n\nBu düyməni təsdiqləsəniz, adminə TƏCİLİ HƏYƏCAN siqnalı göndəriləcək və telefonunuz Polisə (102) zəng edəcək. Davam edilsin?')) return;
     const current = getActiveUser();
-
-    await supabase.from('user_reports').insert({
-      reporter_id: current.driverId || 0,
-      target_user_id: null,
-      reason: '🚨 SOS TƏCİLİ SİQNAL! 🚨',
-      details: `İstifadəçi təcili SOS düyməsini basdı! Dərhal onunla əlaqə saxlayın və ya aktiv çatlardakı/səfərlərdəki məkanını yoxlayın.`,
-      status: 'open',
-    });
-
+    await supabase.from('user_reports').insert({ reporter_id: current.driverId || 0, target_user_id: null, reason: '🚨 SOS TƏCİLİ SİQNAL! 🚨', details: `İstifadəçi təcili SOS düyməsini basdı! Dərhal onunla əlaqə saxlayın.`, status: 'open' });
     alert('SOS siqnalı adminə göndərildi!\nİndi Polisə (102) yönləndirilirsiniz...');
     window.location.href = 'tel:102';
   }
 
   async function handleCreateSupport(e: React.FormEvent) {
-    e.preventDefault()
-    setSupportLoading(true)
-    setMessage('')
-
+    e.preventDefault(); setSupportLoading(true); setMessage('')
     const current = getActiveUser()
-    if (!current.driverId) {
-      setMessage('İstifadəçi tapılmadı.')
-      setSupportLoading(false)
-      return
-    }
+    if (!current.driverId) { setMessage('İstifadəçi tapılmadı.'); setSupportLoading(false); return }
+    if (!supportEmail.trim() || !supportMessage.trim()) { setMessage('Bütün xanaları doldurun.'); setSupportLoading(false); return }
 
-    if (!supportEmail.trim() || !supportMessage.trim()) {
-      setMessage('Bütün xanaları doldurun.')
-      setSupportLoading(false)
-      return
-    }
+    const yesterday = new Date(); yesterday.setHours(yesterday.getHours() - 24)
+    const { data: existingReports } = await supabase.from('user_reports').select('id').eq('reporter_id', current.driverId).ilike('reason', 'Dəstək%').gte('created_at', yesterday.toISOString())
 
-    const yesterday = new Date()
-    yesterday.setHours(yesterday.getHours() - 24)
-    
-    const { data: existingReports } = await supabase
-      .from('user_reports')
-      .select('id, created_at')
-      .eq('reporter_id', current.driverId)
-      .ilike('reason', 'Dəstək%')
-      .gte('created_at', yesterday.toISOString())
+    if (existingReports && existingReports.length > 0) { setMessage('Gün ərzində 1 dəfə dəstək müraciəti olar.'); setSupportLoading(false); return }
 
-    if (existingReports && existingReports.length > 0) {
-      setMessage('Gün ərzində yalnız 1 dəfə dəstək müraciəti göndərə bilərsiniz.')
-      setSupportLoading(false)
-      return
-    }
+    const { error } = await supabase.from('user_reports').insert({ reporter_id: current.driverId, reason: `Dəstək: ${supportEmail.trim()}`.slice(0, 300), details: supportMessage.trim().slice(0, 2000), status: 'open' })
 
-    const { error } = await supabase.from('user_reports').insert({
-      reporter_id: current.driverId,
-      reason: `Dəstək: ${supportEmail.trim()}`.slice(0, 300),
-      details: supportMessage.trim().slice(0, 2000),
-      status: 'open',
-    })
-
-    if (error) {
-      setMessage('Müraciət göndərilmədi, yenidən cəhd edin.')
-    } else {
-      setMessage('Müraciətiniz qeydə alındı.')
-      setSupportEmail('')
-      setSupportMessage('')
-      if (isAdmin) await getAdminData()
-    }
-
+    if (error) { setMessage('Müraciət göndərilmədi.'); } else { setMessage('Müraciətiniz qeydə alındı.'); setSupportEmail(''); setSupportMessage(''); if (isAdmin) await getAdminData() }
     setSupportLoading(false)
   }
 
+  // BURA YENİLƏNDİ: Rəng olmadan sürücüyə keçid qadağandır
   async function handleSwitchRole() {
-    if (!profile) {
-      setMessage('Əvvəl profil yaratmaq lazımdır.')
-      return
-    }
-
+    if (!profile) { setMessage('Əvvəl profil yaratmaq lazımdır.'); return }
     const newRole: UserRole = profile.role === 'driver' ? 'passenger' : 'driver'
 
     if (newRole === 'driver' && (!profile.car_brand || !profile.license_plate || !profile.car_color)) {
-      setMessage('Sürücü olmaq üçün əvvəlcə profil bölməsində avtomobil markası, nömrəsi və RƏNGİNİ daxil edin.')
+      setMessage('⚠️ Sürücü olmaq üçün əvvəlcə profil bölməsində avtomobil markası, nömrəsi və RƏNGİNİ daxil edin.')
       setActiveTab('profile')
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ role: newRole })
-      .eq('id', currentUser.driverId)
-
-    if (error) {
-      setMessage(`Rol dəyişdirilmədi: ${error.message}`)
-    } else {
-      setMessage(newRole === 'driver' ? '🚗 Sürücü rejiminə keçildi!' : '🧑‍✈️ Sərnişin rejiminə keçildi!')
-      await getProfile()
-      await getRides()
-      await getAllMyRides()
-    }
+    const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', currentUser.driverId)
+    if (error) { setMessage(`Xəta: ${error.message}`) } else { setMessage(newRole === 'driver' ? '🚗 Sürücü rejimi' : '🧑‍✈️ Sərnişin rejimi'); await getProfile(); await getRides(); await getAllMyRides() }
   }
 
   async function handleCreateReport() {
-    if (!reportTargetUserId.trim() || !reportReason.trim()) {
-      setMessage('Target user və reason məcburidir.')
-      return
-    }
-
+    if (!reportTargetUserId.trim() || !reportReason.trim()) { setMessage('Bütün xanaları doldurun.'); return }
     const targetUserIdNum = Number(reportTargetUserId)
-    if (!Number.isFinite(targetUserIdNum)) {
-      setMessage('Target user ID düzgün deyil.')
-      return
-    }
+    if (!Number.isFinite(targetUserIdNum)) { setMessage('ID düzgün deyil.'); return }
+    if (reportReason.trim().length > LIMITS.reportReasonMax) { setMessage(`Reason max ${LIMITS.reportReasonMax} simvol.`); return }
 
-    if (reportReason.trim().length > LIMITS.reportReasonMax) {
-      setMessage(`Reason maksimum ${LIMITS.reportReasonMax} simvol ola bilər.`)
-      return
-    }
-
-    if (reportDetails.trim().length > LIMITS.reportDetailsMax) {
-      setMessage(`Details maksimum ${LIMITS.reportDetailsMax} simvol ola bilər.`)
-      return
-    }
-
-    const { error } = await supabase.from('user_reports').insert({
-      target_user_id: targetUserIdNum,
-      reporter_id: currentUser.driverId,
-      reason: reportReason.trim(),
-      details: reportDetails.trim() || null,
-      status: 'open',
-    })
-
-    if (error) {
-      setMessage('Report göndərilmədi.')
-    } else {
-      setMessage('Report göndərildi.')
-      setReportTargetUserId('')
-      setReportReason('')
-      setReportDetails('')
-      if (isAdmin) await getAdminData()
-    }
+    const { error } = await supabase.from('user_reports').insert({ target_user_id: targetUserIdNum, reporter_id: currentUser.driverId, reason: reportReason.trim(), details: reportDetails.trim() || null, status: 'open' })
+    if (error) { setMessage('Report göndərilmədi.') } else { setMessage('Report göndərildi.'); setReportTargetUserId(''); setReportReason(''); setReportDetails(''); if (isAdmin) await getAdminData() }
   }
 
   async function handleAdminToggleUser(user: UserOverview) {
-    setAdminLoadingId(user.id)
-
-    const nextBlocked = !adminUserBlockedMap[user.id]
-    const nextNote = (adminUserNoteMap[user.id] || '').trim()
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        is_blocked: nextBlocked,
-        admin_note: nextNote || null,
-      })
-      .eq('id', user.id)
-
-    if (error) {
-      setMessage('User update olmadı.')
-    } else {
-      await logAdminAction(
-        nextBlocked ? 'block_user' : 'unblock_user',
-        'profile',
-        String(user.id),
-        { is_blocked: user.is_blocked, admin_note: user.admin_note },
-        { is_blocked: nextBlocked, admin_note: nextNote || null },
-        nextNote || null
-      )
-      setMessage(nextBlocked ? 'User bloklandı.' : 'User blokdan çıxarıldı.')
-      await getAdminData()
-    }
-
+    setAdminLoadingId(user.id); const nextBlocked = !adminUserBlockedMap[user.id]; const nextNote = (adminUserNoteMap[user.id] || '').trim()
+    const { error } = await supabase.from('profiles').update({ is_blocked: nextBlocked, admin_note: nextNote || null }).eq('id', user.id)
+    if (error) { setMessage('User update olmadı.') } else { await logAdminAction(nextBlocked ? 'block' : 'unblock', 'profile', String(user.id), null, null, nextNote); setMessage(nextBlocked ? 'User bloklandı.' : 'User blokdan çıxarıldı.'); await getAdminData() }
     setAdminLoadingId(null)
   }
 
   async function handleAdminDeleteUser(user: UserOverview) {
-    const confirmed = window.confirm(`DİQQƏT! ${user.full_name || user.username} adlı istifadəçini tamamilə silmək istəyirsiniz? Bu əməliyyat geri qaytarıla bilməz!`);
-    if (!confirmed) return;
-
-    setAdminLoadingId(user.id);
-
+    if (!window.confirm('Tamamilə silinsin?')) return; setAdminLoadingId(user.id);
     const { error } = await supabase.from('profiles').delete().eq('id', user.id);
-
-    if (error) {
-      setMessage(`Silinmədi: Baza xətası ola bilər (Məsələn: istifadəçinin aktiv elanları varsa). Əvvəlcə istifadəçini bloklayın.`);
-    } else {
-      await logAdminAction('delete_user', 'profile', String(user.id), user as any, null, 'Admin deleted user');
-      setMessage('İstifadəçi tamamilə silindi.');
-      await getAdminData();
-    }
-
+    if (error) { setMessage('Silinmədi.'); } else { await logAdminAction('delete', 'profile', String(user.id)); setMessage('İstifadəçi silindi.'); await getAdminData(); }
     setAdminLoadingId(null);
   }
 
   async function handleAdminUpdateReport(report: UserReport) {
-    setAdminLoadingId(report.id)
-
-    const nextStatus = adminReportStatusMap[report.id]
-    const nextNote = (adminReportNoteMap[report.id] || '').trim()
-
-    const { error } = await supabase
-      .from('user_reports')
-      .update({
-        status: nextStatus,
-        admin_note: nextNote || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', report.id)
-
-    if (error) {
-      setMessage('Report update olmadı.')
-    } else {
-      await logAdminAction(
-        'update_report',
-        'user_report',
-        String(report.id),
-        { status: report.status, admin_note: report.admin_note },
-        { status: nextStatus, admin_note: nextNote || null },
-        nextNote || null
-      )
-      setMessage('Report yeniləndi.')
-      await getAdminData()
-    }
-
+    setAdminLoadingId(report.id); const nextStatus = adminReportStatusMap[report.id]; const nextNote = (adminReportNoteMap[report.id] || '').trim()
+    const { error } = await supabase.from('user_reports').update({ status: nextStatus, admin_note: nextNote || null, updated_at: new Date().toISOString() }).eq('id', report.id)
+    if (error) { setMessage('Xəta.') } else { await logAdminAction('update', 'report', String(report.id)); setMessage('Yeniləndi.'); await getAdminData() }
     setAdminLoadingId(null)
   }
 
   function handleAdminStartEditRide(ride: Ride) {
-    setAdminEditingRideId(ride.id)
-    setAdminRideOrigin(ride.origin || '')
-    setAdminRideDestination(ride.destination || '')
-    setAdminRideDate(ride.ride_date || '')
-    setAdminRideTime(ride.departure_time || '')
-    setAdminRideSeats(String(ride.seats ?? 1))
-    setAdminRidePrice(String(ride.price_per_seat ?? 0))
-    setAdminRideNotes(ride.notes || '')
-    setAdminRideStatus(ride.status)
+    setAdminEditingRideId(ride.id); setAdminRideOrigin(ride.origin || ''); setAdminRideDestination(ride.destination || ''); setAdminRideDate(ride.ride_date || ''); setAdminRideTime(ride.departure_time || ''); setAdminRideSeats(String(ride.seats ?? 1)); setAdminRidePrice(String(ride.price_per_seat ?? 0)); setAdminRideNotes(ride.notes || ''); setAdminRideStatus(ride.status)
   }
 
   async function handleAdminSaveRide() {
-    if (!adminEditingRideId) return
-
-    setAdminLoadingId(adminEditingRideId)
-
-    const payload = {
-      origin: adminRideOrigin.trim(),
-      destination: adminRideDestination.trim(),
-      ride_date: adminRideDate || null,
-      departure_time: adminRideTime,
-      seats: Number(adminRideSeats),
-      price_per_seat: Number(adminRidePrice),
-      notes: adminRideNotes.trim() || null,
-      status: adminRideStatus,
-      updated_at: new Date().toISOString(),
-    }
-
-    const original = allRidesAdmin.find((r) => r.id === adminEditingRideId)
-
+    if (!adminEditingRideId) return; setAdminLoadingId(adminEditingRideId)
+    const payload = { origin: adminRideOrigin.trim(), destination: adminRideDestination.trim(), ride_date: adminRideDate || null, departure_time: adminRideTime, seats: Number(adminRideSeats), price_per_seat: Number(adminRidePrice), notes: adminRideNotes.trim() || null, status: adminRideStatus, updated_at: new Date().toISOString() }
     const { error } = await supabase.from('ride_listings').update(payload).eq('id', adminEditingRideId)
-
-    if (error) {
-      setMessage('Admin: ride update alınmadı.')
-    } else {
-      await logAdminAction(
-        'update_ride',
-        'ride_listing',
-        adminEditingRideId,
-        original ? (original as unknown as Record<string, unknown>) : null,
-        payload as unknown as Record<string, unknown>,
-        'Admin ride edit'
-      )
-      setMessage('Ride yeniləndi.')
-      setAdminEditingRideId(null)
-      await getAdminData()
-      await getRides()
-      await getAllMyRides()
-    }
-
+    if (error) { setMessage('Xəta.') } else { await logAdminAction('edit', 'ride', adminEditingRideId); setMessage('Yeniləndi.'); setAdminEditingRideId(null); await getAdminData(); await getRides(); await getAllMyRides() }
     setAdminLoadingId(null)
   }
 
   async function handleAdminDeleteRide(ride: Ride) {
-    const confirmed = window.confirm(`Ride ${ride.id} ləğv edilsin?`)
-    if (!confirmed) return
-
-    setAdminLoadingId(ride.id)
-
-    const payload = {
-      status: 'cancelled' as RideStatus,
-      closed_reason: 'admin_cancelled',
-      updated_at: new Date().toISOString(),
-    }
-
-    const { error } = await supabase.from('ride_listings').update(payload).eq('id', ride.id)
-
-    if (error) {
-      setMessage('Admin: ride delete olmadı.')
-    } else {
-      await logAdminAction(
-        'delete_ride',
-        'ride_listing',
-        ride.id,
-        ride as unknown as Record<string, unknown>,
-        payload as unknown as Record<string, unknown>,
-        'Admin cancelled ride'
-      )
-      setMessage('Ride ləğv edildi.')
-      await getAdminData()
-      await getRides()
-      await getAllMyRides()
-    }
-
+    if (!window.confirm(`Silinsin?`)) return; setAdminLoadingId(ride.id)
+    const { error } = await supabase.from('ride_listings').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', ride.id)
+    if (error) { setMessage('Xəta.') } else { await logAdminAction('delete', 'ride', ride.id); setMessage('Ləğv edildi.'); await getAdminData(); await getRides(); await getAllMyRides() }
     setAdminLoadingId(null)
   }
 
   function handleAdminStartEditRequest(item: RideRequestWithRide) {
-    setAdminEditingRequestId(item.id)
-    setAdminRequestStatus(item.status)
-    setAdminRequestSeats(String(item.seats_requested))
-    setAdminRequestMessage(item.message_text || '')
+    setAdminEditingRequestId(item.id); setAdminRequestStatus(item.status); setAdminRequestSeats(String(item.seats_requested)); setAdminRequestMessage(item.message_text || '')
   }
 
   async function handleAdminSaveRequest() {
-    if (!adminEditingRequestId) return
-
-    setAdminLoadingId(adminEditingRequestId)
-
-    const original = allRideRequestsAdmin.find((r) => r.id === adminEditingRequestId)
-
-    const payload = {
-      status: adminRequestStatus,
-      seats_requested: Number(adminRequestSeats),
-      message_text: adminRequestMessage.trim() || null,
-      updated_at: new Date().toISOString(),
-    }
-
+    if (!adminEditingRequestId) return; setAdminLoadingId(adminEditingRequestId)
+    const payload = { status: adminRequestStatus, seats_requested: Number(adminRequestSeats), message_text: adminRequestMessage.trim() || null, updated_at: new Date().toISOString() }
     const { error } = await supabase.from('ride_requests').update(payload).eq('id', adminEditingRequestId)
-
-    if (error) {
-      setMessage('Admin: request update olmadı.')
-    } else {
-      await logAdminAction(
-        'update_request',
-        'ride_request',
-        String(adminEditingRequestId),
-        original ? (original as unknown as Record<string, unknown>) : null,
-        payload as unknown as Record<string, unknown>,
-        'Admin request edit'
-      )
-      setMessage('Request yeniləndi.')
-      setAdminEditingRequestId(null)
-      await getAdminData()
-      await getRideRequests()
-    }
-
+    if (error) { setMessage('Xəta.') } else { await logAdminAction('edit', 'request', String(adminEditingRequestId)); setMessage('Yeniləndi.'); setAdminEditingRequestId(null); await getAdminData(); await getRideRequests() }
     setAdminLoadingId(null)
   }
 
   async function handleAdminDeleteRequest(item: RideRequestWithRide) {
-    const confirmed = window.confirm(`Request ${item.id} ləğv edilsin?`)
-    if (!confirmed) return
-
-    setAdminLoadingId(item.id)
-
-    const payload = {
-      status: 'cancelled' as RideRequestStatus,
-      updated_at: new Date().toISOString(),
-    }
-
-    const { error } = await supabase.from('ride_requests').update(payload).eq('id', item.id)
-
-    if (error) {
-      setMessage('Admin: request delete olmadı.')
-    } else {
-      await logAdminAction(
-        'delete_request',
-        'ride_request',
-        String(item.id),
-        item as unknown as Record<string, unknown>,
-        payload as unknown as Record<string, unknown>,
-        'Admin cancelled request'
-      )
-      setMessage('Request ləğv edildi.')
-      await getAdminData()
-      await getRideRequests()
-    }
-
+    if (!window.confirm('Ləğv edilsin?')) return; setAdminLoadingId(item.id)
+    const { error } = await supabase.from('ride_requests').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', item.id)
+    if (error) { setMessage('Xəta.') } else { await logAdminAction('cancel', 'request', String(item.id)); setMessage('Ləğv edildi.'); await getAdminData(); await getRideRequests() }
     setAdminLoadingId(null)
   }
 
-  function handleAdminStartEditMessage(item: Message) {
-    setAdminEditingMessageId(item.id)
-    setAdminMessageText(item.message_text || '')
-  }
+  function handleAdminStartEditMessage(item: Message) { setAdminEditingMessageId(item.id); setAdminMessageText(item.message_text || '') }
 
   async function handleAdminSaveMessage() {
-    if (!adminEditingMessageId) return
-
-    setAdminLoadingId(adminEditingMessageId)
-
-    const original = allMessagesAdmin.find((m) => m.id === adminEditingMessageId)
-
-    const payload = {
-      message_text: adminMessageText.trim(),
-    }
-
-    const { error } = await supabase.from('messages').update(payload).eq('id', adminEditingMessageId)
-
-    if (error) {
-      setMessage('Admin: message update olmadı.')
-    } else {
-      await logAdminAction(
-        'update_message',
-        'message',
-        String(adminEditingMessageId),
-        original ? (original as unknown as Record<string, unknown>) : null,
-        payload as unknown as Record<string, unknown>,
-        'Admin message edit'
-      )
-      setMessage('Message yeniləndi.')
-      setAdminEditingMessageId(null)
-      await getAdminData()
-    }
-
+    if (!adminEditingMessageId) return; setAdminLoadingId(adminEditingMessageId)
+    const { error } = await supabase.from('messages').update({ message_text: adminMessageText.trim() }).eq('id', adminEditingMessageId)
+    if (error) { setMessage('Xəta.') } else { await logAdminAction('edit', 'message', String(adminEditingMessageId)); setMessage('Yeniləndi.'); setAdminEditingMessageId(null); await getAdminData() }
     setAdminLoadingId(null)
   }
 
   async function handleAdminDeleteMessage(item: Message) {
-    const confirmed = window.confirm(`Message ${item.id} silinsin?`)
-    if (!confirmed) return
-
-    setAdminLoadingId(item.id)
-
+    if (!window.confirm('Silinsin?')) return; setAdminLoadingId(item.id)
     const { error } = await supabase.from('messages').delete().eq('id', item.id)
-
-    if (error) {
-      setMessage('Admin: message delete olmadı.')
-    } else {
-      await logAdminAction(
-        'delete_message',
-        'message',
-        String(item.id),
-        item as unknown as Record<string, unknown>,
-        null,
-        'Admin deleted message'
-      )
-      setMessage('Message silindi.')
-      await getAdminData()
-    }
-
+    if (error) { setMessage('Xəta.') } else { await logAdminAction('delete', 'message', String(item.id)); setMessage('Silindi.'); await getAdminData() }
     setAdminLoadingId(null)
   }
 
-  function handleAdminStartEditReview(item: ReviewWithMeta) {
-    setAdminEditingReviewId(item.id)
-    setAdminReviewRating(String(item.rating))
-    setAdminReviewComment(item.comment_text || '')
-  }
+  function handleAdminStartEditReview(item: ReviewWithMeta) { setAdminEditingReviewId(item.id); setAdminReviewRating(String(item.rating)); setAdminReviewComment(item.comment_text || '') }
 
   async function handleAdminSaveReview() {
-    if (!adminEditingReviewId) return
-
-    setAdminLoadingId(adminEditingReviewId)
-
-    const original = allReviewsAdmin.find((r) => r.id === adminEditingReviewId)
-
-    const payload = {
-      rating: Number(adminReviewRating),
-      comment_text: adminReviewComment.trim() || null,
-    }
-
-    const { error } = await supabase.from('reviews').update(payload).eq('id', adminEditingReviewId)
-
-    if (error) {
-      setMessage('Admin: review update olmadı.')
-    } else {
-      await logAdminAction(
-        'update_review',
-        'review',
-        String(adminEditingReviewId),
-        original ? (original as unknown as Record<string, unknown>) : null,
-        payload as unknown as Record<string, unknown>,
-        'Admin review edit'
-      )
-      setMessage('Review yeniləndi.')
-      setAdminEditingReviewId(null)
-      await getAdminData()
-    }
-
+    if (!adminEditingReviewId) return; setAdminLoadingId(adminEditingReviewId)
+    const { error } = await supabase.from('reviews').update({ rating: Number(adminReviewRating), comment_text: adminReviewComment.trim() || null }).eq('id', adminEditingReviewId)
+    if (error) { setMessage('Xəta.') } else { await logAdminAction('edit', 'review', String(adminEditingReviewId)); setMessage('Yeniləndi.'); setAdminEditingReviewId(null); await getAdminData() }
     setAdminLoadingId(null)
   }
 
   async function handleAdminDeleteReview(item: ReviewWithMeta) {
-    const confirmed = window.confirm(`Review ${item.id} silinsin?`)
-    if (!confirmed) return
-
-    setAdminLoadingId(item.id)
-
+    if (!window.confirm('Silinsin?')) return; setAdminLoadingId(item.id)
     const { error } = await supabase.from('reviews').delete().eq('id', item.id)
-
-    if (error) {
-      setMessage('Admin: review delete olmadı.')
-    } else {
-      await logAdminAction(
-        'delete_review',
-        'review',
-        String(item.id),
-        item as unknown as Record<string, unknown>,
-        null,
-        'Admin deleted review'
-      )
-      setMessage('Review silindi.')
-      await getAdminData()
-    }
-
+    if (error) { setMessage('Xəta.') } else { await logAdminAction('delete', 'review', String(item.id)); setMessage('Silindi.'); await getAdminData() }
     setAdminLoadingId(null)
   }
-// ── FİLTERLƏMƏ VƏ HESABLAMA (useMemo) BLOKU ──
+
+  // ── FİLTERLƏMƏ VƏ HESABLAMA (useMemo) BLOKU (GERİ QAYTARILDI VƏ TƏMİZLƏNDİ) ──
   const filteredRides = useMemo(() => {
     const current = getActiveUser()
     const text = searchText.toLowerCase().trim()
@@ -2755,9 +1865,7 @@ const triggerVibration = (type: string = 'medium') => {
       const rideDestination = (ride.destination || '').toLowerCase()
       const rideNotes = (ride.notes || '').toLowerCase()
 
-      const matchesText =
-        !text || rideOrigin.includes(text) || rideDestination.includes(text) || rideNotes.includes(text)
-
+      const matchesText = !text || rideOrigin.includes(text) || rideDestination.includes(text) || rideNotes.includes(text)
       const matchesRole = filterRole === 'all' || (ride.role || 'driver') === filterRole
       const matchesDate = !filterDate || (ride.ride_date || '') === filterDate
       const notMine = ride.driver_id !== current.driverId
@@ -2768,21 +1876,17 @@ const triggerVibration = (type: string = 'medium') => {
 
       return matchesText && matchesRole && matchesSearchGender && matchesDate && notMine && matchesWomenOnly && ride.status === 'active'
     })
-  }, [rides, searchText, filterRole, filterDate, isAdmin])
+  }, [rides, searchText, filterRole, filterDate, isAdmin, driverProfilesMap, profile?.gender])
 
   const incomingRideRequests = useMemo(() => {
     return rideRequests.filter((item) => item.owner_id === currentUser.driverId)
-  }, [rideRequests, currentUser.driverId, isAdmin])
+  }, [rideRequests, currentUser.driverId])
 
   const outgoingRideRequests = useMemo(() => {
     return rideRequests.filter((item) => item.requester_id === currentUser.driverId)
-  }, [rideRequests, currentUser.driverId, isAdmin])
+  }, [rideRequests, currentUser.driverId])
 
-  const selectedConversation =
-    conversations.find((item) => item.id === selectedConversationId) || 
-    (isAdmin ? allConversationsAdmin.find((item) => item.id === selectedConversationId) : null) || 
-    null
-
+  const selectedConversation = conversations.find((item) => item.id === selectedConversationId) || (isAdmin ? allConversationsAdmin.find((item) => item.id === selectedConversationId) : null) || null
   const selectedConversationRide = selectedConversation?.ride || null
 
   const currentMessages = useMemo(() => {
@@ -2793,30 +1897,15 @@ const triggerVibration = (type: string = 'medium') => {
   const adminUsersFiltered = useMemo(() => {
     const q = adminGlobalSearch.toLowerCase().trim()
     if (!q) return adminUsers
-    return adminUsers.filter((user) =>
-      [String(user.id), user.full_name || '', user.username || '', user.phone || '', user.bio || '']
-        .join(' ')
-        .toLowerCase()
-        .includes(q)
-    )
+    return adminUsers.filter((user) => [String(user.id), user.full_name || '', user.username || '', user.phone || '', user.bio || ''].join(' ').toLowerCase().includes(q) )
   }, [adminUsers, adminGlobalSearch])
 
   const adminReportsFiltered = useMemo(() => {
     const q = adminGlobalSearch.toLowerCase().trim()
     if (!q) return adminReports
-    return adminReports.filter((report) =>
-      [
-        String(report.id),
-        String(report.target_user_id || ''),
-        String(report.reporter_id),
-        report.reason || '',
-        report.details || '',
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(q)
-    )
+    return adminReports.filter((report) => [String(report.id), String(report.target_user_id || ''), String(report.reporter_id), report.reason || '', report.details || ''].join(' ').toLowerCase().includes(q) )
   }, [adminReports, adminGlobalSearch])
+
   if (!tgReady) {
     return (
       <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -2835,12 +1924,8 @@ const triggerVibration = (type: string = 'medium') => {
         <div style={{ textAlign: 'center', padding: 40 }}>
           <p style={{ fontSize: 40, marginBottom: 16 }}>📱</p>
           <p style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>Telegram tələb olunur</p>
-          <p style={{ fontSize: 14, color: '#64748b', marginTop: 8 }}>
-            Bu tətbiq yalnız Telegram Mini App kimi işləyir.
-          </p>
-          <p style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>
-            Botdan açın: @yolustubot
-          </p>
+          <p style={{ fontSize: 14, color: '#64748b', marginTop: 8 }}>Bu tətbiq yalnız Telegram Mini App kimi işləyir.</p>
+          <p style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>Botdan açın: @yolustubot</p>
         </div>
       </main>
     )
@@ -2852,40 +1937,15 @@ const triggerVibration = (type: string = 'medium') => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <div>
             <h1 style={styles.title}>Yolüstü</h1>
-            <p style={styles.subtitle}>
-              Bakıda sürücü və sərnişinləri birləşdirən icma platforma.
-            </p>
+            <p style={styles.subtitle}>Bakıda sürücü və sərnişinləri birləşdirən icma platforma.</p>
           </div>
-          
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {isRealAdmin && (
-              <button 
-                type="button" 
-                onClick={() => {
-                  setIsAdminMode(!isAdminMode)
-                  setActiveTab(!isAdminMode ? 'admin' : 'dashboard')
-                }} 
-                style={{ 
-                  background: isAdminMode ? '#475569' : '#7c3aed', color: '#ffffff', border: 'none', 
-                  padding: '12px 20px', borderRadius: '12px', fontWeight: 900, 
-                  fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', 
-                  boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)',
-                }}
-              >
+              <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setActiveTab(!isAdminMode ? 'admin' : 'dashboard') }} style={{ background: isAdminMode ? '#475569' : '#7c3aed', color: '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)', }}>
                 {isAdminMode ? '👤 İstifadəçi rejimi' : '👨‍💻 Admin rejimi'}
               </button>
             )}
-            <button 
-              type="button" 
-              onClick={() => void handleSOS()} 
-              style={{ 
-                background: '#ef4444', color: '#ffffff', border: 'none', 
-                padding: '12px 20px', borderRadius: '12px', fontWeight: 900, 
-                fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', 
-                gap: 8, boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
-                animation: 'pulse 2s infinite'
-              }}
-            >
+            <button type="button" onClick={() => void handleSOS()} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)', animation: 'pulse 2s infinite' }}>
               🚨 SOS
             </button>
           </div>
@@ -2905,20 +1965,7 @@ const triggerVibration = (type: string = 'medium') => {
           { key: 'support', label: 'Dəstək' },
           { key: 'profile', label: 'Profil' }
         ]).map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            onClick={() => setActiveTab(item.key as TabType)}
-            style={
-              activeTab === item.key
-                ? item.key === 'admin'
-                  ? styles.adminActiveTabButton
-                  : styles.activeTabButton
-                : item.key === 'admin'
-                ? styles.adminTabButton
-                : styles.tabButton
-            }
-          >
+          <button key={item.key} type="button" onClick={() => setActiveTab(item.key as TabType)} style={ activeTab === item.key ? item.key === 'admin' ? styles.adminActiveTabButton : styles.activeTabButton : item.key === 'admin' ? styles.adminTabButton : styles.tabButton }>
             {item.label}
           </button>
         ))}
@@ -2929,28 +1976,11 @@ const triggerVibration = (type: string = 'medium') => {
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Dashboard</h2>
             <div style={styles.statsGrid}>
-              <div style={styles.statsCard}>
-                <p style={styles.statLabel}>Aktiv elanlarım</p>
-                <p style={styles.statValue}>{myRides.length}</p>
-              </div>
-              <div style={styles.statsCard}>
-                <p style={styles.statLabel}>Tarixçədəki elanlar</p>
-                <p style={styles.statValue}>{historyRides.length}</p>
-              </div>
-             <div style={styles.statsCard}>
-                <p style={styles.statLabel}>Gələn aktiv müraciətlər</p>
-                <p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length}</p>
-              </div>
-             <div style={styles.statsCard}>
-                <p style={styles.statLabel}>Oxunmamış mesajlar</p>
-                <p style={styles.statValue}>{unreadTotal}</p>
-              </div>
-              <div style={styles.statsCard}>
-                <p style={styles.statLabel}>Reytinqim</p>
-                <p style={{ ...styles.statValue, color: '#eab308' }}>
-                  ⭐ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0'}
-                </p>
-              </div>
+              <div style={styles.statsCard}><p style={styles.statLabel}>Aktiv elanlarım</p><p style={styles.statValue}>{myRides.length}</p></div>
+              <div style={styles.statsCard}><p style={styles.statLabel}>Tarixçədəki elanlar</p><p style={styles.statValue}>{historyRides.length}</p></div>
+             <div style={styles.statsCard}><p style={styles.statLabel}>Gələn aktiv müraciətlər</p><p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length}</p></div>
+             <div style={styles.statsCard}><p style={styles.statLabel}>Oxunmamış mesajlar</p><p style={styles.statValue}>{unreadTotal}</p></div>
+              <div style={styles.statsCard}><p style={styles.statLabel}>Reytinqim</p><p style={{ ...styles.statValue, color: '#eab308' }}>⭐ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0'}</p></div>
             </div>
           </section>
 
@@ -2971,7 +2001,6 @@ const triggerVibration = (type: string = 'medium') => {
                     <p style={styles.infoRow}><strong>Qalan yer:</strong> {ride.seats}</p>
                     <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
                     {ride.notes && <p style={styles.infoRow}><strong>Qeyd:</strong> {ride.notes}</p>}
-
                     <div style={styles.actionRow}>
                       <button type="button" onClick={() => handleEditRide(ride)} style={styles.warningButton}>Redaktə et</button>
                       <button type="button" onClick={() => void handleCloseRide(ride.id)} style={styles.closeButton} disabled={rideActionLoading === ride.id}>Elanı bağla</button>
@@ -2995,18 +2024,11 @@ const triggerVibration = (type: string = 'medium') => {
             <form onSubmit={handleSubmitRide} style={styles.form}>
               {(profile?.home_address || profile?.work_address) && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                  {profile.home_address && (
-                    <button type="button" onClick={() => { if(!origin) setOrigin(profile.home_address!); else if(!destination) setDestination(profile.home_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>
-                  )}
-                  {profile.work_address && (
-                    <button type="button" onClick={() => { if(!origin) setOrigin(profile.work_address!); else if(!destination) setDestination(profile.work_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>
-                  )}
+                  {profile.home_address && <button type="button" onClick={() => { if(!origin) setOrigin(profile.home_address!); else if(!destination) setDestination(profile.home_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>}
+                  {profile.work_address && <button type="button" onClick={() => { if(!origin) setOrigin(profile.work_address!); else if(!destination) setDestination(profile.work_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>}
                 </div>
               )}
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Aktiv rol</label>
-                <input value={getRoleLabel(profile.role)} readOnly style={styles.input} />
-              </div>
+              <div style={styles.fieldWrap}><label style={styles.label}>Aktiv rol</label><input value={getRoleLabel(profile.role)} readOnly style={styles.input} /></div>
 
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Haradan</label>
@@ -3030,9 +2052,7 @@ const triggerVibration = (type: string = 'medium') => {
                 {destLat && <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>📍 {destLat.toFixed(5)}, {destLng?.toFixed(5)}</p>}
               </div>
 
-              {locationPickerOpen && (
-                <LocationPicker title={locationPickerTarget === 'origin' ? 'Haradan — başlanğıc nöqtəsi' : 'Hara — son nöqtə'} onClose={() => setLocationPickerOpen(false)} onSelect={(lat, lng, address) => { if (locationPickerTarget === 'origin') { setOrigin(address); setOriginLat(lat); setOriginLng(lng); } else { setDestination(address); setDestLat(lat); setDestLng(lng); } setLocationPickerOpen(false); }} />
-              )}
+              {locationPickerOpen && <LocationPicker title={locationPickerTarget === 'origin' ? 'Haradan — başlanğıc nöqtəsi' : 'Hara — son nöqtə'} onClose={() => setLocationPickerOpen(false)} onSelect={(lat, lng, address) => { if (locationPickerTarget === 'origin') { setOrigin(address); setOriginLat(lat); setOriginLng(lng); } else { setDestination(address); setDestLat(lat); setDestLng(lng); } setLocationPickerOpen(false); }} />}
 
               <div style={styles.twoColumnGrid}>
                 <div style={styles.fieldWrap}>
@@ -3059,21 +2079,11 @@ const triggerVibration = (type: string = 'medium') => {
               </div>
 
               <div style={styles.twoColumnGrid}>
-                <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Yer sayı / nəfər sayı</label>
-                  <input type="number" min="1" value={seats} onChange={(e) => setSeats(e.target.value)} required style={styles.input} />
-                </div>
-
-                <div style={styles.fieldWrap}>
-                  <label style={styles.label}>Qiymət</label>
-                  <input type="number" step="0.1" min="0" value={pricePerSeat} onChange={(e) => setPricePerSeat(e.target.value)} required style={styles.input} />
-                </div>
+                <div style={styles.fieldWrap}><label style={styles.label}>Yer sayı / nəfər sayı</label><input type="number" min="1" value={seats} onChange={(e) => setSeats(e.target.value)} required style={styles.input} /></div>
+                <div style={styles.fieldWrap}><label style={styles.label}>Qiymət</label><input type="number" step="0.1" min="0" value={pricePerSeat} onChange={(e) => setPricePerSeat(e.target.value)} required style={styles.input} /></div>
               </div>
 
-              <div style={styles.fieldWrap}>
-                <label style={styles.label}>Qeyd</label>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} style={styles.textarea} />
-              </div>
+              <div style={styles.fieldWrap}><label style={styles.label}>Qeyd</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} style={styles.textarea} /></div>
 
               {profile?.gender === 'female' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#fdf4ff', border: '1px solid #f0abfc', borderRadius: 12, marginTop: 4, marginBottom: 14 }}>
@@ -3103,12 +2113,8 @@ const triggerVibration = (type: string = 'medium') => {
 
               {(profile?.home_address || profile?.work_address) && (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {profile.home_address && (
-                    <button type="button" onClick={() => setSearchText(profile.home_address!)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>
-                  )}
-                  {profile.work_address && (
-                    <button type="button" onClick={() => setSearchText(profile.work_address!)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>
-                  )}
+                  {profile.home_address && <button type="button" onClick={() => setSearchText(profile.home_address!)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>}
+                  {profile.work_address && <button type="button" onClick={() => setSearchText(profile.work_address!)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>}
                 </div>
               )}
 
@@ -3116,21 +2122,15 @@ const triggerVibration = (type: string = 'medium') => {
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Rol filteri</label>
                   <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} style={styles.select}>
-                    <option value="all">Hamısı</option>
-                    <option value="driver">Sürücü elanları</option>
-                    <option value="passenger">Sərnişin elanları</option>
+                    <option value="all">Hamısı</option><option value="driver">Sürücü elanları</option><option value="passenger">Sərnişin elanları</option>
                   </select>
                 </div>
-
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Cins filteri</label>
                   <select value={filterGender} onChange={(e) => setFilterGender(e.target.value)} style={styles.select}>
-                    <option value="">Bütün cinslər</option>
-                    <option value="male">Kişi</option>
-                    <option value="female">Qadın</option>
+                    <option value="">Bütün cinslər</option><option value="male">Kişi</option><option value="female">Qadın</option>
                   </select>
                 </div>
-
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Tarix filteri</label>
                   <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} style={styles.input} />
@@ -3163,19 +2163,20 @@ const triggerVibration = (type: string = 'medium') => {
                       <div style={{...styles.approvedBadge, margin: 0}}>Aktiv</div>
                       {driverProfilesMap[ride.driver_id] && (
                         <div style={{ display: 'flex', gap: 10, background: '#f8fafc', padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }}>
-                          <span style={{ fontWeight: 700, color: '#334155' }}>
-                            {driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}
-                          </span>
+                          <span style={{ fontWeight: 700, color: '#334155' }}>{driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}</span>
                           <span style={{ fontWeight: 800, color: '#eab308' }}>⭐ {driverProfilesMap[ride.driver_id].rating}</span>
                         </div>
                       )}
                     </div>
                     <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
+                    
+                    {/* BURA YENİLƏNDİ: Axtarışda Avtomobil markası və rəngi */}
                     {driverProfilesMap[ride.driver_id]?.carBrand && (
                       <p style={styles.infoRow}>
                         <strong>Avtomobil:</strong> {driverProfilesMap[ride.driver_id].carBrand} ({driverProfilesMap[ride.driver_id].carColor})
                       </p>
                     )}
+
                     <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
                     <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
                     <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
@@ -3188,12 +2189,10 @@ const triggerVibration = (type: string = 'medium') => {
                       <label style={styles.label}>Müraciət mesajı</label>
                       <textarea rows={2} value={requestMessageMap[ride.id] || ''} onChange={(e) => setRequestMessageMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.textarea} placeholder="Qısa mesaj yaz" />
                     </div>
-
                     <div style={styles.fieldWrap}>
                       <label style={styles.label}>Neçə yer / nəfər</label>
                       <input type="number" min="1" max={ride.seats} value={requestSeatsMap[ride.id] || '1'} onChange={(e) => setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.input} />
                     </div>
-
                     <div style={styles.actionRow}>
                       <button type="button" onClick={() => void handleCreateRideRequest(ride)} style={styles.primaryButton} disabled={rideRequestLoading === ride.id}>{rideRequestLoading === ride.id ? 'Göndərilir...' : 'Müraciət et'}</button>
                     </div>
@@ -3296,7 +2295,10 @@ const triggerVibration = (type: string = 'medium') => {
                   <div style={styles.resultCard}>
                     <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
                     <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
-                    <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {selectedConversationRide ? `${selectedConversationRide.ride_date || '-'} / ${selectedConversationRide.departure_time}` : '-'}</p> {selectedConversationRide && driverProfilesMap[selectedConversationRide.driver_id]?.carBrand && (
+                    <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {selectedConversationRide ? `${selectedConversationRide.ride_date || '-'} / ${selectedConversationRide.departure_time}` : '-'}</p>
+
+                    {/* BURA YENİLƏNDİ: Çatda Dövlət Qeydiyyat Nömrəsinin göstərilməsi */}
+                    {selectedConversationRide && driverProfilesMap[selectedConversationRide.driver_id]?.carBrand && (
                       <p style={styles.infoRow}>
                         <strong>Avtomobil:</strong> {driverProfilesMap[selectedConversationRide.driver_id].carBrand} ({driverProfilesMap[selectedConversationRide.driver_id].carColor}) 
                         {' '}
@@ -3305,6 +2307,7 @@ const triggerVibration = (type: string = 'medium') => {
                         </span>
                       </p>
                     )}
+
                     <p style={styles.infoRow}><strong>Qiymət:</strong> {selectedConversationRide ? `${selectedConversationRide.price_per_seat} AZN` : '-'}</p>
                     <p style={styles.infoRow}><strong>Status:</strong> {selectedConversation.status === 'closed' ? 'Arxivlənib (Bağlı)' : selectedConversation.status}</p>
                     {selectedConversation.status !== 'closed' && (
@@ -3460,8 +2463,7 @@ const triggerVibration = (type: string = 'medium') => {
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Cins</label>
                 <select value={profileGender} onChange={(e) => setProfileGender(e.target.value as 'male' | 'female')} style={styles.select}>
-                  <option value="male">Kişi</option>
-                  <option value="female">Qadın</option>
+                  <option value="male">Kişi</option><option value="female">Qadın</option>
                 </select>
               </div>
               <div style={styles.fieldWrap}>
@@ -3486,8 +2488,7 @@ const triggerVibration = (type: string = 'medium') => {
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>İlkin rol</label>
                 <select value={initialRole} onChange={(e) => setInitialRole(e.target.value as UserRole)} style={styles.select}>
-                  <option value="driver">Sürücü</option>
-                  <option value="passenger">Sərnişin</option>
+                  <option value="driver">Sürücü</option><option value="passenger">Sərnişin</option>
                 </select>
               </div>
             ) : (
@@ -3497,7 +2498,7 @@ const triggerVibration = (type: string = 'medium') => {
               </div>
             )}
             <div style={{ marginTop: 10, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-              <p style={{ margin: '0 0 12px', fontWeight: 700, color: '#334155' }}>🚗 Sürücü Məlumatları (Sürücü roluna keçmək istəyənlər üçün məcburidir)</p>
+              <p style={{ margin: '0 0 12px', fontWeight: 700, color: '#334155' }}>🚗 Sürücü Məlumatları (Sürücü roluna keçmək üçün məcburidir)</p>
               <div style={styles.twoColumnGrid}>
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Avtomobil markası</label>
@@ -3507,10 +2508,11 @@ const triggerVibration = (type: string = 'medium') => {
                   <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
                   <input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} style={styles.input} placeholder="Məs: 99-XX-999" />
                 </div>
+                {/* BURA YENİLƏNDİ: Rəng xanası */}
                 <div style={styles.fieldWrap}>
-                    <label style={styles.label}>Avtomobil rəngi</label>
-                    <input value={carColor} onChange={(e) => setCarColor(e.target.value)} style={styles.input} placeholder="Məs: Qara" />
-                  </div>
+                  <label style={styles.label}>Avtomobil rəngi</label>
+                  <input value={carColor} onChange={(e) => setCarColor(e.target.value)} style={styles.input} placeholder="Məs: Ağ" />
+                </div>
               </div>
             </div>
             <div style={styles.buttonRow}>
@@ -3525,63 +2527,25 @@ const triggerVibration = (type: string = 'medium') => {
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Admin panel</h2>
             <div style={styles.chipRow}>
-              {[
-                { key: 'overview', label: 'Overview' },
-                { key: 'users', label: 'Users' },
-                { key: 'rides', label: 'Rides' },
-                { key: 'requests', label: 'Requests' },
-                { key: 'conversations', label: 'Conversations' },
-                { key: 'messages', label: 'Messages' },
-                { key: 'reviews', label: 'Reviews' },
-                { key: 'reports', label: 'Reports' },
-                { key: 'audit', label: 'Audit' },
-              ].map((item) => (
+              {[ { key: 'overview', label: 'Overview' }, { key: 'users', label: 'Users' }, { key: 'rides', label: 'Rides' }, { key: 'requests', label: 'Requests' }, { key: 'conversations', label: 'Conversations' }, { key: 'messages', label: 'Messages' }, { key: 'reviews', label: 'Reviews' }, { key: 'reports', label: 'Reports' }, { key: 'audit', label: 'Audit' }, ].map((item) => (
                 <button key={item.key} type="button" onClick={() => setAdminSection(item.key as AdminSection)} style={adminSection === item.key ? styles.chipAdmin : styles.chip}>{item.label}</button>
               ))}
             </div>
-            <div style={styles.fieldWrap}>
-              <label style={styles.label}>Admin search</label>
-              <input value={adminGlobalSearch} onChange={(e) => setAdminGlobalSearch(e.target.value)} style={styles.input} placeholder="User, report, id, səbəb..." />
-            </div>
+            <div style={styles.fieldWrap}><label style={styles.label}>Admin search</label><input value={adminGlobalSearch} onChange={(e) => setAdminGlobalSearch(e.target.value)} style={styles.input} placeholder="User, report, id, səbəb..." /></div>
           </section>
 
           {adminSection === 'overview' && (
             <section style={styles.sectionCard}>
               <h2 style={styles.sectionTitle}>Overview</h2>
               <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px,1fr))', marginBottom: 20 }}>
-                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #dc2626', background: adminReports.filter(r => r.status === 'open').length > 0 ? '#fff5f5' : '#faf5ff' }}>
-                  <p style={styles.statLabel}>🔴 Açıq reportlar</p>
-                  <p style={{ ...styles.statValue, color: adminReports.filter(r => r.status === 'open').length > 0 ? '#dc2626' : '#0f172a' }}>{adminReports.filter(r => r.status === 'open').length}</p>
-                </div>
-                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #f59e0b' }}>
-                  <p style={styles.statLabel}>🔒 Bloklanmış</p>
-                  <p style={{ ...styles.statValue, color: '#f59e0b' }}>{adminUsers.filter(u => u.is_blocked).length}</p>
-                </div>
-                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #2563eb' }}>
-                  <p style={styles.statLabel}>🚗 Aktiv elanlar</p>
-                  <p style={{ ...styles.statValue, color: '#2563eb' }}>{allRidesAdmin.filter(r => r.status === 'active').length}</p>
-                </div>
-                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #7c3aed' }}>
-                  <p style={styles.statLabel}>⏳ Gözləyən müraciətlər</p>
-                  <p style={{ ...styles.statValue, color: '#7c3aed' }}>{allRideRequestsAdmin.filter(r => r.status === 'pending').length}</p>
-                </div>
+                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #dc2626', background: adminReports.filter(r => r.status === 'open').length > 0 ? '#fff5f5' : '#faf5ff' }}><p style={styles.statLabel}>🔴 Açıq reportlar</p><p style={{ ...styles.statValue, color: adminReports.filter(r => r.status === 'open').length > 0 ? '#dc2626' : '#0f172a' }}>{adminReports.filter(r => r.status === 'open').length}</p></div>
+                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #f59e0b' }}><p style={styles.statLabel}>🔒 Bloklanmış</p><p style={{ ...styles.statValue, color: '#f59e0b' }}>{adminUsers.filter(u => u.is_blocked).length}</p></div>
+                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #2563eb' }}><p style={styles.statLabel}>🚗 Aktiv elanlar</p><p style={{ ...styles.statValue, color: '#2563eb' }}>{allRidesAdmin.filter(r => r.status === 'active').length}</p></div>
+                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #7c3aed' }}><p style={styles.statLabel}>⏳ Gözləyən müraciətlər</p><p style={{ ...styles.statValue, color: '#7c3aed' }}>{allRideRequestsAdmin.filter(r => r.status === 'pending').length}</p></div>
               </div>
               <div style={styles.statsGrid}>
-                {[
-                  { label: 'Cəmi İstifadəçi', value: adminUsers.length, color: '#2563eb' },
-                  { label: 'Cəmi Elan', value: allRidesAdmin.length, color: '#0891b2' },
-                  { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' },
-                  { label: 'Cəmi Mesaj', value: allMessagesAdmin.length, color: '#059669' },
-                  { label: 'Cəmi Review', value: allReviewsAdmin.length, color: '#d97706' },
-                  { label: 'Cəmi Report', value: adminReports.length, color: '#dc2626' },
-                ].map(item => (
-                  <div key={item.label} style={styles.adminStatsCard}>
-                    <p style={styles.statLabel}>{item.label}</p>
-                    <p style={{ ...styles.statValue, color: item.color }}>{item.value}</p>
-                    <div style={{ marginTop: 8, height: 5, borderRadius: 4, background: '#e2e8f0' }}>
-                      <div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} />
-                    </div>
-                  </div>
+                {[ { label: 'Cəmi İstifadəçi', value: adminUsers.length, color: '#2563eb' }, { label: 'Cəmi Elan', value: allRidesAdmin.length, color: '#0891b2' }, { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' }, { label: 'Cəmi Mesaj', value: allMessagesAdmin.length, color: '#059669' }, { label: 'Cəmi Review', value: allReviewsAdmin.length, color: '#d97706' }, { label: 'Cəmi Report', value: adminReports.length, color: '#dc2626' }, ].map(item => (
+                  <div key={item.label} style={styles.adminStatsCard}><p style={styles.statLabel}>{item.label}</p><p style={{ ...styles.statValue, color: item.color }}>{item.value}</p><div style={{ marginTop: 8, height: 5, borderRadius: 4, background: '#e2e8f0' }}><div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} /></div></div>
                 ))}
               </div>
               <div style={{ marginTop: 20, padding: 16, background: '#faf5ff', borderRadius: 14, border: '1px solid #e9d5ff' }}>
@@ -3630,10 +2594,7 @@ const triggerVibration = (type: string = 'medium') => {
                     <p style={styles.infoRow}><strong>Blocked:</strong> {adminUserBlockedMap[user.id] ? 'Bəli' : 'Xeyr'}</p>
                     <p style={styles.infoRow}><strong>Avg rating:</strong> {user.avg_rating || 0}</p>
                     <p style={styles.infoRow}><strong>Active rides:</strong> {user.active_rides}</p>
-                    <div style={styles.fieldWrap}>
-                      <label style={styles.label}>Admin note</label>
-                      <textarea rows={3} value={adminUserNoteMap[user.id] || ''} onChange={(e) => setAdminUserNoteMap((prev) => ({ ...prev, [user.id]: e.target.value }))} style={styles.textarea} />
-                    </div>
+                    <div style={styles.fieldWrap}><label style={styles.label}>Admin note</label><textarea rows={3} value={adminUserNoteMap[user.id] || ''} onChange={(e) => setAdminUserNoteMap((prev) => ({ ...prev, [user.id]: e.target.value }))} style={styles.textarea} /></div>
                     <div style={styles.actionRow}>
                       <button type="button" style={adminUserBlockedMap[user.id] ? styles.successButton : styles.warningButton} disabled={adminLoadingId === user.id} onClick={() => void handleAdminToggleUser(user)}>{adminUserBlockedMap[user.id] ? 'Blokdan çıxar' : 'Blokla'}</button>
                       <button type="button" style={styles.dangerButton} disabled={adminLoadingId === user.id} onClick={() => void handleAdminDeleteUser(user)}>Tamamilə Sil</button>
@@ -3687,14 +2648,9 @@ const triggerVibration = (type: string = 'medium') => {
                     <input type="time" value={adminRideTime} onChange={(e) => setAdminRideTime(e.target.value)} style={styles.input} />
                     <input type="number" value={adminRideSeats} onChange={(e) => setAdminRideSeats(e.target.value)} style={styles.input} />
                     <input type="number" value={adminRidePrice} onChange={(e) => setAdminRidePrice(e.target.value)} style={styles.input} />
-                    <select value={adminRideStatus} onChange={(e) => setAdminRideStatus(e.target.value as RideStatus)} style={styles.select}>
-                      <option value="active">active</option><option value="full">full</option><option value="cancelled">cancelled</option><option value="completed">completed</option>
-                    </select>
+                    <select value={adminRideStatus} onChange={(e) => setAdminRideStatus(e.target.value as RideStatus)} style={styles.select}><option value="active">active</option><option value="full">full</option><option value="cancelled">cancelled</option><option value="completed">completed</option></select>
                     <textarea value={adminRideNotes} onChange={(e) => setAdminRideNotes(e.target.value)} rows={3} style={styles.textarea} />
-                    <div style={styles.actionRow}>
-                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveRide()}>Save ride</button>
-                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingRideId(null)}>Cancel</button>
-                    </div>
+                    <div style={styles.actionRow}><button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveRide()}>Save ride</button><button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingRideId(null)}>Cancel</button></div>
                   </div>
                 </section>
               )}
@@ -3722,10 +2678,7 @@ const triggerVibration = (type: string = 'medium') => {
                             <p style={styles.infoRow}><strong>Owner:</strong> {item.owner_id}</p>
                             <p style={styles.infoRow}><strong>Seats:</strong> {item.seats_requested}</p>
                             <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
-                            <div style={styles.actionRow}>
-                              <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRequest(item)}>Edit</button>
-                              <button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteRequest(item)}>Delete</button>
-                            </div>
+                            <div style={styles.actionRow}><button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRequest(item)}>Edit</button><button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteRequest(item)}>Delete</button></div>
                           </div>
                         ))}
                       </div>
@@ -3738,15 +2691,10 @@ const triggerVibration = (type: string = 'medium') => {
                 <section style={styles.sectionCard}>
                   <h2 style={styles.sectionTitle}>Request edit</h2>
                   <div style={styles.form}>
-                    <select value={adminRequestStatus} onChange={(e) => setAdminRequestStatus(e.target.value as RideRequestStatus)} style={styles.select}>
-                      <option value="pending">pending</option><option value="accepted">accepted</option><option value="rejected">rejected</option><option value="cancelled">cancelled</option>
-                    </select>
+                    <select value={adminRequestStatus} onChange={(e) => setAdminRequestStatus(e.target.value as RideRequestStatus)} style={styles.select}><option value="pending">pending</option><option value="accepted">accepted</option><option value="rejected">rejected</option><option value="cancelled">cancelled</option></select>
                     <input type="number" value={adminRequestSeats} onChange={(e) => setAdminRequestSeats(e.target.value)} style={styles.input} />
                     <textarea value={adminRequestMessage} onChange={(e) => setAdminRequestMessage(e.target.value)} rows={3} style={styles.textarea} />
-                    <div style={styles.actionRow}>
-                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveRequest()}>Save request</button>
-                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingRequestId(null)}>Cancel</button>
-                    </div>
+                    <div style={styles.actionRow}><button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveRequest()}>Save request</button><button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingRequestId(null)}>Cancel</button></div>
                   </div>
                 </section>
               )}
@@ -3773,9 +2721,7 @@ const triggerVibration = (type: string = 'medium') => {
                           <p style={styles.infoRow}><strong>Passenger:</strong> {conv.passenger_user_id}</p>
                           <p style={styles.infoRow}><strong>Status:</strong> {conv.status}</p>
                           <p style={styles.infoRow}><strong>Updated:</strong> {formatDateTime(conv.updated_at)}</p>
-                          <div style={styles.actionRow}>
-                            <button type="button" style={styles.primaryButton} onClick={() => void handleOpenConversation(conv.id)}>Çata daxil ol</button>
-                          </div>
+                          <div style={styles.actionRow}><button type="button" style={styles.primaryButton} onClick={() => void handleOpenConversation(conv.id)}>Çata daxil ol</button></div>
                         </div>
                       ))}
                     </div>
@@ -3796,10 +2742,7 @@ const triggerVibration = (type: string = 'medium') => {
                       <p style={styles.infoRow}><strong>Sender:</strong> {item.sender_id}</p>
                       <p style={styles.infoRow}><strong>Text:</strong> {item.message_text}</p>
                       <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
-                      <div style={styles.actionRow}>
-                        <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditMessage(item)}>Edit</button>
-                        <button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteMessage(item)}>Delete</button>
-                      </div>
+                      <div style={styles.actionRow}><button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditMessage(item)}>Edit</button><button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteMessage(item)}>Delete</button></div>
                     </div>
                   ))}
                 </div>
@@ -3810,10 +2753,7 @@ const triggerVibration = (type: string = 'medium') => {
                   <h2 style={styles.sectionTitle}>Message edit</h2>
                   <div style={styles.form}>
                     <textarea value={adminMessageText} onChange={(e) => setAdminMessageText(e.target.value)} rows={4} style={styles.textarea} />
-                    <div style={styles.actionRow}>
-                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveMessage()}>Save message</button>
-                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingMessageId(null)}>Cancel</button>
-                    </div>
+                    <div style={styles.actionRow}><button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveMessage()}>Save message</button><button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingMessageId(null)}>Cancel</button></div>
                   </div>
                 </section>
               )}
@@ -3832,10 +2772,7 @@ const triggerVibration = (type: string = 'medium') => {
                     <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
                     <p style={styles.infoRow}><strong>Rating:</strong> {item.rating}</p>
                     <p style={styles.infoRow}><strong>Comment:</strong> {item.comment_text || '-'}</p>
-                    <div style={styles.actionRow}>
-                      <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>Edit</button>
-                      <button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteReview(item)}>Delete</button>
-                    </div>
+                    <div style={styles.actionRow}><button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>Edit</button><button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteReview(item)}>Delete</button></div>
                   </div>
                 ))}
                 </div>
@@ -3845,14 +2782,9 @@ const triggerVibration = (type: string = 'medium') => {
                 <section style={styles.sectionCard}>
                   <h2 style={styles.sectionTitle}>Review edit</h2>
                   <div style={styles.form}>
-                    <select value={adminReviewRating} onChange={(e) => setAdminReviewRating(e.target.value)} style={styles.select}>
-                      <option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
-                    </select>
+                    <select value={adminReviewRating} onChange={(e) => setAdminReviewRating(e.target.value)} style={styles.select}><option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option></select>
                     <textarea value={adminReviewComment} onChange={(e) => setAdminReviewComment(e.target.value)} rows={4} style={styles.textarea} />
-                    <div style={styles.actionRow}>
-                      <button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveReview()}>Save review</button>
-                      <button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingReviewId(null)}>Cancel</button>
-                    </div>
+                    <div style={styles.actionRow}><button type="button" style={styles.primaryButton} onClick={() => void handleAdminSaveReview()}>Save review</button><button type="button" style={styles.secondaryButton} onClick={() => setAdminEditingReviewId(null)}>Cancel</button></div>
                   </div>
                 </section>
               )}
@@ -3871,19 +2803,9 @@ const triggerVibration = (type: string = 'medium') => {
                     <p style={styles.infoRow}><strong>Target:</strong> {report.target_user_id || '-'}</p>
                     <p style={styles.infoRow}><strong>Reason:</strong> {report.reason}</p>
                     <p style={styles.infoRow}><strong>Details:</strong> {report.details || '-'}</p>
-                    <div style={styles.fieldWrap}>
-                      <label style={styles.label}>Status</label>
-                      <select value={adminReportStatusMap[report.id] || report.status} onChange={(e) => setAdminReportStatusMap((prev) => ({ ...prev, [report.id]: e.target.value as ReportStatus, })) } style={styles.select}>
-                        <option value="open">open</option><option value="in_review">in_review</option><option value="resolved">resolved</option><option value="dismissed">dismissed</option>
-                      </select>
-                    </div>
-                    <div style={styles.fieldWrap}>
-                      <label style={styles.label}>Admin note</label>
-                      <textarea rows={3} value={adminReportNoteMap[report.id] || ''} onChange={(e) => setAdminReportNoteMap((prev) => ({ ...prev, [report.id]: e.target.value, })) } style={styles.textarea} />
-                    </div>
-                    <div style={styles.actionRow}>
-                      <button type="button" style={styles.primaryButton} disabled={adminLoadingId === report.id} onClick={() => void handleAdminUpdateReport(report)}>Update report</button>
-                    </div>
+                    <div style={styles.fieldWrap}><label style={styles.label}>Status</label><select value={adminReportStatusMap[report.id] || report.status} onChange={(e) => setAdminReportStatusMap((prev) => ({ ...prev, [report.id]: e.target.value as ReportStatus, })) } style={styles.select}><option value="open">open</option><option value="in_review">in_review</option><option value="resolved">resolved</option><option value="dismissed">dismissed</option></select></div>
+                    <div style={styles.fieldWrap}><label style={styles.label}>Admin note</label><textarea rows={3} value={adminReportNoteMap[report.id] || ''} onChange={(e) => setAdminReportNoteMap((prev) => ({ ...prev, [report.id]: e.target.value, })) } style={styles.textarea} /></div>
+                    <div style={styles.actionRow}><button type="button" style={styles.primaryButton} disabled={adminLoadingId === report.id} onClick={() => void handleAdminUpdateReport(report)}>Update report</button></div>
                   </div>
                 ))}
               </div>
@@ -3895,16 +2817,10 @@ const triggerVibration = (type: string = 'medium') => {
               <h2 style={styles.sectionTitle}>Audit log</h2>
               <div style={styles.tableWrap}>
                 <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>ID</th><th style={styles.th}>Admin</th><th style={styles.th}>Action</th><th style={styles.th}>Entity</th><th style={styles.th}>Entity ID</th><th style={styles.th}>Note</th><th style={styles.th}>Tarix</th>
-                    </tr>
-                  </thead>
+                  <thead><tr><th style={styles.th}>ID</th><th style={styles.th}>Admin</th><th style={styles.th}>Action</th><th style={styles.th}>Entity</th><th style={styles.th}>Entity ID</th><th style={styles.th}>Note</th><th style={styles.th}>Tarix</th></tr></thead>
                   <tbody>
                     {adminAuditLogs.map((log) => (
-                      <tr key={log.id}>
-                        <td style={styles.td}>{log.id}</td><td style={styles.td}>{log.admin_user_id}</td><td style={styles.td}>{log.action_type}</td><td style={styles.td}>{log.entity_type}</td><td style={styles.td}>{log.entity_id}</td><td style={styles.td}>{log.note || '-'}</td><td style={styles.td}>{formatDateTime(log.created_at)}</td>
-                      </tr>
+                      <tr key={log.id}><td style={styles.td}>{log.id}</td><td style={styles.td}>{log.admin_user_id}</td><td style={styles.td}>{log.action_type}</td><td style={styles.td}>{log.entity_type}</td><td style={styles.td}>{log.entity_id}</td><td style={styles.td}>{log.note || '-'}</td><td style={styles.td}>{formatDateTime(log.created_at)}</td></tr>
                     ))}
                   </tbody>
                 </table>
@@ -3913,7 +2829,8 @@ const triggerVibration = (type: string = 'medium') => {
           )}
         </>
       )}
-    {/* ── Qlobal Toast Bildirişi ── */}
+
+      {/* ── Qlobal Toast Bildirişi ── */}
       {message && (
         <>
           <style>{`
