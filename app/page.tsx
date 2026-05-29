@@ -192,10 +192,10 @@ const LIMITS = {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: {
+ page: {
     maxWidth: 1280,
     margin: '0 auto',
-    padding: '20px 16px 48px',
+    padding: '20px 16px 100px', // Bura dəyişdi (aşağıdan yer veririk)
     fontFamily: 'Arial, sans-serif',
     background: '#f8fafc',
     minHeight: '100vh',
@@ -713,6 +713,54 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 8px',
     borderBottom: '1px solid #eef2f7',
     verticalAlign: 'top',
+  },
+  bottomNav: {
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    background: '#ffffff',
+    borderTop: '1px solid #e2e8f0',
+    display: 'flex',
+    justifyContent: 'space-around',
+    paddingBottom: '16px', // Telefonların alt xəttinə görə
+    zIndex: 1000,
+    boxShadow: '0 -4px 20px rgba(0,0,0,0.05)',
+  },
+  navItem: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '12px 0 4px',
+    color: '#64748b',
+    cursor: 'pointer',
+    fontSize: 12,
+    fontWeight: 700,
+    background: 'transparent',
+    border: 'none',
+    outline: 'none',
+  },
+  navItemActive: {
+    color: '#2563eb',
+  },
+  fab: {
+    position: 'fixed',
+    bottom: '90px',
+    right: '20px',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '50px',
+    padding: '16px 24px',
+    fontSize: '15px',
+    fontWeight: 800,
+    cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+    zIndex: 1001,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    transition: 'transform 0.2s',
   },
 }
 
@@ -1952,25 +2000,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div style={styles.topTabs}>
-        {(isAdminMode ? [
-          { key: 'admin', label: '👑 Admin Paneli' }
-        ] : [
-          { key: 'dashboard', label: 'Dashboard' },
-          { key: 'create', label: 'Elan ver' },
-          { key: 'search', label: 'Axtarış' },
-          { key: 'requests', label: `Müraciətlər (${incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length})` },
-          { key: 'chat', label: unreadTotal > 0 ? `Chat (${unreadTotal} yeni)` : `Chat (${conversations.filter(c => c.status !== 'closed').length})` },
-          { key: 'history', label: 'Tarixçə' },
-          { key: 'support', label: 'Dəstək' },
-          { key: 'profile', label: 'Profil' }
-        ]).map((item) => (
-          <button key={item.key} type="button" onClick={() => setActiveTab(item.key as TabType)} style={ activeTab === item.key ? item.key === 'admin' ? styles.adminActiveTabButton : styles.activeTabButton : item.key === 'admin' ? styles.adminTabButton : styles.tabButton }>
-            {item.label}
-          </button>
-        ))}
-      </div>
-
+      
       {activeTab === 'dashboard' && (
         <>
           <section style={styles.sectionCard}>
@@ -2206,7 +2236,15 @@ export default function Home() {
 
       {activeTab === 'requests' && (
         <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>Müraciətlər</h2>
+          {/* INBOX (GƏLƏNLƏR) ÜST MENYUSU */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20, background: '#f1f5f9', padding: 6, borderRadius: 12 }}>
+            <button onClick={() => setActiveTab('chat')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: 'transparent', color: '#64748b' }}>
+              💬 Mesajlar ({unreadTotal > 0 ? `${unreadTotal} yeni` : conversations.filter(c => c.status !== 'closed').length})
+            </button>
+            <button onClick={() => setActiveTab('requests')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#0f172a', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+              🔔 Müraciətlər ({incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active').length})
+            </button>
+          </div>
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
             <button type="button" onClick={() => { setReqView('incoming'); setReqStatus('active'); }} style={reqView === 'incoming' ? styles.primaryButton : styles.ghostButton}>📥 Gələnlər ({incomingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})</button>
             <button type="button" onClick={() => { setReqView('outgoing'); setReqStatus('active'); }} style={reqView === 'outgoing' ? styles.primaryButton : styles.ghostButton}>📤 Göndərdiklərim ({outgoingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})</button>
@@ -2260,7 +2298,15 @@ export default function Home() {
 
       {activeTab === 'chat' && (
         <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>Chat</h2>
+          {/* INBOX (GƏLƏNLƏR) ÜST MENYUSU */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20, background: '#f1f5f9', padding: 6, borderRadius: 12 }}>
+            <button onClick={() => setActiveTab('chat')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#0f172a', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+              💬 Mesajlar ({unreadTotal > 0 ? `${unreadTotal} yeni` : conversations.filter(c => c.status !== 'closed').length})
+            </button>
+            <button onClick={() => setActiveTab('requests')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: 'transparent', color: '#64748b' }}>
+              🔔 Müraciətlər ({incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active').length})
+            </button>
+          </div>
           <div style={styles.chatLayout}>
             <div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -2519,6 +2565,12 @@ export default function Home() {
               <button type="submit" disabled={profileSaving} style={styles.primaryButton}>{profileSaving ? 'Yadda saxlanılır...' : profile ? 'Profili yenilə' : 'Profili yarat'}</button>
             </div>
           </form>
+          {/* YENİ: Dəstək Düyməsi (Profilin daxilində) */}
+          <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <button type="button" onClick={() => { setActiveTab('support'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: '#f8fafc', color: '#334155', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+              🎧 Dəstək və Əlaqə
+            </button>
+          </div>
         </section>
       )}
 
@@ -2829,7 +2881,42 @@ export default function Home() {
           )}
         </>
       )}
+{/* ── SABİT ALT MENYU (BOTTOM NAV) ── */}
+      <div style={styles.bottomNav}>
+        <button style={{ ...styles.navItem, ...(activeTab === 'dashboard' || activeTab === 'search' ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('dashboard'); window.scrollTo({ top: 0 }); }}>
+          <span style={{ fontSize: 24, marginBottom: 4 }}>🏠</span>
+          Kəşf Et
+        </button>
+        <button style={{ ...styles.navItem, ...(activeTab === 'history' ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('history'); window.scrollTo({ top: 0 }); }}>
+          <span style={{ fontSize: 24, marginBottom: 4 }}>🚗</span>
+          Səfərlərim
+        </button>
+        <button style={{ ...styles.navItem, ...((activeTab === 'chat' || activeTab === 'requests') ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('chat'); window.scrollTo({ top: 0 }); }}>
+          <div style={{ position: 'relative' }}>
+            <span style={{ fontSize: 24, marginBottom: 4 }}>💬</span>
+            {(unreadTotal + incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active').length) > 0 && (
+              <span style={{ position: 'absolute', top: -4, right: -8, background: '#ef4444', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 10 }}>
+                {unreadTotal + incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active').length}
+              </span>
+            )}
+          </div>
+          Gələnlər
+        </button>
+        <button style={{ ...styles.navItem, ...((activeTab === 'profile' || activeTab === 'support' || activeTab === 'admin') ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('profile'); window.scrollTo({ top: 0 }); }}>
+          <span style={{ fontSize: 24, marginBottom: 4 }}>👤</span>
+          Profil
+        </button>
+      </div>
 
+      {/* ── AĞILLI ÜZƏN DÜYMƏ (FAB) ── */}
+      {profile && ['dashboard', 'history', 'profile'].includes(activeTab) && (
+        <button 
+          style={{...styles.fab, background: profile.role === 'driver' ? '#16a34a' : '#2563eb'}} 
+          onClick={() => { setActiveTab(profile.role === 'driver' ? 'create' : 'search'); window.scrollTo({ top: 0 }); }}
+        >
+          {profile.role === 'driver' ? '➕ Elan Ver' : '🔍 Səfər Axtar'}
+        </button>
+      )}
       {/* ── Qlobal Toast Bildirişi ── */}
       {message && (
         <>
