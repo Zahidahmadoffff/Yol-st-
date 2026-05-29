@@ -210,7 +210,7 @@ const styles: Record<string, React.CSSProperties> = {
   form: { display: 'grid', gap: 14 },
   fieldWrap: { display: 'grid', gap: 6 },
   label: { fontSize: 14, fontWeight: 700, color: '#334155' },
-  input: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box' },
+  input: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box', transition: 'border 0.2s' },
   select: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box' },
   textarea: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box', resize: 'vertical' },
   primaryButton: { padding: '12px 16px', background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800, boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)' },
@@ -224,15 +224,15 @@ const styles: Record<string, React.CSSProperties> = {
   message: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#dbeafe', color: '#1e3a8a', border: '1px solid #bfdbfe', fontSize: 14 },
   adminMessage: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe', fontSize: 14 },
   ridesGrid: { display: 'grid', gap: 16 },
-  statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' },
+  statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' },
   twoColumnGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' },
   adminGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' },
-  statsCard: { border: '1px solid #dbe3ee', borderRadius: 16, padding: 16, background: '#f8fafc', cursor: 'pointer', transition: 'transform 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' },
+  statsCard: { border: '1px solid #dbe3ee', borderRadius: 16, padding: 16, background: '#ffffff', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s', },
   adminStatsCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#faf5ff' },
   statLabel: { margin: 0, fontSize: 13, color: '#64748b', fontWeight: 700 },
-  statValue: { margin: '8px 0 0', fontSize: 28, color: '#0f172a', fontWeight: 800 },
+  statValue: { margin: '8px 0 0', fontSize: 26, color: '#0f172a', fontWeight: 800 },
   myRideCard: { border: '1px solid #bfdbfe', borderRadius: 16, padding: 16, background: '#eff6ff', color: '#0f172a', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
-  resultCard: { border: '1px solid #cbd5e1', borderRadius: 16, padding: 16, background: '#f8fafc', color: '#0f172a', boxShadow: '0 1px 6px rgba(15, 23, 42, 0.04)' },
+  resultCard: { border: '1px solid #cbd5e1', borderRadius: 16, padding: 16, background: '#ffffff', color: '#0f172a', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' },
   adminCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#fcfaff', color: '#0f172a', boxShadow: '0 1px 6px rgba(124, 58, 237, 0.06)' },
   infoRow: { margin: '6px 0', color: '#1e293b', lineHeight: 1.5 },
   mutedText: { color: '#64748b', fontSize: 14, lineHeight: 1.5 },
@@ -250,20 +250,19 @@ const styles: Record<string, React.CSSProperties> = {
   fullBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#ede9fe', color: '#5b21b6' },
   completedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#d1fae5', color: '#065f46' },
   warningBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef9c3', color: '#b45309' }, 
-  unreadBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 22, padding: '0 8px', borderRadius: 999, background: '#2563eb', color: '#ffffff', fontSize: 12, fontWeight: 800, marginLeft: 8 },
+  unreadBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 22, padding: '0 8px', borderRadius: 999, background: '#ef4444', color: '#ffffff', fontSize: 12, fontWeight: 800, marginLeft: 8 },
   chatLayout: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
   conversationList: { display: 'grid', gap: 12 },
-  conversationCard: { border: '1px solid #dbe3ee', borderRadius: 14, padding: 14, background: '#ffffff', cursor: 'pointer' },
+  conversationCard: { border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, background: '#ffffff', cursor: 'pointer', transition: '0.2s' },
   conversationCardActive: { border: '1px solid #2563eb', borderRadius: 14, padding: 14, background: '#eff6ff', cursor: 'pointer' },
-  chatPanel: { border: '1px solid #dbe3ee', borderRadius: 16, background: '#ffffff', padding: 16 },
-  messageList: { display: 'grid', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
-  myMessage: { justifySelf: 'end', maxWidth: '80%', background: '#2563eb', color: '#ffffff', padding: '10px 12px', borderRadius: 14 },
-  otherMessage: { justifySelf: 'start', maxWidth: '80%', background: '#e2e8f0', color: '#0f172a', padding: '10px 12px', borderRadius: 14 },
+  chatPanel: { border: '1px solid #e2e8f0', borderRadius: 16, background: '#ffffff', padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
+  messageList: { display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
+  myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: '#2563eb', color: '#ffffff', padding: '10px 14px', borderRadius: '16px 16px 2px 16px' },
+  otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: '#f1f5f9', color: '#0f172a', padding: '10px 14px', borderRadius: '16px 16px 16px 2px' },
   tableWrap: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
   th: { textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #e2e8f0', color: '#475569', whiteSpace: 'nowrap' },
   td: { padding: '10px 8px', borderBottom: '1px solid #eef2f7', verticalAlign: 'top' },
-  profileBlock: { padding: 20, background: '#ffffff', borderRadius: 16, border: '1px solid #e2e8f0', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }
 }
 
 function pad(value: number) { return String(value).padStart(2, '0') }
@@ -338,7 +337,7 @@ function getRideBadgeStyle(ride: Ride) {
   return styles.approvedBadge
 }
 
-// ── YENİ: Çatda Göndərilmiş Linkləri Formatlamaq (Kliklənə bilən etmək) ──
+// Çat daxilində GPS linklərini kliklənə bilən etmək üçün köməkçi funksiya
 const formatMessageText = (text: string, isMine: boolean) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
@@ -864,7 +863,7 @@ export default function Home() {
       setRequestMessageMap((prev) => ({ ...prev, [ride.id]: '' }))
       setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: '1' }))
       try { await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ride.driver_id, text: `🚗 <b>YolDash: Yeni müraciət!</b>\n\n<b>Marşrut:</b> ${ride.origin} → ${ride.destination}\n<b>Tarix:</b> ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' }) }) } catch (_) { }
-      setActiveTab('requests') // Müraciət ediləndə birbaşa ora atacaq
+      await getRideRequests(); setActiveTab('chat')
     }
     setRideRequestLoading(null)
   }
@@ -986,7 +985,8 @@ export default function Home() {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps?q=${lat},${lng}`;
+        // Rəsmi Google Maps Axtarış URL-i
+        const locMsg = `📍 Konumum: https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
 
         const { error } = await supabase.from('messages').insert({
           conversation_id: selectedConversationId!,
@@ -1004,7 +1004,7 @@ export default function Home() {
         setMessageSending(false);
       },
       (err) => {
-        setMessage('Konum alına bilmədi. Zəhmət olmasa GPS-ə (Məkan) icazə verdiyinizdən əmin olun.');
+        setMessage('Konum alına bilmədi. Zəhmət olmasa cihazın GPS (Məkan) icazəsinə əmin olun.');
         setMessageSending(false);
       },
       { enableHighAccuracy: true }
@@ -1419,7 +1419,7 @@ export default function Home() {
 
       {activeTab === 'search' && (
         <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>Axtarış (Kəşf Et)</h2>
+          <h2 style={styles.sectionTitle}>Axtarış</h2>
           <div style={styles.form}>
             <div style={styles.fieldWrap}>
               <label style={styles.label}>Axtarış</label>
@@ -1454,7 +1454,7 @@ export default function Home() {
 
             <div style={styles.buttonRow}>
               <button type="button" onClick={() => { setSearchText(''); setFilterRole('all'); setFilterGender(''); setFilterDate(''); }} style={styles.secondaryButton}>Filteri sıfırla</button>
-              <button type="button" onClick={() => { void initializeData(); }} style={styles.ghostButton}>Yenilə</button>
+              <button type="button" onClick={() => void initializeData()} style={styles.ghostButton}>Yenilə</button>
             </div>
           </div>
         </section>
@@ -1644,12 +1644,12 @@ export default function Home() {
                       {selectedConversation.status !== 'closed' && selectedConversationRide && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                           {selectedConversationRide.origin_lat && (
-                            <a href={`https://www.google.com/maps?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <a href={`https://www.google.com/maps/search/?api=1&query=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
                               📍 Başlanğıca get
                             </a>
                           )}
                           {selectedConversationRide.destination_lat && (
-                            <a href={`https://www.google.com/maps?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <a href={`https://www.google.com/maps/search/?api=1&query=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
                               🏁 Son nöqtəyə get
                             </a>
                           )}
