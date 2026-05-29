@@ -68,7 +68,6 @@ type Profile = {
   work_address?: string | null
   car_brand: string | null
   license_plate: string | null
-  car_color?: string | null
   is_blocked?: boolean
   admin_note?: string | null
   last_seen_at?: string | null
@@ -872,7 +871,6 @@ const triggerVibration = (type: string = 'medium') => {
   const [womenOnly, setWomenOnly] = useState(false)
   const [carBrand, setCarBrand] = useState('')
   const [licensePlate, setLicensePlate] = useState('')
-  const [carColor, setCarColor] = useState('') // YENİ: Rəng dəyişəni
 
   const [searchText, setSearchText] = useState('')
   const [filterRole, setFilterRole] = useState('all')
@@ -975,7 +973,36 @@ const triggerVibration = (type: string = 'medium') => {
       void getAdminData();
     }
   }, [isAdmin]);
+// ── AĞILLI TELEFON NÖMRƏSİ FORMATI ──
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
 
+    // Əgər istifadəçi hər şeyi sildisə və ya prefixi (+994) tamamilə pozmağa çalışırsa, təmizlə
+    if (!input || (input.length < profilePhone.length && input.length <= 4)) {
+      setProfilePhone('');
+      return;
+    }
+
+    let numbers = input.replace(/\D/g, ''); // Yalnız rəqəmləri saxlayırıq
+
+    // Azərbaycan kodunu avtomatik bərpa edirik
+    if (numbers.startsWith('0')) {
+      numbers = '994' + numbers.substring(1);
+    } else if (!numbers.startsWith('994') && numbers.length > 0) {
+      numbers = '994' + numbers;
+    }
+
+    numbers = numbers.substring(0, 12); // Maksimum uzunluğu kəsirik (994 + 9 rəqəm)
+
+    // Vizual formata salırıq: +994 50 123 45 67
+    let formatted = '+994';
+    if (numbers.length > 3) formatted += ' ' + numbers.substring(3, 5);
+    if (numbers.length > 5) formatted += ' ' + numbers.substring(5, 8);
+    if (numbers.length > 8) formatted += ' ' + numbers.substring(8, 10);
+    if (numbers.length > 10) formatted += ' ' + numbers.substring(10, 12);
+
+    setProfilePhone(formatted);
+  };
   function resetRideForm() {
     setEditingRideId(null)
     setOrigin('')
@@ -1251,7 +1278,6 @@ useEffect(() => {
       setProfileWorkAddress(p.work_address || '')
       setCarBrand(p.car_brand || '')
       setLicensePlate(p.license_plate || '')
-      setCarColor(p.car_color || '') // YENİ: Bazadan çəkilən rəng
       setInitialRole(p.role || 'passenger')
     } else {
       setProfile(null)
@@ -1598,27 +1624,20 @@ useEffect(() => {
 
     const current = getActiveUser()
 
-    // ── 1. SƏRT NÖMRƏ YOXLAMASI ──
-    const safePhone = profilePhone || '';
-    const digitsOnly = safePhone.replace(/\D/g, ''); // Sadəcə rəqəmləri sayır
-
-    // Əgər nömrə tam 12 rəqəm (994 və 9 rəqəm) deyilsə, BURADA DAYAN!
-    if (digitsOnly.length !== 12) {
-      setMessage('⚠️ Telefon nömrəsini tam daxil edin (Məs: +994 50 123 45 67)');
-      setProfileSaving(false);
-      return; 
+    if (!profilePhone.trim()) {
+      setMessage('Telefon nömrəsi məcburidir.')
+      setProfileSaving(false)
+      return
     }
 
-    // ── 2. ROL VƏ MAŞIN YOXLAMASI ──
     const effectiveRole = profile ? profile.role : initialRole
 
-    if (effectiveRole === 'driver' && (!carBrand.trim() || !licensePlate.trim() || !carColor.trim())) {
-      setMessage('⚠️ Sürücü üçün avtomobil markası, nömrəsi və rəngi məcburidir.')
+    if (effectiveRole === 'driver' && (!carBrand.trim() || !licensePlate.trim())) {
+      setMessage('Sürücü üçün avtomobil markası və nömrə məcburidir.')
       setProfileSaving(false)
-      return;
+      return
     }
 
-    // Əgər yuxarıdakı maneələrdən keçdisə, deməli məlumat 100% doğrudur, bazaya yaz:
     const payload = {
       id: current.driverId,
       full_name: profileFullName.trim(),
@@ -1629,9 +1648,9 @@ useEffect(() => {
       home_address: profileHomeAddress.trim() || null,
       work_address: profileWorkAddress.trim() || null,
       role: effectiveRole,
+      // DƏYİŞİKLİK BURADADIR: Artıq rolundan asılı olmayaraq maşın məlumatı yadda saxlanılacaq
       car_brand: carBrand.trim() || null,
       license_plate: licensePlate.trim() || null,
-      car_color: carColor.trim() || null,
       last_seen_at: new Date().toISOString(),
     }
 
@@ -1640,7 +1659,7 @@ useEffect(() => {
     if (error) {
       setMessage('Profil yadda saxlanmadı.')
     } else {
-      setMessage('✅ Profil uğurla yadda saxlanıldı.')
+      setMessage('Profil yadda saxlanıldı.')
       await getProfile()
     }
     setProfileSaving(false)
@@ -2307,9 +2326,9 @@ async function handleCloseConversation(conversationId: number) {
 
     const newRole: UserRole = profile.role === 'driver' ? 'passenger' : 'driver'
 
-    // Sürücüyə keçirsə və maşın məlumatları (rəng də daxil) yoxdursa, profilə yönləndir
-    if (newRole === 'driver' && (!profile.car_brand || !profile.license_plate || !profile.car_color)) {
-      setMessage('⚠️ Sürücü olmaq üçün əvvəlcə profil bölməsində avtomobil markası, nömrəsi və RƏNGİNİ daxil edin.')
+    // YENİ ƏLAVƏ: Sürücüyə keçirsə və maşın məlumatı yoxdursa, profilə yönləndir
+    if (newRole === 'driver' && (!profile.car_brand || !profile.license_plate)) {
+      setMessage('Sürücü olmaq üçün əvvəlcə profil bölməsində avtomobilinizin markasını və nömrəsini daxil edin.')
       setActiveTab('profile')
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
@@ -2330,7 +2349,7 @@ async function handleCloseConversation(conversationId: number) {
     }
   }
 
-    async function handleCreateReport() {
+  async function handleCreateReport() {
     if (!reportTargetUserId.trim() || !reportReason.trim()) {
       setMessage('Target user və reason məcburidir.')
       return
@@ -2370,6 +2389,7 @@ async function handleCloseConversation(conversationId: number) {
       if (isAdmin) await getAdminData()
     }
   }
+
   async function handleAdminToggleUser(user: UserOverview) {
     setAdminLoadingId(user.id)
 
@@ -3378,7 +3398,104 @@ async function handleCloseConversation(conversationId: number) {
         </>
       )}
 
-      
+      {activeTab === 'requests' && (
+        <section style={styles.sectionCard}>
+          <h2 style={styles.sectionTitle}>Müraciətlər</h2>
+
+          {/* --- SƏVİYYƏ 1: GƏLƏNLƏR VƏ GÖNDƏRİLƏNLƏR TABLARI --- */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => { setReqView('incoming'); setReqStatus('active'); }}
+              style={reqView === 'incoming' ? styles.primaryButton : styles.ghostButton}
+            >
+              📥 Gələnlər ({incomingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => { setReqView('outgoing'); setReqStatus('active'); }}
+              style={reqView === 'outgoing' ? styles.primaryButton : styles.ghostButton}
+            >
+              📤 Göndərdiklərim ({outgoingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})
+            </button>
+          </div>
+
+          {/* --- SƏVİYYƏ 2: AKTİV VƏ ARXİV TABLARI --- */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
+            <button
+              type="button"
+              onClick={() => setReqStatus('active')}
+              style={reqStatus === 'active' ? styles.chipActive : styles.chip}
+            >
+              🟢 Aktiv
+            </button>
+            <button
+              type="button"
+              onClick={() => setReqStatus('archived')}
+              style={reqStatus === 'archived' ? styles.chipActive : styles.chip}
+            >
+              🗄️ Arxiv
+            </button>
+          </div>
+
+          {/* --- MƏLUMATLARIN (KARTLARIN) GÖSTƏRİLMƏSİ --- */}
+          <div style={styles.ridesGrid}>
+            {(() => {
+              // Hazırkı müraciət siyahısını təyin edirik
+              const currentList = reqView === 'incoming' ? incomingRideRequests : outgoingRideRequests;
+              
+              // Müraciətin "Aktiv" olub-olmadığını yoxlayan məntiq
+              const isReqActive = (req: any) => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active');
+              
+              // Siyahını filterdən keçiririk
+              const filteredList = currentList.filter(req => reqStatus === 'active' ? isReqActive(req) : !isReqActive(req));
+
+              // Əgər siyahı boşdursa
+              if (filteredList.length === 0) {
+                return (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 10px', background: '#f8fafc', borderRadius: 16, border: '1px dashed #cbd5e1' }}>
+                    <span style={{ fontSize: 40 }}>{reqStatus === 'active' ? '📬' : '🗄️'}</span>
+                    <p style={{ ...styles.mutedText, marginTop: 12, fontWeight: 600 }}>
+                      {reqStatus === 'active' ? 'Göstəriləcək aktiv müraciət yoxdur.' : 'Arxiv boşdur.'}
+                    </p>
+                  </div>
+                );
+              }
+
+              // Siyahı dolu isə kartları çəkirik
+              return filteredList.map((item) => (
+                <div key={item.id} style={{ ...styles.resultCard, opacity: reqStatus === 'archived' ? 0.65 : 1 }}>
+                  <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
+                  <p style={styles.infoRow}>
+                    <strong>Rol:</strong> {getRoleLabel(reqView === 'incoming' ? item.requester_role : item.owner_role)}
+                  </p>
+                  <p style={styles.infoRow}><strong>İstənən yer:</strong> {item.seats_requested}</p>
+                  {item.message_text && <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text}</p>}
+                  {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
+                  <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
+
+                  {/* DÜYMƏLƏR - YALNIZ "GƏLƏNLƏR" VƏ "AKTİV" BÖLMƏSİNDƏ GÖRÜNÜR */}
+                  {reqView === 'incoming' && reqStatus === 'active' && (
+                    <>
+                      {item.status === 'pending' && item.ride?.status === 'active' && (
+                        <div style={styles.actionRow}>
+                          <button type="button" style={styles.successButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'accepted')}>Qəbul et</button>
+                          <button type="button" style={styles.dangerButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'rejected')}>Rədd et</button>
+                        </div>
+                      )}
+                      {item.status === 'accepted' && item.ride?.status === 'active' && (
+                        <div style={styles.actionRow}>
+                          <button type="button" style={styles.closeButton} disabled={rideRequestLoading === item.id} onClick={() => void handleConfirmDeal(item)}>Deal təsdiqlə</button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ));
+            })()}
+          </div>
+        </section>
+      )}
       {activeTab === 'chat' && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Chat</h2>
@@ -3703,7 +3820,14 @@ async function handleCloseConversation(conversationId: number) {
 
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Telefon</label>
-                  <input value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} style={styles.input} required />
+                  <input 
+                    type="tel"
+                    value={profilePhone} 
+                    onChange={handlePhoneChange} 
+                    style={{ ...styles.input, letterSpacing: '1px', fontWeight: 600, color: '#1e293b' }} 
+                    placeholder="+994 50 123 45 67"
+                    required 
+                  />
                 </div>
               </div>
 
@@ -3762,11 +3886,6 @@ async function handleCloseConversation(conversationId: number) {
                   <div style={styles.fieldWrap}>
                     <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
                     <input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} style={styles.input} placeholder="Məs: 99-XX-999" />
-                  </div>
-                  {/* YENİ: Maşının rəngi xanası */}
-                  <div style={styles.fieldWrap}>
-                    <label style={styles.label}>Avtomobil rəngi</label>
-                    <input value={carColor} onChange={(e) => setCarColor(e.target.value)} style={styles.input} placeholder="Məs: Ağ" />
                   </div>
                 </div>
               </div>
