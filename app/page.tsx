@@ -68,7 +68,7 @@ type Profile = {
   work_address?: string | null
   car_brand: string | null
   license_plate: string | null
-  car_color?: string | null // YENİ: Rəng
+  car_color?: string | null
   is_blocked?: boolean
   admin_note?: string | null
   last_seen_at?: string | null
@@ -192,10 +192,10 @@ const LIMITS = {
 }
 
 const styles: Record<string, React.CSSProperties> = {
- page: {
+  page: {
     maxWidth: 1280,
     margin: '0 auto',
-    padding: '20px 16px 100px', // Bura dəyişdi (aşağıdan yer veririk)
+    padding: '20px 16px 100px', // Alt menyuya görə boşluq qoyuldu
     fontFamily: 'Arial, sans-serif',
     background: '#f8fafc',
     minHeight: '100vh',
@@ -209,614 +209,82 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 18,
     boxShadow: '0 6px 20px rgba(15, 23, 42, 0.06)',
   },
-  title: {
-    margin: 0,
-    fontSize: 30,
-    fontWeight: 800,
-    color: '#0f172a',
-  },
-  subtitle: {
-    marginTop: 8,
-    marginBottom: 0,
-    color: '#475569',
-    fontSize: 15,
-    lineHeight: 1.5,
-  },
-  topTabs: {
-    display: 'flex',
-    gap: 10,
-    flexWrap: 'wrap',
-    marginBottom: 18,
-  },
-  tabButton: {
-    padding: '10px 14px',
-    borderRadius: 999,
-    border: '1px solid #cbd5e1',
-    background: '#ffffff',
-    color: '#0f172a',
-    cursor: 'pointer',
-    fontWeight: 700,
-    fontSize: 14,
-  },
-  activeTabButton: {
-    padding: '10px 14px',
-    borderRadius: 999,
-    border: '1px solid #2563eb',
-    background: '#2563eb',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: 700,
-    fontSize: 14,
-  },
-  adminTabButton: {
-    padding: '10px 14px',
-    borderRadius: 999,
-    border: '1px solid #7c3aed',
-    background: '#faf5ff',
-    color: '#6d28d9',
-    cursor: 'pointer',
-    fontWeight: 800,
-    fontSize: 14,
-  },
-  adminActiveTabButton: {
-    padding: '10px 14px',
-    borderRadius: 999,
-    border: '1px solid #7c3aed',
-    background: '#7c3aed',
-    color: '#ffffff',
-    cursor: 'pointer',
-    fontWeight: 800,
-    fontSize: 14,
-  },
-  sectionCard: {
-    background: '#ffffff',
-    border: '1px solid #e2e8f0',
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 18,
-    boxShadow: '0 3px 14px rgba(15, 23, 42, 0.05)',
-  },
-  sectionTitle: {
-    marginTop: 0,
-    marginBottom: 16,
-    fontSize: 22,
-    fontWeight: 800,
-    color: '#0f172a',
-  },
-  form: {
-    display: 'grid',
-    gap: 14,
-  },
-  fieldWrap: {
-    display: 'grid',
-    gap: 6,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: '#334155',
-  },
-  input: {
-    width: '100%',
-    padding: '12px 14px',
-    borderRadius: 12,
-    border: '1px solid #cbd5e1',
-    background: '#ffffff',
-    color: '#0f172a',
-    fontSize: 15,
-    outline: 'none',
-    boxSizing: 'border-box',
-  },
-  select: {
-    width: '100%',
-    padding: '12px 14px',
-    borderRadius: 12,
-    border: '1px solid #cbd5e1',
-    background: '#ffffff',
-    color: '#0f172a',
-    fontSize: 15,
-    outline: 'none',
-    boxSizing: 'border-box',
-  },
-  textarea: {
-    width: '100%',
-    padding: '12px 14px',
-    borderRadius: 12,
-    border: '1px solid #cbd5e1',
-    background: '#ffffff',
-    color: '#0f172a',
-    fontSize: 15,
-    outline: 'none',
-    boxSizing: 'border-box',
-    resize: 'vertical',
-  },
-  primaryButton: {
-    padding: '12px 16px',
-    background: '#2563eb',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: 12,
-    cursor: 'pointer',
-    fontSize: 15,
-    fontWeight: 800,
-    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
-  },
-  secondaryButton: {
-    padding: '10px 14px',
-    background: '#e2e8f0',
-    color: '#0f172a',
-    border: 'none',
-    borderRadius: 12,
-    cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 700,
-  },
-  ghostButton: {
-    padding: '10px 14px',
-    background: '#ffffff',
-    color: '#0f172a',
-    border: '1px solid #cbd5e1',
-    borderRadius: 12,
-    cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 700,
-  },
-  successButton: {
-    padding: '10px 14px',
-    background: '#16a34a',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: 10,
-    cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 800,
-  },
-  dangerButton: {
-    padding: '10px 14px',
-    background: '#dc2626',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: 10,
-    cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 800,
-  },
-  warningButton: {
-    padding: '10px 14px',
-    background: '#f59e0b',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: 10,
-    cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 800,
-  },
-  closeButton: {
-    padding: '10px 14px',
-    background: '#7c3aed',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: 10,
-    cursor: 'pointer',
-    fontSize: 14,
-    fontWeight: 800,
-  },
-  cancelButton: {
-    padding: '12px 16px',
-    background: '#94a3b8',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: 12,
-    cursor: 'pointer',
-    fontSize: 15,
-    fontWeight: 800,
-  },
-  message: {
-    marginTop: 8,
-    marginBottom: 18,
-    padding: '12px 14px',
-    borderRadius: 12,
-    background: '#dbeafe',
-    color: '#1e3a8a',
-    border: '1px solid #bfdbfe',
-    fontSize: 14,
-  },
-  adminMessage: {
-    marginTop: 8,
-    marginBottom: 18,
-    padding: '12px 14px',
-    borderRadius: 12,
-    background: '#f3e8ff',
-    color: '#6b21a8',
-    border: '1px solid #d8b4fe',
-    fontSize: 14,
-  },
-  ridesGrid: {
-    display: 'grid',
-    gap: 16,
-  },
-  statsGrid: {
-    display: 'grid',
-    gap: 14,
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-  },
-  twoColumnGrid: {
-    display: 'grid',
-    gap: 16,
-    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-  },
-  adminGrid: {
-    display: 'grid',
-    gap: 16,
-    gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-  },
-  statsCard: {
-    border: '1px solid #dbe3ee',
-    borderRadius: 16,
-    padding: 16,
-    background: '#f8fafc',
-  },
-  adminStatsCard: {
-    border: '1px solid #e9d5ff',
-    borderRadius: 16,
-    padding: 16,
-    background: '#faf5ff',
-  },
-  statLabel: {
-    margin: 0,
-    fontSize: 13,
-    color: '#64748b',
-    fontWeight: 700,
-  },
-  statValue: {
-    margin: '8px 0 0',
-    fontSize: 28,
-    color: '#0f172a',
-    fontWeight: 800,
-  },
-  myRideCard: {
-    border: '1px solid #bfdbfe',
-    borderRadius: 16,
-    padding: 16,
-    background: '#eff6ff',
-    color: '#0f172a',
-    boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)',
-  },
-  resultCard: {
-    border: '1px solid #cbd5e1',
-    borderRadius: 16,
-    padding: 16,
-    background: '#f8fafc',
-    color: '#0f172a',
-    boxShadow: '0 1px 6px rgba(15, 23, 42, 0.04)',
-  },
-  adminCard: {
-    border: '1px solid #e9d5ff',
-    borderRadius: 16,
-    padding: 16,
-    background: '#fcfaff',
-    color: '#0f172a',
-    boxShadow: '0 1px 6px rgba(124, 58, 237, 0.06)',
-  },
-  infoRow: {
-    margin: '6px 0',
-    color: '#1e293b',
-    lineHeight: 1.5,
-  },
-  mutedText: {
-    color: '#64748b',
-    fontSize: 14,
-    lineHeight: 1.5,
-  },
-  chipRow: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  chip: {
-    padding: '8px 12px',
-    borderRadius: 999,
-    border: '1px solid #cbd5e1',
-    background: '#ffffff',
-    color: '#334155',
-    cursor: 'pointer',
-    fontSize: 13,
-    fontWeight: 700,
-  },
-  chipActive: {
-    padding: '8px 12px',
-    borderRadius: 999,
-    border: '1px solid #2563eb',
-    background: '#dbeafe',
-    color: '#1d4ed8',
-    cursor: 'pointer',
-    fontSize: 13,
-    fontWeight: 800,
-  },
-  chipAdmin: {
-    padding: '8px 12px',
-    borderRadius: 999,
-    border: '1px solid #7c3aed',
-    background: '#faf5ff',
-    color: '#6d28d9',
-    cursor: 'pointer',
-    fontSize: 13,
-    fontWeight: 800,
-  },
-  buttonRow: {
-    display: 'flex',
-    gap: 10,
-    flexWrap: 'wrap',
-    marginBottom: 4,
-  },
-  actionRow: {
-    display: 'flex',
-    gap: 10,
-    flexWrap: 'wrap',
-    marginTop: 10,
-  },
-  badge: {
-    display: 'inline-block',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 800,
-    marginBottom: 8,
-    background: '#e2e8f0',
-    color: '#0f172a',
-  },
-  adminBadge: {
-    display: 'inline-block',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 800,
-    marginBottom: 8,
-    background: '#f3e8ff',
-    color: '#6b21a8',
-  },
-  pendingBadge: {
-    display: 'inline-block',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 800,
-    marginBottom: 8,
-    background: '#fef3c7',
-    color: '#92400e',
-  },
-  approvedBadge: {
-    display: 'inline-block',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 800,
-    marginBottom: 8,
-    background: '#dcfce7',
-    color: '#166534',
-  },
-  rejectedBadge: {
-    display: 'inline-block',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 800,
-    marginBottom: 8,
-    background: '#fee2e2',
-    color: '#991b1b',
-  },
-  fullBadge: {
-    display: 'inline-block',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 800,
-    marginBottom: 8,
-    background: '#ede9fe',
-    color: '#5b21b6',
-  },
-  completedBadge: {
-    display: 'inline-block',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 800,
-    marginBottom: 8,
-    background: '#d1fae5',
-    color: '#065f46',
-  },
-  unreadBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 22,
-    height: 22,
-    padding: '0 8px',
-    borderRadius: 999,
-    background: '#2563eb',
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 800,
-    marginLeft: 8,
-  },
-  chatLayout: {
-    display: 'grid',
-    gap: 16,
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-  },
-  conversationList: {
-    display: 'grid',
-    gap: 12,
-  },
-  conversationCard: {
-    border: '1px solid #dbe3ee',
-    borderRadius: 14,
-    padding: 14,
-    background: '#ffffff',
-    cursor: 'pointer',
-  },
-  conversationCardActive: {
-    border: '1px solid #2563eb',
-    borderRadius: 14,
-    padding: 14,
-    background: '#eff6ff',
-    cursor: 'pointer',
-  },
-  chatPanel: {
-    border: '1px solid #dbe3ee',
-    borderRadius: 16,
-    background: '#ffffff',
-    padding: 16,
-  },
-  messageList: {
-    display: 'grid',
-    gap: 10,
-    maxHeight: 420,
-    overflowY: 'auto',
-    paddingBottom: 8,
-    marginBottom: 14,
-  },
-  myMessage: {
-    justifySelf: 'end',
-    maxWidth: '80%',
-    background: '#2563eb',
-    color: '#ffffff',
-    padding: '10px 12px',
-    borderRadius: 14,
-  },
-  otherMessage: {
-    justifySelf: 'start',
-    maxWidth: '80%',
-    background: '#e2e8f0',
-    color: '#0f172a',
-    padding: '10px 12px',
-    borderRadius: 14,
-  },
-  tableWrap: {
-    overflowX: 'auto',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: 14,
-  },
-  th: {
-    textAlign: 'left',
-    padding: '10px 8px',
-    borderBottom: '1px solid #e2e8f0',
-    color: '#475569',
-    whiteSpace: 'nowrap',
-  },
-  td: {
-    padding: '10px 8px',
-    borderBottom: '1px solid #eef2f7',
-    verticalAlign: 'top',
-  },
-  bottomNav: {
-    position: 'fixed',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    background: '#ffffff',
-    borderTop: '1px solid #e2e8f0',
-    display: 'flex',
-    justifyContent: 'space-around',
-    paddingBottom: '16px', // Telefonların alt xəttinə görə
-    zIndex: 1000,
-    boxShadow: '0 -4px 20px rgba(0,0,0,0.05)',
-  },
-  navItem: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '12px 0 4px',
-    color: '#64748b',
-    cursor: 'pointer',
-    fontSize: 12,
-    fontWeight: 700,
-    background: 'transparent',
-    border: 'none',
-    outline: 'none',
-  },
-  navItemActive: {
-    color: '#2563eb',
-  },
-  fab: {
-    position: 'fixed',
-    bottom: '90px',
-    right: '20px',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '50px',
-    padding: '16px 24px',
-    fontSize: '15px',
-    fontWeight: 800,
-    cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
-    zIndex: 1001,
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    transition: 'transform 0.2s',
-  },
+  title: { margin: 0, fontSize: 30, fontWeight: 800, color: '#0f172a' },
+  subtitle: { marginTop: 8, marginBottom: 0, color: '#475569', fontSize: 15, lineHeight: 1.5 },
+  sectionCard: { background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 20, marginBottom: 18, boxShadow: '0 3px 14px rgba(15, 23, 42, 0.05)' },
+  sectionTitle: { marginTop: 0, marginBottom: 16, fontSize: 22, fontWeight: 800, color: '#0f172a' },
+  form: { display: 'grid', gap: 14 },
+  fieldWrap: { display: 'grid', gap: 6 },
+  label: { fontSize: 14, fontWeight: 700, color: '#334155' },
+  input: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box' },
+  select: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box' },
+  textarea: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box', resize: 'vertical' },
+  primaryButton: { padding: '12px 16px', background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800, boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)' },
+  secondaryButton: { padding: '10px 14px', background: '#e2e8f0', color: '#0f172a', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 14, fontWeight: 700 },
+  ghostButton: { padding: '10px 14px', background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: 12, cursor: 'pointer', fontSize: 14, fontWeight: 700 },
+  successButton: { padding: '10px 14px', background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
+  dangerButton: { padding: '10px 14px', background: '#dc2626', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
+  warningButton: { padding: '10px 14px', background: '#f59e0b', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
+  closeButton: { padding: '10px 14px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
+  cancelButton: { padding: '12px 16px', background: '#94a3b8', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800 },
+  message: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#dbeafe', color: '#1e3a8a', border: '1px solid #bfdbfe', fontSize: 14 },
+  ridesGrid: { display: 'grid', gap: 16 },
+  statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' },
+  twoColumnGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' },
+  statsCard: { border: '1px solid #dbe3ee', borderRadius: 16, padding: 16, background: '#f8fafc' },
+  adminStatsCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#faf5ff' },
+  statLabel: { margin: 0, fontSize: 13, color: '#64748b', fontWeight: 700 },
+  statValue: { margin: '8px 0 0', fontSize: 28, color: '#0f172a', fontWeight: 800 },
+  myRideCard: { border: '1px solid #bfdbfe', borderRadius: 16, padding: 16, background: '#eff6ff', color: '#0f172a', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
+  resultCard: { border: '1px solid #cbd5e1', borderRadius: 16, padding: 16, background: '#f8fafc', color: '#0f172a', boxShadow: '0 1px 6px rgba(15, 23, 42, 0.04)' },
+  adminCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#fcfaff', color: '#0f172a', boxShadow: '0 1px 6px rgba(124, 58, 237, 0.06)' },
+  infoRow: { margin: '6px 0', color: '#1e293b', lineHeight: 1.5 },
+  mutedText: { color: '#64748b', fontSize: 14, lineHeight: 1.5 },
+  chipRow: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, marginBottom: 10 },
+  chip: { padding: '8px 12px', borderRadius: 999, border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer', fontSize: 13, fontWeight: 700 },
+  chipActive: { padding: '8px 12px', borderRadius: 999, border: '1px solid #2563eb', background: '#dbeafe', color: '#1d4ed8', cursor: 'pointer', fontSize: 13, fontWeight: 800 },
+  chipAdmin: { padding: '8px 12px', borderRadius: 999, border: '1px solid #7c3aed', background: '#faf5ff', color: '#6d28d9', cursor: 'pointer', fontSize: 13, fontWeight: 800 },
+  buttonRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 4 },
+  actionRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 },
+  badge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#e2e8f0', color: '#0f172a' },
+  adminBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#f3e8ff', color: '#6b21a8' },
+  pendingBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef3c7', color: '#92400e' },
+  approvedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#dcfce7', color: '#166534' },
+  rejectedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fee2e2', color: '#991b1b' },
+  fullBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#ede9fe', color: '#5b21b6' },
+  completedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#d1fae5', color: '#065f46' },
+  unreadBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 22, padding: '0 8px', borderRadius: 999, background: '#2563eb', color: '#ffffff', fontSize: 12, fontWeight: 800, marginLeft: 8 },
+  chatLayout: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
+  conversationList: { display: 'grid', gap: 12 },
+  conversationCard: { border: '1px solid #dbe3ee', borderRadius: 14, padding: 14, background: '#ffffff', cursor: 'pointer' },
+  conversationCardActive: { border: '1px solid #2563eb', borderRadius: 14, padding: 14, background: '#eff6ff', cursor: 'pointer' },
+  chatPanel: { border: '1px solid #dbe3ee', borderRadius: 16, background: '#ffffff', padding: 16 },
+  messageList: { display: 'grid', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
+  myMessage: { justifySelf: 'end', maxWidth: '80%', background: '#2563eb', color: '#ffffff', padding: '10px 12px', borderRadius: 14 },
+  otherMessage: { justifySelf: 'start', maxWidth: '80%', background: '#e2e8f0', color: '#0f172a', padding: '10px 12px', borderRadius: 14 },
+  tableWrap: { overflowX: 'auto' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
+  th: { textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #e2e8f0', color: '#475569', whiteSpace: 'nowrap' },
+  td: { padding: '10px 8px', borderBottom: '1px solid #eef2f7', verticalAlign: 'top' },
+  bottomNav: { position: 'fixed', bottom: 0, left: 0, right: 0, background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-around', paddingBottom: '16px', paddingTop: '8px', zIndex: 1000, boxShadow: '0 -4px 20px rgba(0,0,0,0.05)' },
+  navItem: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#64748b', cursor: 'pointer', fontSize: 12, fontWeight: 700, background: 'transparent', border: 'none', outline: 'none' },
+  navItemActive: { color: '#2563eb' },
 }
 
-function pad(value: number) {
-  return String(value).padStart(2, '0')
-}
-
-function addDays(base: Date, days: number) {
-  const d = new Date(base)
-  d.setDate(d.getDate() + days)
-  return d
-}
-
-function toDateInputValue(date: Date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
-
-function toTimeInputValue(date: Date) {
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
-
-function roundToNextMinutes(date: Date, step = 5) {
-  const d = new Date(date)
-  d.setSeconds(0, 0)
-  const minutes = d.getMinutes()
-  const rounded = Math.ceil(minutes / step) * step
-  if (rounded === 60) {
-    d.setHours(d.getHours() + 1)
-    d.setMinutes(0)
-  } else {
-    d.setMinutes(rounded)
-  }
-  return d
-}
+function pad(value: number) { return String(value).padStart(2, '0') }
+function addDays(base: Date, days: number) { const d = new Date(base); d.setDate(d.getDate() + days); return d }
+function toDateInputValue(date: Date) { return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` }
+function toTimeInputValue(date: Date) { return `${pad(date.getHours())}:${pad(date.getMinutes())}` }
+function roundToNextMinutes(date: Date, step = 5) { const d = new Date(date); d.setSeconds(0, 0); const minutes = d.getMinutes(); const rounded = Math.ceil(minutes / step) * step; if (rounded === 60) { d.setHours(d.getHours() + 1); d.setMinutes(0); } else { d.setMinutes(rounded); } return d }
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) return '-'
-  try {
-    return new Date(value).toLocaleString()
-  } catch {
-    return String(value)
-  }
+  try { return new Date(value).toLocaleString() } catch { return String(value) }
 }
 
-function normalizeText(value: string | null | undefined) {
-  return (value || '').toLowerCase().trim()
-}
-
-function getRoleLabel(role: UserRole | null) {
-  return role === 'passenger' ? 'Sərnişin' : 'Sürücü'
-}
-
-function getAppRoleLabel(role: AppRole) {
-  if (role === 'admin') return 'Admin'
-  return role === 'passenger' ? 'Sərnişin' : 'Sürücü'
-}
+function normalizeText(value: string | null | undefined) { return (value || '').toLowerCase().trim() }
+function getRoleLabel(role: UserRole | null) { return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
+function getAppRoleLabel(role: AppRole) { if (role === 'admin') return 'Admin'; return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
 
 function getRequestStatusLabel(status: RideRequestStatus) {
   if (status === 'accepted') return 'Qəbul edildi'
@@ -839,14 +307,17 @@ function getReportStatusLabel(status: ReportStatus) {
   return 'Açıq'
 }
 
+// ── YENİ: Ulduz Reytinqi Göstərici Funksiyası ──
+function renderStars(ratingStr: string | number) {
+  const r = Number(ratingStr)
+  if (isNaN(r) || r === 0) return '★★★★★ (5.0)'
+  const full = Math.round(r)
+  const empty = Math.max(0, 5 - full)
+  return '★'.repeat(full) + '☆'.repeat(empty) + ` (${r.toFixed(1)})`
+}
+
 const triggerVibration = (type: string = 'medium') => {
-  try {
-    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) {
-      (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type);
-    }
-  } catch (e) {
-    // səssiz davam et
-  }
+  try { if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) { (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type); } } catch (e) { }
 };
 
 export default function Home() {
@@ -876,15 +347,14 @@ export default function Home() {
   const [adminUsers, setAdminUsers] = useState<UserOverview[]>([])
   const [adminReports, setAdminReports] = useState<UserReport[]>([])
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([])
-  
-  // YENİ: Maşın məlumatlarını da əlavə edirik
+
   const [driverProfilesMap, setDriverProfilesMap] = useState<Record<number, { name: string, rating: string, gender: string, carBrand: string, carColor: string, licensePlate: string }>>({})
 
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [unreadTotal, setUnreadTotal] = useState(0)
 
   const selectedConversationIdRef = useRef<number | null>(null)
-  
+
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [profileSaving, setProfileSaving] = useState(false)
@@ -918,9 +388,9 @@ export default function Home() {
   const [profileHomeAddress, setProfileHomeAddress] = useState('')
   const [profileWorkAddress, setProfileWorkAddress] = useState('')
   const [womenOnly, setWomenOnly] = useState(false)
-  
+
   const [carBrand, setCarBrand] = useState('')
-  const [carColor, setCarColor] = useState('') // YENİ: Rəng
+  const [carColor, setCarColor] = useState('')
   const [licensePlate, setLicensePlate] = useState('')
 
   const [searchText, setSearchText] = useState('')
@@ -981,128 +451,67 @@ export default function Home() {
     }
     prevUnreadRef.current = unreadTotal || 0;
   }, [unreadTotal]);
-  
+
   useEffect(() => {
     if (message) {
-      const timer = setTimeout(() => {
-        setMessage('')
-      }, 3000)
+      const timer = setTimeout(() => { setMessage('') }, 3000)
       return () => clearTimeout(timer)
     }
   }, [message])
 
   function getActiveUser() {
-    if (typeof window === 'undefined') {
-      return { driverId: 0, username: '', fullName: '', appRole: 'passenger' as AppRole }
-    }
+    if (typeof window === 'undefined') { return { driverId: 0, username: '', fullName: '', appRole: 'passenger' as AppRole } }
     const tg = (window as any)?.Telegram?.WebApp
     const user = tg?.initDataUnsafe?.user
-    if (!user) {
-      return { driverId: 0, username: 'guest', fullName: 'Guest', appRole: 'passenger' as AppRole }
-    }
-    const adminIds = (process.env.NEXT_PUBLIC_ADMIN_IDS ?? '')
-      .split(',').map((s: string) => s.trim()).filter(Boolean)
+    if (!user) { return { driverId: 0, username: 'guest', fullName: 'Guest', appRole: 'passenger' as AppRole } }
+    const adminIds = (process.env.NEXT_PUBLIC_ADMIN_IDS ?? '').split(',').map((s: string) => s.trim()).filter(Boolean)
     const userIdStr = String(user.id)
     const isAdminUser = adminIds.includes(userIdStr) || adminIds.includes(String(Number(userIdStr)))
-    return {
-      driverId: user.id as number,
-      username: (user.username as string) || `tg${user.id}`,
-      fullName: [user.first_name, user.last_name].filter(Boolean).join(' ') || 'User',
-      appRole: isAdminUser ? ('admin' as AppRole) : ('driver' as AppRole),
-    }
+    return { driverId: user.id as number, username: (user.username as string) || `tg${user.id}`, fullName: [user.first_name, user.last_name].filter(Boolean).join(' ') || 'User', appRole: isAdminUser ? ('admin' as AppRole) : ('driver' as AppRole), }
   }
 
   const currentUser = getActiveUser()
   const isRealAdmin = currentUser.appRole === 'admin'
   const isAdmin = isRealAdmin && isAdminMode
 
-  useEffect(() => {
-    if (isAdmin) {
-      void getAdminData();
-    }
-  }, [isAdmin]);
+  useEffect(() => { if (isAdmin) { void getAdminData(); } }, [isAdmin]);
 
-  // ── TAM VƏ SƏRT TELEFON NÖMRƏSİ FORMATI ──
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let rawInput = e.target.value.replace(/\D/g, ''); 
-
-    if (!rawInput) {
-      setProfilePhone('');
-      return;
-    }
-
-    if (rawInput.startsWith('0')) {
-      rawInput = '994' + rawInput.substring(1);
-    } else if (!rawInput.startsWith('994') && rawInput.length > 0) {
-      rawInput = '994' + rawInput;
-    }
-
-    rawInput = rawInput.substring(0, 12); 
-
+    let rawInput = e.target.value.replace(/\D/g, '');
+    if (!rawInput) { setProfilePhone(''); return; }
+    if (rawInput.startsWith('0')) { rawInput = '994' + rawInput.substring(1); } else if (!rawInput.startsWith('994') && rawInput.length > 0) { rawInput = '994' + rawInput; }
+    rawInput = rawInput.substring(0, 12);
     let formatted = '+994';
     if (rawInput.length > 3) formatted += ' ' + rawInput.substring(3, 5);
     if (rawInput.length > 5) formatted += ' ' + rawInput.substring(5, 8);
     if (rawInput.length > 8) formatted += ' ' + rawInput.substring(8, 10);
     if (rawInput.length > 10) formatted += ' ' + rawInput.substring(10, 12);
-
     setProfilePhone(formatted);
   };
 
   function resetRideForm() {
-    setEditingRideId(null)
-    setOrigin('')
-    setDestination('')
-    setRideDate('')
-    setDepartureTime('')
-    setSeats('1')
-    setPricePerSeat('')
-    setNotes('')
-    setOriginLat(null); setOriginLng(null)
-    setDestLat(null); setDestLng(null)
+    setEditingRideId(null); setOrigin(''); setDestination(''); setRideDate(''); setDepartureTime(''); setSeats('1'); setPricePerSeat(''); setNotes(''); setOriginLat(null); setOriginLng(null); setDestLat(null); setDestLng(null)
   }
 
   function setToday() { setRideDate(toDateInputValue(new Date())) }
   function setTomorrow() { setRideDate(toDateInputValue(addDays(new Date(), 1))) }
   function setPlusTwoDays() { setRideDate(toDateInputValue(addDays(new Date(), 2))) }
   function setNowTime() { setDepartureTime(toTimeInputValue(roundToNextMinutes(new Date(), 5))) }
-  
-  function setPlus30Min() {
-    const d = new Date()
-    d.setMinutes(d.getMinutes() + 30)
-    setDepartureTime(toTimeInputValue(roundToNextMinutes(d, 5)))
-  }
-
-  function setPlus60Min() {
-    const d = new Date()
-    d.setMinutes(d.getMinutes() + 60)
-    setDepartureTime(toTimeInputValue(roundToNextMinutes(d, 5)))
-  }
-
+  function setPlus30Min() { const d = new Date(); d.setMinutes(d.getMinutes() + 30); setDepartureTime(toTimeInputValue(roundToNextMinutes(d, 5))) }
+  function setPlus60Min() { const d = new Date(); d.setMinutes(d.getMinutes() + 60); setDepartureTime(toTimeInputValue(roundToNextMinutes(d, 5))) }
   function setPresetTime(value: string) { setDepartureTime(value) }
 
   function getRequestBadgeStyle(status: RideRequestStatus) {
-    if (status === 'accepted') return styles.approvedBadge
-    if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge
-    return styles.pendingBadge
+    if (status === 'accepted') return styles.approvedBadge; if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge; return styles.pendingBadge
   }
-
   function getRideBadgeStyle(status: RideStatus) {
-    if (status === 'full') return styles.fullBadge
-    if (status === 'completed') return styles.completedBadge
-    if (status === 'cancelled') return styles.rejectedBadge
-    return styles.approvedBadge
+    if (status === 'full') return styles.fullBadge; if (status === 'completed') return styles.completedBadge; if (status === 'cancelled') return styles.rejectedBadge; return styles.approvedBadge
   }
-
   function getReportBadgeStyle(status: ReportStatus) {
-    if (status === 'resolved') return styles.approvedBadge
-    if (status === 'dismissed') return styles.rejectedBadge
-    if (status === 'in_review') return styles.fullBadge
-    return styles.pendingBadge
+    if (status === 'resolved') return styles.approvedBadge; if (status === 'dismissed') return styles.rejectedBadge; if (status === 'in_review') return styles.fullBadge; return styles.pendingBadge
   }
 
-  useEffect(() => {
-    selectedConversationIdRef.current = selectedConversationId
-  }, [selectedConversationId])
+  useEffect(() => { selectedConversationIdRef.current = selectedConversationId }, [selectedConversationId])
 
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp
@@ -1113,214 +522,87 @@ export default function Home() {
 
   useEffect(() => {
     const activeUserId = getActiveUser().driverId
-
     const channels = [
-      supabase.channel(`messages-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async () => {
-          const currentSelectedId = selectedConversationIdRef.current
-          if (currentSelectedId && !isAdmin) { await getMessages(currentSelectedId, false) }
-          await getConversations(false)
-          if (isAdmin) await getAdminData()
-        }).subscribe(),
-
-      supabase.channel(`ride-requests-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, async () => {
-          await getRideRequests()
-          await getAllMyRides()
-          if (isAdmin) await getAdminData()
-        }).subscribe(),
-
-      supabase.channel(`conversations-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, async () => {
-          await getConversations(false)
-          if (isAdmin) await getAdminData()
-        }).subscribe(),
-
-      supabase.channel(`ride-listings-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'ride_listings' }, async () => {
-          await getRides()
-          await getAllMyRides()
-          if (isAdmin) await getAdminData()
-        }).subscribe(),
-
-      supabase.channel(`reviews-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, async () => {
-          await getReviews()
-          if (isAdmin) await getAdminData()
-        }).subscribe(),
-
-      supabase.channel(`reports-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'user_reports' }, async () => {
-          if (isAdmin) await getAdminData()
-        }).subscribe(),
-
-      supabase.channel(`profiles-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, async () => {
-          await getProfile()
-          if (isAdmin) await getAdminData()
-        }).subscribe(),
-
-      supabase.channel(`audit-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'admin_audit_logs' }, async () => {
-          if (isAdmin) await getAdminData()
-        }).subscribe(),
+      supabase.channel(`messages-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async () => { const currentSelectedId = selectedConversationIdRef.current; if (currentSelectedId && !isAdmin) { await getMessages(currentSelectedId, false) } await getConversations(false); if (isAdmin) await getAdminData() }).subscribe(),
+      supabase.channel(`ride-requests-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, async () => { await getRideRequests(); await getAllMyRides(); if (isAdmin) await getAdminData() }).subscribe(),
+      supabase.channel(`conversations-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, async () => { await getConversations(false); if (isAdmin) await getAdminData() }).subscribe(),
+      supabase.channel(`ride-listings-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'ride_listings' }, async () => { await getRides(); await getAllMyRides(); if (isAdmin) await getAdminData() }).subscribe(),
+      supabase.channel(`reviews-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, async () => { await getReviews(); if (isAdmin) await getAdminData() }).subscribe(),
+      supabase.channel(`reports-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'user_reports' }, async () => { if (isAdmin) await getAdminData() }).subscribe(),
+      supabase.channel(`profiles-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, async () => { await getProfile(); if (isAdmin) await getAdminData() }).subscribe(),
+      supabase.channel(`audit-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'admin_audit_logs' }, async () => { if (isAdmin) await getAdminData() }).subscribe(),
     ]
-
-    return () => {
-      channels.forEach((channel) => { void supabase.removeChannel(channel) })
-    }
+    return () => { channels.forEach((channel) => { void supabase.removeChannel(channel) }) }
   }, [isAdmin])
 
   useEffect(() => {
     if (isAdmin) return
-
-    if (conversations.length === 0) {
-      if (selectedConversationId !== null) {
-        setSelectedConversationId(null)
-        setMessages([])
-      }
-      return
-    }
-
+    if (conversations.length === 0) { if (selectedConversationId !== null) { setSelectedConversationId(null); setMessages([]) }; return }
     const selectedStillExists = conversations.some((item) => item.id === selectedConversationId)
-
-    if (selectedConversationId === null || !selectedStillExists) {
-      setSelectedConversationId(conversations[0].id)
-    }
+    if (selectedConversationId === null || !selectedStillExists) { setSelectedConversationId(conversations[0].id) }
   }, [conversations, selectedConversationId, isAdmin])
 
   useEffect(() => {
-    if (isAdmin) return
-    if (!selectedConversationId) return
-    void getMessages(selectedConversationId)
+    if (isAdmin) return; if (!selectedConversationId) return; void getMessages(selectedConversationId)
   }, [selectedConversationId, isAdmin])
 
   useEffect(() => {
-    const fastInterval = setInterval(() => {
-      if (document.hidden) return;
-      getRideRequests();
-      getConversations(true);
-      getAllMyRides();
-      if (selectedConversationIdRef.current) { getMessages(selectedConversationIdRef.current, false); }
-    }, 10000);
-
-    const slowInterval = setInterval(() => {
-      if (document.hidden) return;
-      getRides();
-    }, 120000);
-
-    return () => {
-      clearInterval(fastInterval);
-      clearInterval(slowInterval);
-    };
+    const fastInterval = setInterval(() => { if (document.hidden) return; getRideRequests(); getConversations(true); getAllMyRides(); if (selectedConversationIdRef.current) { getMessages(selectedConversationIdRef.current, false); } }, 10000);
+    const slowInterval = setInterval(() => { if (document.hidden) return; getRides(); }, 120000);
+    return () => { clearInterval(fastInterval); clearInterval(slowInterval); };
   }, []);
 
   async function initializeData() {
-    setMessage('')
-    setSelectedConversationId(null)
-    setMessages([])
-
-    await Promise.all([
-      ensureUserRecord(),
-      getProfile(),
-      getRides(),
-      getAllMyRides(),
-      getRideRequests(),
-      getConversations(false),
-      getReviews(),
-      isAdmin ? getAdminData() : Promise.resolve(),
-    ])
+    setMessage(''); setSelectedConversationId(null); setMessages([])
+    await Promise.all([ensureUserRecord(), getProfile(), getRides(), getAllMyRides(), getRideRequests(), getConversations(false), getReviews(), isAdmin ? getAdminData() : Promise.resolve(),])
   }
 
   async function ensureUserRecord() {
-    const current = getActiveUser()
-    if (!current.driverId) return
-
+    const current = getActiveUser(); if (!current.driverId) return
     await supabase.from('users').upsert({ id: current.driverId, username: current.username, full_name: current.fullName })
-
     const { data } = await supabase.from('profiles').select('id,role').eq('id', current.driverId).maybeSingle()
-
-    if (!data) {
-      await supabase.from('profiles').insert({
-        id: current.driverId, full_name: current.fullName, username: current.username, role: 'passenger' as UserRole,
-        is_blocked: false, admin_note: null, last_seen_at: new Date().toISOString(),
-      })
-    } else {
-      await supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', current.driverId)
-    }
+    if (!data) { await supabase.from('profiles').insert({ id: current.driverId, full_name: current.fullName, username: current.username, role: 'passenger' as UserRole, is_blocked: false, admin_note: null, last_seen_at: new Date().toISOString(), }) } else { await supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', current.driverId) }
   }
 
   async function getProfile() {
     const current = getActiveUser()
     const { data, error } = await supabase.from('profiles').select('*').eq('id', current.driverId).maybeSingle()
-
-    if (error) {
-      console.error('Profile read error:', JSON.stringify(error, null, 2))
-      return
-    }
-
+    if (error) { console.error('Profile read error:', JSON.stringify(error, null, 2)); return }
     if (data) {
       const p = data as Profile
-      setProfile(p)
-      setProfileFullName(p.full_name || current.fullName)
-      setProfileUsername(p.username || current.username)
-      setProfilePhone(p.phone || '')
-      setProfileBio(p.bio || '')
-      setProfileGender(p.gender || 'male')
-      setProfileHomeAddress(p.home_address || '')
-      setProfileWorkAddress(p.work_address || '')
-      
-      setCarBrand(p.car_brand || '')
-      setLicensePlate(p.license_plate || '')
-      setCarColor(p.car_color || (p.role === 'driver' ? 'Qara' : '')) // YENİ: Rəng default olaraq Qara
-      
-      setInitialRole(p.role || 'passenger')
+      setProfile(p); setProfileFullName(p.full_name || current.fullName); setProfileUsername(p.username || current.username); setProfilePhone(p.phone || ''); setProfileBio(p.bio || ''); setProfileGender(p.gender || 'male'); setProfileHomeAddress(p.home_address || ''); setProfileWorkAddress(p.work_address || '');
+      setCarBrand(p.car_brand || ''); setLicensePlate(p.license_plate || ''); setCarColor(p.car_color || (p.role === 'driver' ? 'Qara' : '')); setInitialRole(p.role || 'passenger')
     } else {
-      setProfile(null)
-      setProfileFullName(current.fullName)
-      setProfileUsername(current.username)
-      setProfilePhone('')
-      setProfileBio(current.appRole === 'admin' ? 'Admin hesabı' : '')
-      setProfileGender('male')
-      setProfileHomeAddress('')
-      setProfileWorkAddress('')
-      setCarBrand('')
-      setLicensePlate('')
-      setCarColor('')
-      setInitialRole('passenger')
+      setProfile(null); setProfileFullName(current.fullName); setProfileUsername(current.username); setProfilePhone(''); setProfileBio(current.appRole === 'admin' ? 'Admin hesabı' : ''); setProfileGender('male'); setProfileHomeAddress(''); setProfileWorkAddress(''); setCarBrand(''); setLicensePlate(''); setCarColor(''); setInitialRole('passenger')
     }
   }
 
-  // BURA YENİLƏNDİ: Axtarışda maşın məlumatları
+  // ── YENİDƏN İŞLƏNDİ: Avtomatik Vaxtı Keçmiş Elanların Silinməsi ──
   async function getRides() {
     setLoading(true)
-
     const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Ride list error:', JSON.stringify(error, null, 2))
-      setMessage('Aktiv elanlar yüklənmədi.')
-    } else {
+    if (error) { console.error('Ride list error:', JSON.stringify(error, null, 2)); setMessage('Aktiv elanlar yüklənmədi.') } else {
       const rows = (data as Ride[]) || []
-      setRides(rows)
 
-      const driverIds = [...new Set(rows.map((r) => r.driver_id))]
+      const now = new Date();
+      const validRows = rows.filter(r => {
+        if (!r.ride_date) return true;
+        const rideDateTime = new Date(`${r.ride_date}T${r.departure_time}:00`);
+        return rideDateTime.getTime() + 2 * 60 * 60 * 1000 > now.getTime(); // Yalnız 2 saatdan çox vaxt keçməyənlər
+      });
+      setRides(validRows)
+
+      const driverIds = [...new Set(validRows.map((r) => r.driver_id))]
       if (driverIds.length > 0) {
-          const [profilesRes, reviewsRes] = await Promise.all([
+        const [profilesRes, reviewsRes] = await Promise.all([
           supabase.from('profiles').select('id, full_name, username, gender, car_brand, car_color, license_plate').in('id', driverIds),
           supabase.from('reviews').select('reviewee_id, rating').in('reviewee_id', driverIds)
         ])
-
-        const pData = profilesRes.data || []
-        const rData = reviewsRes.data || []
-        const newMap: Record<number, { name: string, rating: string, gender: string, carBrand: string, carColor: string, licensePlate: string }> = {}
-
+        const pData = profilesRes.data || []; const rData = reviewsRes.data || []; const newMap: Record<number, { name: string, rating: string, gender: string, carBrand: string, carColor: string, licensePlate: string }> = {}
         pData.forEach(p => {
           const userReviews = rData.filter(r => r.reviewee_id === p.id)
-          const avgRating = userReviews.length > 0
-            ? (userReviews.reduce((sum, r) => sum + r.rating, 0) / userReviews.length).toFixed(1)
-            : '5.0'
-
-          newMap[p.id] = {
-            name: p.full_name || p.username || 'İstifadəçi',
-            rating: avgRating,
-            gender: p.gender || 'male',
-            carBrand: p.car_brand || '',
-            carColor: p.car_color || 'Qara',
-            licensePlate: p.license_plate || ''
-          }
+          const avgRating = userReviews.length > 0 ? (userReviews.reduce((sum, r) => sum + r.rating, 0) / userReviews.length).toFixed(1) : '5.0'
+          newMap[p.id] = { name: p.full_name || p.username || 'İstifadəçi', rating: avgRating, gender: p.gender || 'male', carBrand: p.car_brand || '', carColor: p.car_color || 'Qara', licensePlate: p.license_plate || '' }
         })
         setDriverProfilesMap(newMap)
       }
@@ -1328,115 +610,80 @@ export default function Home() {
     setLoading(false)
   }
 
+  // ── YENİDƏN İŞLƏNDİ: Mənim Səfərlərimdə Tarixçəyə Düşməsi ──
   async function getAllMyRides() {
     const current = getActiveUser()
     const { data, error } = await supabase.from('ride_listings').select('*').eq('driver_id', current.driverId).order('created_at', { ascending: false })
-
     if (error) { console.error('My rides error:', JSON.stringify(error, null, 2)); return }
 
     const rows = (data as Ride[]) || []
+    const now = new Date();
+    const active = rows.filter(r => {
+      if (r.status !== 'active') return false;
+      if (!r.ride_date) return true;
+      const rideDateTime = new Date(`${r.ride_date}T${r.departure_time}:00`);
+      return rideDateTime.getTime() + 2 * 60 * 60 * 1000 > now.getTime();
+    });
+    const history = rows.filter(r => !active.includes(r));
+
     setAllMyRides(rows)
-    setMyRides(rows.filter((ride) => ride.status === 'active'))
-    setHistoryRides(rows.filter((ride) => ride.status !== 'active'))
+    setMyRides(active)
+    setHistoryRides(history)
   }
 
   async function getRideRequests() {
     const current = getActiveUser()
     const { data, error } = await supabase.from('ride_requests').select('*').or(`requester_id.eq.${current.driverId},owner_id.eq.${current.driverId}`).order('id', { ascending: false })
-
     if (error) { console.error('Ride requests error:', JSON.stringify(error, null, 2)); return }
-
     const rows = (data as RideRequest[]) || []
     const rideIds = [...new Set(rows.map((x) => x.ride_id).filter(Boolean))]
     let rideMap = new Map<string, Ride>()
-
-    if (rideIds.length > 0) {
-      const { data: ridesData } = await supabase.from('ride_listings').select('*').in('id', rideIds)
-      rideMap = new Map(((ridesData as Ride[]) || []).map((ride) => [ride.id, ride]))
-    }
-
+    if (rideIds.length > 0) { const { data: ridesData } = await supabase.from('ride_listings').select('*').in('id', rideIds); rideMap = new Map(((ridesData as Ride[]) || []).map((ride) => [ride.id, ride])) }
     setRideRequests(rows.map((item) => ({ ...item, ride: rideMap.get(item.ride_id) || null })))
   }
 
   async function getReviews() {
     const current = getActiveUser()
     const { data, error } = await supabase.from('reviews').select('*').or(`reviewer_id.eq.${current.driverId},reviewee_id.eq.${current.driverId}`).order('id', { ascending: false })
-
     if (error) { console.error('Reviews error:', JSON.stringify(error, null, 2)); return }
-
     const rows = (data as Review[]) || []
     const rideIds = [...new Set(rows.map((x) => x.ride_id).filter(Boolean))] as string[]
     let rideMap = new Map<string, Ride>()
-
-    if (rideIds.length > 0) {
-      const { data: ridesData } = await supabase.from('ride_listings').select('*').in('id', rideIds)
-      rideMap = new Map(((ridesData as Ride[]) || []).map((ride) => [ride.id, ride]))
-    }
-
+    if (rideIds.length > 0) { const { data: ridesData } = await supabase.from('ride_listings').select('*').in('id', rideIds); rideMap = new Map(((ridesData as Ride[]) || []).map((ride) => [ride.id, ride])) }
     setReviews(rows.map((item) => ({ ...item, ride: item.ride_id ? rideMap.get(item.ride_id) || null : null })))
   }
 
   async function getAdminData() {
     if (!isAdmin) return
+    const [ridesRes, requestsRes, conversationsRes, messagesRes, reviewsRes, usersRes, reportsRes, auditRes] = await Promise.all([
+      supabase.from('ride_listings').select('*').order('created_at', { ascending: false }),
+      supabase.from('ride_requests').select('*').order('id', { ascending: false }),
+      supabase.from('conversations').select('*').order('updated_at', { ascending: false }),
+      supabase.from('messages').select('*').order('created_at', { ascending: false }),
+      supabase.from('reviews').select('*').order('id', { ascending: false }),
+      supabase.from('admin_user_overview').select('*').order('id', { ascending: false }),
+      supabase.from('user_reports').select('*').order('created_at', { ascending: false }),
+      supabase.from('admin_audit_logs').select('*').order('created_at', { ascending: false }).limit(200),
+    ])
 
-    const [ridesRes, requestsRes, conversationsRes, messagesRes, reviewsRes, usersRes, reportsRes, auditRes] =
-      await Promise.all([
-        supabase.from('ride_listings').select('*').order('created_at', { ascending: false }),
-        supabase.from('ride_requests').select('*').order('id', { ascending: false }),
-        supabase.from('conversations').select('*').order('updated_at', { ascending: false }),
-        supabase.from('messages').select('*').order('created_at', { ascending: false }),
-        supabase.from('reviews').select('*').order('id', { ascending: false }),
-        supabase.from('admin_user_overview').select('*').order('id', { ascending: false }),
-        supabase.from('user_reports').select('*').order('created_at', { ascending: false }),
-        supabase.from('admin_audit_logs').select('*').order('created_at', { ascending: false }).limit(200),
-      ])
-
-    const ridesRows = (ridesRes.data as Ride[]) || []
-    const requestRows = (requestsRes.data as RideRequest[]) || []
-    const conversationRows = (conversationsRes.data as Conversation[]) || []
-    const messageRows = (messagesRes.data as Message[]) || []
-    const reviewRows = (reviewsRes.data as Review[]) || []
-    const userRows = (usersRes.data as UserOverview[]) || []
-    const reportRows = (reportsRes.data as UserReport[]) || []
-    const auditRows = (auditRes.data as AdminAuditLog[]) || []
-
+    const ridesRows = (ridesRes.data as Ride[]) || []; const requestRows = (requestsRes.data as RideRequest[]) || []; const conversationRows = (conversationsRes.data as Conversation[]) || []; const messageRows = (messagesRes.data as Message[]) || []; const reviewRows = (reviewsRes.data as Review[]) || []; const userRows = (usersRes.data as UserOverview[]) || []; const reportRows = (reportsRes.data as UserReport[]) || []; const auditRows = (auditRes.data as AdminAuditLog[]) || []
     const rideMap = new Map(ridesRows.map((ride) => [ride.id, ride]))
 
-    setAllRidesAdmin(ridesRows)
-    setAllRideRequestsAdmin(requestRows.map((item) => ({ ...item, ride: rideMap.get(item.ride_id) || null })))
-    setAllConversationsAdmin(conversationRows.map((item) => ({ ...item, ride: rideMap.get(item.ride_id) || null, unread_count: 0 })))
-    setAllMessagesAdmin(messageRows)
-    setAllReviewsAdmin(reviewRows.map((item) => ({ ...item, ride: item.ride_id ? rideMap.get(item.ride_id) || null : null })))
-    setAdminUsers(userRows)
-    setAdminReports(reportRows)
-    setAdminAuditLogs(auditRows)
+    setAllRidesAdmin(ridesRows); setAllRideRequestsAdmin(requestRows.map((item) => ({ ...item, ride: rideMap.get(item.ride_id) || null }))); setAllConversationsAdmin(conversationRows.map((item) => ({ ...item, ride: rideMap.get(item.ride_id) || null, unread_count: 0 }))); setAllMessagesAdmin(messageRows); setAllReviewsAdmin(reviewRows.map((item) => ({ ...item, ride: item.ride_id ? rideMap.get(item.ride_id) || null : null }))); setAdminUsers(userRows); setAdminReports(reportRows); setAdminAuditLogs(auditRows)
 
-    const userBlockedMap: Record<number, boolean> = {}
-    const userNoteMap: Record<number, string> = {}
-    const reportStatusMap: Record<number, ReportStatus> = {}
-    const reportNoteMap: Record<number, string> = {}
-
-    userRows.forEach((user) => { userBlockedMap[user.id] = user.is_blocked; userNoteMap[user.id] = user.admin_note || '' })
-    reportRows.forEach((report) => { reportStatusMap[report.id] = report.status; reportNoteMap[report.id] = report.admin_note || '' })
-
-    setAdminUserBlockedMap(userBlockedMap)
-    setAdminUserNoteMap(userNoteMap)
-    setAdminReportStatusMap(reportStatusMap)
-    setAdminReportNoteMap(reportNoteMap)
+    const userBlockedMap: Record<number, boolean> = {}; const userNoteMap: Record<number, string> = {}; const reportStatusMap: Record<number, ReportStatus> = {}; const reportNoteMap: Record<number, string> = {}
+    userRows.forEach((user) => { userBlockedMap[user.id] = user.is_blocked; userNoteMap[user.id] = user.admin_note || '' }); reportRows.forEach((report) => { reportStatusMap[report.id] = report.status; reportNoteMap[report.id] = report.admin_note || '' })
+    setAdminUserBlockedMap(userBlockedMap); setAdminUserNoteMap(userNoteMap); setAdminReportStatusMap(reportStatusMap); setAdminReportNoteMap(reportNoteMap)
   }
 
   async function markConversationMessagesAsRead(conversationId: number) {
-    const current = getActiveUser()
-    if (isAdmin) return
-
+    const current = getActiveUser(); if (isAdmin) return
     await supabase.from('messages').update({ is_read: true }).eq('conversation_id', conversationId).eq('is_read', false).neq('sender_id', current.driverId)
   }
 
-  // BURA YENİLƏNDİ: Çatda maşının dövlət nömrəsini göstərmək üçün
   async function getConversations(preserveSelection = true) {
     const current = getActiveUser()
     const { data, error } = await supabase.from('conversations').select('*').or(`driver_user_id.eq.${current.driverId},passenger_user_id.eq.${current.driverId}`).order('updated_at', { ascending: false })
-
     if (error) { console.error('Conversations error:', JSON.stringify(error, null, 2)); return }
 
     const rows = (data as Conversation[]) || []
@@ -1455,14 +702,11 @@ export default function Home() {
             const newMap = { ...prev };
             pData.forEach(p => {
               if (!newMap[p.id]) {
-                 newMap[p.id] = { name: p.full_name || p.username || 'User', rating: '5.0', gender: p.gender || 'male', carBrand: p.car_brand || '', carColor: p.car_color || 'Qara', licensePlate: p.license_plate || '' };
+                newMap[p.id] = { name: p.full_name || p.username || 'User', rating: '5.0', gender: p.gender || 'male', carBrand: p.car_brand || '', carColor: p.car_color || 'Qara', licensePlate: p.license_plate || '' };
               } else {
-                 newMap[p.id].carBrand = p.car_brand || '';
-                 newMap[p.id].carColor = p.car_color || 'Qara';
-                 newMap[p.id].licensePlate = p.license_plate || '';
+                newMap[p.id].carBrand = p.car_brand || ''; newMap[p.id].carColor = p.car_color || 'Qara'; newMap[p.id].licensePlate = p.license_plate || '';
               }
-            });
-            return newMap;
+            }); return newMap;
           });
         }
       }
@@ -1472,64 +716,37 @@ export default function Home() {
     const activeConversationIds = rows.filter(c => c.status !== 'closed').map((x) => x.id)
     if (activeConversationIds.length > 0) {
       const { data: unreadRows } = await supabase.from('messages').select('conversation_id').in('conversation_id', activeConversationIds).eq('is_read', false).neq('sender_id', current.driverId)
-      for (const row of unreadRows || []) {
-        const conversationId = (row as { conversation_id: number }).conversation_id
-        unreadMap.set(conversationId, (unreadMap.get(conversationId) || 0) + 1)
-      }
+      for (const row of unreadRows || []) { const conversationId = (row as { conversation_id: number }).conversation_id; unreadMap.set(conversationId, (unreadMap.get(conversationId) || 0) + 1) }
     }
 
     const enriched = rows.map((item) => ({ ...item, ride: rideMap.get(item.ride_id) || null, unread_count: unreadMap.get(item.id) || 0 }))
+    setConversations(enriched); setUnreadTotal(enriched.reduce((sum, item) => sum + (item.unread_count || 0), 0))
 
-    setConversations(enriched)
-    setUnreadTotal(enriched.reduce((sum, item) => sum + (item.unread_count || 0), 0))
-
-    if (enriched.length === 0) {
-      setSelectedConversationId(null)
-      setMessages([])
-      return
-    }
-
+    if (enriched.length === 0) { setSelectedConversationId(null); setMessages([]); return }
     if (!preserveSelection) return
-
     const currentSelectedId = selectedConversationIdRef.current
     const selectedStillExists = enriched.some((item) => item.id === currentSelectedId)
-
     if (currentSelectedId === null || !selectedStillExists) { setSelectedConversationId(enriched[0].id) }
   }
 
   async function getMessages(conversationId: number, markRead = true) {
     const { data, error } = await supabase.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true })
-
     if (error) { console.error('Messages error:', JSON.stringify(error, null, 2)); return }
-
     setMessages((data as Message[]) || [])
-
-    if (markRead) {
-      await markConversationMessagesAsRead(conversationId)
-      await getConversations(false)
-    }
+    if (markRead) { await markConversationMessagesAsRead(conversationId); await getConversations(false) }
   }
 
-  async function logAdminAction( actionType: string, entityType: string, entityId: string, oldData: Record<string, unknown> | null = null, newData: Record<string, unknown> | null = null, note: string | null = null ) {
+  async function logAdminAction(actionType: string, entityType: string, entityId: string, oldData: Record<string, unknown> | null = null, newData: Record<string, unknown> | null = null, note: string | null = null) {
     if (!isAdmin) return
     await supabase.from('admin_audit_logs').insert({ admin_user_id: currentUser.driverId, action_type: actionType, entity_type: entityType, entity_id: entityId, old_data: oldData, new_data: newData, note, })
   }
 
-  // BURA YENİLƏNDİ: Sərt nömrə və rəng yoxlaması
   async function handleCreateOrUpdateProfile(e: React.FormEvent) {
-    e.preventDefault()
-    setProfileSaving(true)
-    setMessage('')
-
+    e.preventDefault(); setProfileSaving(true); setMessage('')
     const current = getActiveUser()
-    const safePhone = profilePhone || '';
-    const digitsOnly = safePhone.replace(/\D/g, ''); 
+    const safePhone = profilePhone || ''; const digitsOnly = safePhone.replace(/\D/g, '');
 
-    if (digitsOnly.length !== 12) {
-      setMessage('⚠️ Telefon nömrəsini tam daxil edin (Məs: +994 50 123 45 67)')
-      setProfileSaving(false)
-      return 
-    }
+    if (digitsOnly.length !== 12) { setMessage('⚠️ Telefon nömrəsini tam daxil edin (Məs: +994 50 123 45 67)'); setProfileSaving(false); return }
 
     const effectiveRole = profile ? profile.role : initialRole
 
@@ -1539,60 +756,41 @@ export default function Home() {
       return
     }
 
-    const payload = {
-      id: current.driverId,
-      full_name: profileFullName.trim(),
-      username: profileUsername.trim(),
-      phone: profilePhone.trim(),
-      bio: profileBio.trim(),
-      gender: profileGender,
-      home_address: profileHomeAddress.trim() || null,
-      work_address: profileWorkAddress.trim() || null,
-      role: effectiveRole,
-      car_brand: carBrand.trim() || null,
-      license_plate: licensePlate.trim() || null,
-      car_color: carColor.trim() || 'Qara',
-      last_seen_at: new Date().toISOString(),
-    }
-
+    const payload = { id: current.driverId, full_name: profileFullName.trim(), username: profileUsername.trim(), phone: profilePhone.trim(), bio: profileBio.trim(), gender: profileGender, home_address: profileHomeAddress.trim() || null, work_address: profileWorkAddress.trim() || null, role: effectiveRole, car_brand: carBrand.trim() || null, license_plate: licensePlate.trim() || null, car_color: carColor.trim() || 'Qara', last_seen_at: new Date().toISOString(), }
     const { error } = await supabase.from('profiles').upsert(payload)
-
     if (error) { setMessage('Profil yadda saxlanmadı.') } else { setMessage('✅ Profil yadda saxlanıldı.'); await getProfile() }
     setProfileSaving(false)
   }
 
   async function handleSubmitRide(e: React.FormEvent) {
-    triggerVibration('medium'); e.preventDefault(); triggerVibration('heavy');
-    setSubmitting(true); setMessage('')
+    triggerVibration('medium'); e.preventDefault(); triggerVibration('heavy'); setSubmitting(true); setMessage('')
 
     const current = getActiveUser()
-
     if (!profile) { setMessage('Əvvəl profil yaratmaq lazımdır.'); setSubmitting(false); return }
     if (profile.is_blocked) { setMessage('Profil bloklandığı üçün elan yarada bilməzsən.'); setSubmitting(false); return }
 
     const cleanOrigin = origin.trim(); const cleanDestination = destination.trim(); const cleanNotes = notes.trim()
 
     if (!cleanOrigin || !cleanDestination) { setMessage('Haradan və hara məcburidir.'); setSubmitting(false); return }
-    if (cleanNotes.length > LIMITS.notesMax) { setMessage(`Qeyd maksimum ${LIMITS.notesMax} simvol ola bilər.`); setSubmitting(false); return }
+    if (cleanNotes.length > LIMITS.notesMax) { setMessage(`Qeyd max ${LIMITS.notesMax} simvol ola bilər.`); setSubmitting(false); return }
 
     const seatsNumber = Number(seats); const priceNumber = Number(pricePerSeat)
-
     if (!Number.isFinite(seatsNumber) || seatsNumber < 1 || seatsNumber > 20) { setMessage('Yer sayı 1-20 arası olmalıdır.'); setSubmitting(false); return }
     if (!Number.isFinite(priceNumber) || priceNumber < 0) { setMessage('Qiymət düzgün daxil edilməlidir.'); setSubmitting(false); return }
 
     const duplicateActiveRide = myRides.find((ride) => {
       if (editingRideId && ride.id === editingRideId) return false
-      return ( normalizeText(ride.origin) === normalizeText(cleanOrigin) && normalizeText(ride.destination) === normalizeText(cleanDestination) && (ride.ride_date || '') === rideDate && ride.departure_time === departureTime && ride.status === 'active' )
+      return (normalizeText(ride.origin) === normalizeText(cleanOrigin) && normalizeText(ride.destination) === normalizeText(cleanDestination) && (ride.ride_date || '') === rideDate && ride.departure_time === departureTime && ride.status === 'active')
     })
 
     if (duplicateActiveRide) { setMessage('Bu marşrut, tarix və saat üçün artıq aktiv elan var.'); setSubmitting(false); return }
 
     if (editingRideId) {
       const { error } = await supabase.from('ride_listings').update({ role: profile.role, origin: cleanOrigin, destination: cleanDestination, ride_date: rideDate, departure_time: departureTime, seats: seatsNumber, price_per_seat: priceNumber, women_only: womenOnly, notes: cleanNotes || null, updated_at: new Date().toISOString(), }).eq('id', editingRideId)
-      if (error) { console.error('Edit error:', error); setMessage('Elan yenilənmədi.') } else { setMessage('Elan yeniləndi.'); resetRideForm(); await initializeData(); setActiveTab('dashboard') }
+      if (error) { setMessage('Elan yenilənmədi.') } else { setMessage('Elan yeniləndi.'); resetRideForm(); await initializeData(); setActiveTab('dashboard') }
     } else {
       const { error } = await supabase.from('ride_listings').insert({ driver_id: current.driverId, role: profile.role, origin: cleanOrigin, destination: cleanDestination, origin_lat: originLat, origin_lng: originLng, destination_lat: destLat, destination_lng: destLng, ride_date: rideDate, departure_time: departureTime, seats: seatsNumber, price_per_seat: priceNumber, is_recurring: false, women_only: womenOnly, notes: cleanNotes || null, status: 'active', })
-      if (error) { console.error('Insert error:', error); setMessage('Elan əlavə olunmadı.') } else { setMessage('🎉 Elanınız uğurla yerləşdirildi!'); resetRideForm(); await initializeData(); setActiveTab('dashboard') }
+      if (error) { setMessage('Elan əlavə olunmadı.') } else { setMessage('🎉 Elanınız uğurla yerləşdirildi!'); resetRideForm(); await initializeData(); setActiveTab('dashboard') }
     }
     setSubmitting(false)
   }
@@ -1644,7 +842,6 @@ export default function Home() {
     if (existingPending) { setMessage('Bu elana artıq aktiv müraciətin var.'); return }
 
     setRideRequestLoading(ride.id)
-
     const requesterRole = profile.role; const ownerRole = ride.role === 'driver' ? 'driver' : 'passenger'
 
     const { error } = await supabase.from('ride_requests').insert({ ride_id: ride.id, requester_id: current.driverId, owner_id: ride.driver_id, requester_role: requesterRole, owner_role: ownerRole, message_text: requestMessage || null, seats_requested: requestedSeats, status: 'pending' })
@@ -1653,8 +850,8 @@ export default function Home() {
       setMessage('Müraciət göndərildi. ✅')
       setRequestMessageMap((prev) => ({ ...prev, [ride.id]: '' }))
       setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: '1' }))
-      try { await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ride.driver_id, text: `🚗 YolDash: Yeni müraciət!\n\nMarşrut: ${ride.origin} → ${ride.destination}\nTarix: ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' }) }) } catch (_) { }
-      await getRideRequests(); setActiveTab('requests')
+      try { await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ride.driver_id, text: `🚗 <b>YolDash: Yeni müraciət!</b>\n\n<b>Marşrut:</b> ${ride.origin} → ${ride.destination}\n<b>Tarix:</b> ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' }) }) } catch (_) { }
+      await getRideRequests(); setActiveTab('chat')
     }
     setRideRequestLoading(null)
   }
@@ -1672,6 +869,7 @@ export default function Home() {
     return (newConversation as Conversation).id
   }
 
+  // ── YENİDƏN İŞLƏNDİ: Qəbul/Rədd ediləndə bota bildiriş ──
   async function handleRideRequestDecision(request: RideRequestWithRide, decision: 'accepted' | 'rejected') {
     setRideRequestLoading(request.id)
     const { error } = await supabase.from('ride_requests').update({ status: decision, updated_at: new Date().toISOString() }).eq('id', request.id)
@@ -1690,6 +888,20 @@ export default function Home() {
       setMessage('Müraciət rədd edildi.')
       await getRideRequests()
     }
+
+    const statusAz = decision === 'accepted' ? '✅ QƏBUL EDİLDİ' : '❌ RƏDD EDİLDİ';
+    try {
+      await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: request.requester_id,
+          text: `🔔 <b>YolDash: Müraciətiniz ${statusAz}!</b>\n\n<b>Marşrut:</b> ${request.ride?.origin || '-'} → ${request.ride?.destination || '-'}`,
+          parse_mode: 'HTML'
+        })
+      });
+    } catch (_) { }
+
     setRideRequestLoading(null)
   }
 
@@ -1714,10 +926,7 @@ export default function Home() {
   }
 
   async function handleOpenConversation(conversationId: number) {
-    setSelectedConversationId(conversationId)
-    await getMessages(conversationId)
-    await getConversations(false)
-    setActiveTab('chat')
+    setSelectedConversationId(conversationId); await getMessages(conversationId); await getConversations(false); setActiveTab('chat')
   }
 
   async function handleCloseConversation(conversationId: number) {
@@ -1726,6 +935,7 @@ export default function Home() {
     if (error) { setMessage('Çat bağlanmadı.'); } else { setMessage('Çat bağlandı.'); await getConversations(true); if (selectedConversationId === conversationId) { setSelectedConversationId(null); } }
   }
 
+  // ── YENİDƏN İŞLƏNDİ: Mesaj gələndə bota bildiriş ──
   async function handleSendMessage() {
     if (!selectedConversationId) { setMessage('Əvvəl chat seç.'); return }
     if (!chatInput.trim()) return
@@ -1735,6 +945,23 @@ export default function Home() {
     const { error } = await supabase.from('messages').insert({ conversation_id: selectedConversationId, sender_id: currentUser.driverId, message_text: chatInput.trim(), is_read: false })
 
     if (error) { setMessage('Mesaj göndərilmədi.') } else {
+
+      const selectedConv = conversations.find(c => c.id === selectedConversationId);
+      if (selectedConv) {
+        const receiverId = selectedConv.driver_user_id === currentUser.driverId ? selectedConv.passenger_user_id : selectedConv.driver_user_id;
+        try {
+          await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: receiverId,
+              text: `💬 <b>YolDash: Yeni mesajınız var!</b>\n\n<b>Kimdən:</b> ${profile?.full_name || profile?.username || 'İstifadəçi'}\n<b>Mesaj:</b> ${chatInput.trim()}\n\nYolDash-ı açın: @yolustubot`,
+              parse_mode: 'HTML'
+            })
+          });
+        } catch (_) { }
+      }
+
       setChatInput(''); await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', selectedConversationId)
       await getMessages(selectedConversationId, false); await getConversations(false)
     }
@@ -1752,7 +979,7 @@ export default function Home() {
     if (comment.length > LIMITS.reviewCommentMax) { setMessage(`Review max ${LIMITS.reviewCommentMax} simvol.`); return }
 
     const revieweeId = req.owner_id === currentUser.driverId ? req.requester_id : req.owner_id
-    const existing = reviews.find((item) => item.request_id === req.id && item.reviewer_id === currentUser.driverId && item.reviewee_id === revieweeId )
+    const existing = reviews.find((item) => item.request_id === req.id && item.reviewer_id === currentUser.driverId && item.reviewee_id === revieweeId)
 
     if (existing) { setMessage('Bu request üçün artıq review yazmısan.'); return }
 
@@ -1786,16 +1013,13 @@ export default function Home() {
     setSupportLoading(false)
   }
 
-  // BURA YENİLƏNDİ: Rəng olmadan sürücüyə keçid qadağandır
   async function handleSwitchRole() {
     if (!profile) { setMessage('Əvvəl profil yaratmaq lazımdır.'); return }
     const newRole: UserRole = profile.role === 'driver' ? 'passenger' : 'driver'
 
     if (newRole === 'driver' && (!profile.car_brand || !profile.license_plate || !profile.car_color)) {
       setMessage('⚠️ Sürücü olmaq üçün əvvəlcə profil bölməsində avtomobil markası, nömrəsi və RƏNGİNİ daxil edin.')
-      setActiveTab('profile')
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-      return
+      setActiveTab('profile'); window.scrollTo({ top: 0, behavior: 'smooth' }); return
     }
 
     const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', currentUser.driverId)
@@ -1903,7 +1127,6 @@ export default function Home() {
     setAdminLoadingId(null)
   }
 
-  // ── FİLTERLƏMƏ VƏ HESABLAMA (useMemo) BLOKU (GERİ QAYTARILDI VƏ TƏMİZLƏNDİ) ──
   const filteredRides = useMemo(() => {
     const current = getActiveUser()
     const text = searchText.toLowerCase().trim()
@@ -1917,7 +1140,7 @@ export default function Home() {
       const matchesRole = filterRole === 'all' || (ride.role || 'driver') === filterRole
       const matchesDate = !filterDate || (ride.ride_date || '') === filterDate
       const notMine = ride.driver_id !== current.driverId
-      
+
       const matchesWomenOnly = ride.women_only ? profile?.gender === 'female' : true
       const rideUserGender = driverProfilesMap[ride.driver_id]?.gender
       const matchesSearchGender = !filterGender || rideUserGender === filterGender
@@ -1945,13 +1168,13 @@ export default function Home() {
   const adminUsersFiltered = useMemo(() => {
     const q = adminGlobalSearch.toLowerCase().trim()
     if (!q) return adminUsers
-    return adminUsers.filter((user) => [String(user.id), user.full_name || '', user.username || '', user.phone || '', user.bio || ''].join(' ').toLowerCase().includes(q) )
+    return adminUsers.filter((user) => [String(user.id), user.full_name || '', user.username || '', user.phone || '', user.bio || ''].join(' ').toLowerCase().includes(q))
   }, [adminUsers, adminGlobalSearch])
 
   const adminReportsFiltered = useMemo(() => {
     const q = adminGlobalSearch.toLowerCase().trim()
     if (!q) return adminReports
-    return adminReports.filter((report) => [String(report.id), String(report.target_user_id || ''), String(report.reporter_id), report.reason || '', report.details || ''].join(' ').toLowerCase().includes(q) )
+    return adminReports.filter((report) => [String(report.id), String(report.target_user_id || ''), String(report.reporter_id), report.reason || '', report.details || ''].join(' ').toLowerCase().includes(q))
   }, [adminReports, adminGlobalSearch])
 
   if (!tgReady) {
@@ -2000,7 +1223,6 @@ export default function Home() {
         </div>
       </div>
 
-      
       {activeTab === 'dashboard' && (
         <>
           <section style={styles.sectionCard}>
@@ -2008,9 +1230,9 @@ export default function Home() {
             <div style={styles.statsGrid}>
               <div style={styles.statsCard}><p style={styles.statLabel}>Aktiv elanlarım</p><p style={styles.statValue}>{myRides.length}</p></div>
               <div style={styles.statsCard}><p style={styles.statLabel}>Tarixçədəki elanlar</p><p style={styles.statValue}>{historyRides.length}</p></div>
-             <div style={styles.statsCard}><p style={styles.statLabel}>Gələn aktiv müraciətlər</p><p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length}</p></div>
-             <div style={styles.statsCard}><p style={styles.statLabel}>Oxunmamış mesajlar</p><p style={styles.statValue}>{unreadTotal}</p></div>
-              <div style={styles.statsCard}><p style={styles.statLabel}>Reytinqim</p><p style={{ ...styles.statValue, color: '#eab308' }}>⭐ {reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0'}</p></div>
+              <div style={styles.statsCard}><p style={styles.statLabel}>Gələn aktiv müraciətlər</p><p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active').length}</p></div>
+              <div style={styles.statsCard}><p style={styles.statLabel}>Oxunmamış mesajlar</p><p style={styles.statValue}>{unreadTotal}</p></div>
+              <div style={styles.statsCard}><p style={styles.statLabel}>Reytinqim</p><p style={{ ...styles.statValue, color: '#eab308', fontSize: 18 }}>{renderStars(reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0')}</p></div>
             </div>
           </section>
 
@@ -2054,8 +1276,8 @@ export default function Home() {
             <form onSubmit={handleSubmitRide} style={styles.form}>
               {(profile?.home_address || profile?.work_address) && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                  {profile.home_address && <button type="button" onClick={() => { if(!origin) setOrigin(profile.home_address!); else if(!destination) setDestination(profile.home_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>}
-                  {profile.work_address && <button type="button" onClick={() => { if(!origin) setOrigin(profile.work_address!); else if(!destination) setDestination(profile.work_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>}
+                  {profile.home_address && <button type="button" onClick={() => { if (!origin) setOrigin(profile.home_address!); else if (!destination) setDestination(profile.home_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>}
+                  {profile.work_address && <button type="button" onClick={() => { if (!origin) setOrigin(profile.work_address!); else if (!destination) setDestination(profile.work_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>}
                 </div>
               )}
               <div style={styles.fieldWrap}><label style={styles.label}>Aktiv rol</label><input value={getRoleLabel(profile.role)} readOnly style={styles.input} /></div>
@@ -2133,7 +1355,7 @@ export default function Home() {
 
       {activeTab === 'search' && (
         <>
-         <section style={styles.sectionCard}>
+          <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Axtarış</h2>
             <div style={styles.form}>
               <div style={styles.fieldWrap}>
@@ -2179,28 +1401,27 @@ export default function Home() {
             {loading ? (
               <p style={styles.mutedText}>Yüklənir...</p>
             ) : filteredRides.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '2px dashed #cbd5e1', marginTop: 20 }}>
-                  <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-                  <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
-                  <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
-                  <button type="button" onClick={() => setActiveTab('create')} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
-                </div>
-              ) : (
-                <div style={styles.ridesGrid}>
+              <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '2px dashed #cbd5e1', marginTop: 20 }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+                <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
+                <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
+                <button type="button" onClick={() => setActiveTab('create')} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
+              </div>
+            ) : (
+              <div style={styles.ridesGrid}>
                 {filteredRides.map((ride) => (
                   <div key={ride.id} style={styles.resultCard}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{...styles.approvedBadge, margin: 0}}>Aktiv</div>
+                      <div style={{ ...styles.approvedBadge, margin: 0 }}>Aktiv</div>
                       {driverProfilesMap[ride.driver_id] && (
                         <div style={{ display: 'flex', gap: 10, background: '#f8fafc', padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }}>
                           <span style={{ fontWeight: 700, color: '#334155' }}>{driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}</span>
-                          <span style={{ fontWeight: 800, color: '#eab308' }}>⭐ {driverProfilesMap[ride.driver_id].rating}</span>
+                          <span style={{ fontWeight: 800, color: '#eab308' }}>{renderStars(driverProfilesMap[ride.driver_id].rating)}</span>
                         </div>
                       )}
                     </div>
                     <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
-                    
-                    {/* BURA YENİLƏNDİ: Axtarışda Avtomobil markası və rəngi */}
+
                     {driverProfilesMap[ride.driver_id]?.carBrand && (
                       <p style={styles.infoRow}>
                         <strong>Avtomobil:</strong> {driverProfilesMap[ride.driver_id].carBrand} ({driverProfilesMap[ride.driver_id].carColor})
@@ -2234,9 +1455,111 @@ export default function Home() {
         </>
       )}
 
+      {activeTab === 'chat' && (
+        <section style={styles.sectionCard}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20, background: '#f1f5f9', padding: 6, borderRadius: 12 }}>
+            <button onClick={() => setActiveTab('chat')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#0f172a', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+              💬 Mesajlar ({unreadTotal > 0 ? `${unreadTotal} yeni` : conversations.filter(c => c.status !== 'closed').length})
+            </button>
+            <button onClick={() => setActiveTab('requests')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: 'transparent', color: '#64748b' }}>
+              🔔 Müraciətlər ({incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active').length})
+            </button>
+          </div>
+          <div style={styles.chatLayout}>
+            <div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                <button onClick={() => { setChatFilter('active'); const firstActive = conversations.find(c => c.status !== 'closed'); setSelectedConversationId(firstActive ? firstActive.id : null); }} style={chatFilter === 'active' ? styles.chipActive : styles.chip}>🟢 Aktiv ({conversations.filter(c => c.status !== 'closed').length})</button>
+                <button onClick={() => { setChatFilter('closed'); const firstClosed = conversations.find(c => c.status === 'closed'); setSelectedConversationId(firstClosed ? firstClosed.id : null); }} style={chatFilter === 'closed' ? styles.chipActive : styles.chip}>🗄️ Arxiv ({conversations.filter(c => c.status === 'closed').length})</button>
+              </div>
+              <div style={styles.conversationList}>
+                {conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').length === 0 ? (
+                  <p style={styles.mutedText}>{chatFilter === 'active' ? 'Aktiv chat yoxdur.' : 'Arxiv boşdur.'}</p>
+                ) : (
+                  conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').map((conv) => {
+                    const ride = conv.ride
+                    return (
+                      <div key={conv.id} style={{ ...(selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard), opacity: chatFilter === 'closed' ? 0.6 : 1 }} onClick={() => void handleOpenConversation(conv.id)}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={chatFilter === 'closed' ? { ...styles.badge, background: '#e2e8f0', color: '#64748b' } : styles.badge}>{chatFilter === 'closed' ? 'Bağlı' : 'Chat'} #{conv.id}</div>
+                          {conv.unread_count && chatFilter === 'active' ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
+                        </div>
+                        <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}</p>
+                        <p style={styles.infoRow}><strong>Tarix:</strong> {ride ? `${ride.ride_date || '-'} / ${ride.departure_time}` : '-'}</p>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+            <div style={styles.chatPanel}>
+              {(!selectedConversation || (chatFilter === 'active' ? selectedConversation.status === 'closed' : selectedConversation.status !== 'closed')) ? (
+                <div style={{ textAlign: 'center', marginTop: 40 }}><span style={{ fontSize: 40 }}>💬</span><p style={{ ...styles.mutedText, marginTop: 12 }}>{chatFilter === 'active' ? 'Göstəriləcək aktiv çat yoxdur.' : 'Göstəriləcək arxiv çat yoxdur.'}</p></div>
+              ) : (
+                <>
+                  <div style={styles.resultCard}>
+                    <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
+                    <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
+                    <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {selectedConversationRide ? `${selectedConversationRide.ride_date || '-'} / ${selectedConversationRide.departure_time}` : '-'}</p>
+
+                    {selectedConversationRide && driverProfilesMap[selectedConversationRide.driver_id]?.carBrand && (
+                      <p style={styles.infoRow}>
+                        <strong>Avtomobil:</strong> {driverProfilesMap[selectedConversationRide.driver_id].carBrand} ({driverProfilesMap[selectedConversationRide.driver_id].carColor})
+                        {' '}
+                        <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>
+                          {driverProfilesMap[selectedConversationRide.driver_id].licensePlate}
+                        </span>
+                      </p>
+                    )}
+
+                    <p style={styles.infoRow}><strong>Qiymət:</strong> {selectedConversationRide ? `${selectedConversationRide.price_per_seat} AZN` : '-'}</p>
+                    <p style={styles.infoRow}><strong>Status:</strong> {selectedConversation.status === 'closed' ? 'Arxivlənib (Bağlı)' : selectedConversation.status}</p>
+                    {selectedConversation.status !== 'closed' && (
+                      <div style={{ marginTop: 10 }}>
+                        <button type="button" onClick={() => void handleCloseConversation(selectedConversation.id)} style={styles.dangerButton}>🔒 Çatı Bağla</button>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ height: 12 }} />
+                  {selectedConversationRide?.status === 'active' && selectedConversation.status !== 'closed' && (
+                    <LiveMap conversationId={selectedConversation.id} currentUserId={currentUser.driverId} isDriver={profile?.role === 'driver'} otherUserId={currentUser.driverId === selectedConversation.driver_user_id ? selectedConversation.passenger_user_id : selectedConversation.driver_user_id} />
+                  )}
+                  <div style={styles.messageList}>
+                    {currentMessages.length === 0 ? (
+                      <p style={styles.mutedText}>Hələ mesaj yoxdur.</p>
+                    ) : (
+                      currentMessages.map((msg) => {
+                        const isMine = msg.sender_id === currentUser.driverId
+                        return (
+                          <div key={msg.id} style={isMine ? styles.myMessage : styles.otherMessage}>
+                            <div>{msg.message_text}</div>
+                            <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8 }}>{formatDateTime(msg.created_at)}</div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                  {selectedConversation.status !== 'closed' ? (
+                    <>
+                      <div style={styles.fieldWrap}>
+                        <label style={styles.label}>Mesaj</label>
+                        <textarea rows={3} value={chatInput} onChange={(e) => setChatInput(e.target.value)} style={styles.textarea} placeholder="Mesaj yaz..." />
+                      </div>
+                      <div style={styles.actionRow}>
+                        <button type="button" onClick={() => void handleSendMessage()} style={styles.primaryButton} disabled={messageSending}>{messageSending ? 'Göndərilir...' : 'Göndər'}</button>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ marginTop: 16, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}><p style={{ margin: 0, fontWeight: 700, color: '#64748b' }}>🔒 Bu çat bağlanıb. Artıq mesaj yazmaq və məkan paylaşmaq mümkün deyil.</p></div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {activeTab === 'requests' && (
         <section style={styles.sectionCard}>
-          {/* INBOX (GƏLƏNLƏR) ÜST MENYUSU */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 20, background: '#f1f5f9', padding: 6, borderRadius: 12 }}>
             <button onClick={() => setActiveTab('chat')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: 'transparent', color: '#64748b' }}>
               💬 Mesajlar ({unreadTotal > 0 ? `${unreadTotal} yeni` : conversations.filter(c => c.status !== 'closed').length})
@@ -2292,111 +1615,6 @@ export default function Home() {
                 </div>
               ));
             })()}
-          </div>
-        </section>
-      )}
-
-      {activeTab === 'chat' && (
-        <section style={styles.sectionCard}>
-          {/* INBOX (GƏLƏNLƏR) ÜST MENYUSU */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 20, background: '#f1f5f9', padding: 6, borderRadius: 12 }}>
-            <button onClick={() => setActiveTab('chat')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: '#ffffff', color: '#0f172a', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-              💬 Mesajlar ({unreadTotal > 0 ? `${unreadTotal} yeni` : conversations.filter(c => c.status !== 'closed').length})
-            </button>
-            <button onClick={() => setActiveTab('requests')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: 'transparent', color: '#64748b' }}>
-              🔔 Müraciətlər ({incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active').length})
-            </button>
-          </div>
-          <div style={styles.chatLayout}>
-            <div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                <button onClick={() => { setChatFilter('active'); const firstActive = conversations.find(c => c.status !== 'closed'); setSelectedConversationId(firstActive ? firstActive.id : null); }} style={chatFilter === 'active' ? styles.chipActive : styles.chip}>🟢 Aktiv ({conversations.filter(c => c.status !== 'closed').length})</button>
-                <button onClick={() => { setChatFilter('closed'); const firstClosed = conversations.find(c => c.status === 'closed'); setSelectedConversationId(firstClosed ? firstClosed.id : null); }} style={chatFilter === 'closed' ? styles.chipActive : styles.chip}>🗄️ Arxiv ({conversations.filter(c => c.status === 'closed').length})</button>
-              </div>
-              <div style={styles.conversationList}>
-                {conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').length === 0 ? (
-                  <p style={styles.mutedText}>{chatFilter === 'active' ? 'Aktiv chat yoxdur.' : 'Arxiv boşdur.'}</p>
-                ) : (
-                  conversations.filter(c => chatFilter === 'active' ? c.status !== 'closed' : c.status === 'closed').map((conv) => {
-                    const ride = conv.ride
-                    return (
-                      <div key={conv.id} style={{ ...(selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard), opacity: chatFilter === 'closed' ? 0.6 : 1 }} onClick={() => void handleOpenConversation(conv.id)}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                          <div style={chatFilter === 'closed' ? {...styles.badge, background: '#e2e8f0', color: '#64748b'} : styles.badge}>{chatFilter === 'closed' ? 'Bağlı' : 'Chat'} #{conv.id}</div>
-                          {conv.unread_count && chatFilter === 'active' ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
-                        </div>
-                        <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}</p>
-                        <p style={styles.infoRow}><strong>Tarix:</strong> {ride ? `${ride.ride_date || '-'} / ${ride.departure_time}` : '-'}</p>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-            </div>
-            <div style={styles.chatPanel}>
-              {(!selectedConversation || (chatFilter === 'active' ? selectedConversation.status === 'closed' : selectedConversation.status !== 'closed')) ? (
-                <div style={{ textAlign: 'center', marginTop: 40 }}><span style={{ fontSize: 40 }}>💬</span><p style={{ ...styles.mutedText, marginTop: 12 }}>{chatFilter === 'active' ? 'Göstəriləcək aktiv çat yoxdur.' : 'Göstəriləcək arxiv çat yoxdur.'}</p></div>
-              ) : (
-                <>
-                  <div style={styles.resultCard}>
-                    <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
-                    <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
-                    <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {selectedConversationRide ? `${selectedConversationRide.ride_date || '-'} / ${selectedConversationRide.departure_time}` : '-'}</p>
-
-                    {/* BURA YENİLƏNDİ: Çatda Dövlət Qeydiyyat Nömrəsinin göstərilməsi */}
-                    {selectedConversationRide && driverProfilesMap[selectedConversationRide.driver_id]?.carBrand && (
-                      <p style={styles.infoRow}>
-                        <strong>Avtomobil:</strong> {driverProfilesMap[selectedConversationRide.driver_id].carBrand} ({driverProfilesMap[selectedConversationRide.driver_id].carColor}) 
-                        {' '}
-                        <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>
-                          {driverProfilesMap[selectedConversationRide.driver_id].licensePlate}
-                        </span>
-                      </p>
-                    )}
-
-                    <p style={styles.infoRow}><strong>Qiymət:</strong> {selectedConversationRide ? `${selectedConversationRide.price_per_seat} AZN` : '-'}</p>
-                    <p style={styles.infoRow}><strong>Status:</strong> {selectedConversation.status === 'closed' ? 'Arxivlənib (Bağlı)' : selectedConversation.status}</p>
-                    {selectedConversation.status !== 'closed' && (
-                      <div style={{ marginTop: 10 }}>
-                        <button type="button" onClick={() => void handleCloseConversation(selectedConversation.id)} style={styles.dangerButton}>🔒 Çatı Bağla</button>
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ height: 12 }} />
-                  {selectedConversationRide?.status === 'active' && selectedConversation.status !== 'closed' && (
-                    <LiveMap conversationId={selectedConversation.id} currentUserId={currentUser.driverId} isDriver={profile?.role === 'driver'} otherUserId={ currentUser.driverId === selectedConversation.driver_user_id ? selectedConversation.passenger_user_id : selectedConversation.driver_user_id } />
-                  )}
-                  <div style={styles.messageList}>
-                    {currentMessages.length === 0 ? (
-                      <p style={styles.mutedText}>Hələ mesaj yoxdur.</p>
-                    ) : (
-                      currentMessages.map((msg) => {
-                        const isMine = msg.sender_id === currentUser.driverId
-                        return (
-                          <div key={msg.id} style={isMine ? styles.myMessage : styles.otherMessage}>
-                            <div>{msg.message_text}</div>
-                            <div style={{ fontSize: 11, marginTop: 6, opacity: 0.8 }}>{formatDateTime(msg.created_at)}</div>
-                          </div>
-                        )
-                      })
-                    )}
-                  </div>
-                  {selectedConversation.status !== 'closed' ? (
-                    <>
-                      <div style={styles.fieldWrap}>
-                        <label style={styles.label}>Mesaj</label>
-                        <textarea rows={3} value={chatInput} onChange={(e) => setChatInput(e.target.value)} style={styles.textarea} placeholder="Mesaj yaz..." />
-                      </div>
-                      <div style={styles.actionRow}>
-                        <button type="button" onClick={() => void handleSendMessage()} style={styles.primaryButton} disabled={messageSending}>{messageSending ? 'Göndərilir...' : 'Göndər'}</button>
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ marginTop: 16, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}><p style={{ margin: 0, fontWeight: 700, color: '#64748b' }}>🔒 Bu çat bağlanıb. Artıq mesaj yazmaq və məkan paylaşmaq mümkün deyil.</p></div>
-                  )}
-                </>
-              )}
-            </div>
           </div>
         </section>
       )}
@@ -2554,7 +1772,6 @@ export default function Home() {
                   <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
                   <input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} style={styles.input} placeholder="Məs: 99-XX-999" />
                 </div>
-                {/* BURA YENİLƏNDİ: Rəng xanası */}
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Avtomobil rəngi</label>
                   <input value={carColor} onChange={(e) => setCarColor(e.target.value)} style={styles.input} placeholder="Məs: Ağ" />
@@ -2564,13 +1781,16 @@ export default function Home() {
             <div style={styles.buttonRow}>
               <button type="submit" disabled={profileSaving} style={styles.primaryButton}>{profileSaving ? 'Yadda saxlanılır...' : profile ? 'Profili yenilə' : 'Profili yarat'}</button>
             </div>
+
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <button type="button" onClick={() => { setActiveTab('history'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: '#f8fafc', color: '#334155', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                🕒 Keçmiş Səfərlərim
+              </button>
+              <button type="button" onClick={() => { setActiveTab('support'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: '#f8fafc', color: '#334155', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+                🎧 Dəstək və Əlaqə
+              </button>
+            </div>
           </form>
-          {/* YENİ: Dəstək Düyməsi (Profilin daxilində) */}
-          <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <button type="button" onClick={() => { setActiveTab('support'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: '#f8fafc', color: '#334155', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-              🎧 Dəstək və Əlaqə
-            </button>
-          </div>
         </section>
       )}
 
@@ -2579,7 +1799,7 @@ export default function Home() {
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Admin panel</h2>
             <div style={styles.chipRow}>
-              {[ { key: 'overview', label: 'Overview' }, { key: 'users', label: 'Users' }, { key: 'rides', label: 'Rides' }, { key: 'requests', label: 'Requests' }, { key: 'conversations', label: 'Conversations' }, { key: 'messages', label: 'Messages' }, { key: 'reviews', label: 'Reviews' }, { key: 'reports', label: 'Reports' }, { key: 'audit', label: 'Audit' }, ].map((item) => (
+              {[{ key: 'overview', label: 'Overview' }, { key: 'users', label: 'Users' }, { key: 'rides', label: 'Rides' }, { key: 'requests', label: 'Requests' }, { key: 'conversations', label: 'Conversations' }, { key: 'messages', label: 'Messages' }, { key: 'reviews', label: 'Reviews' }, { key: 'reports', label: 'Reports' }, { key: 'audit', label: 'Audit' },].map((item) => (
                 <button key={item.key} type="button" onClick={() => setAdminSection(item.key as AdminSection)} style={adminSection === item.key ? styles.chipAdmin : styles.chip}>{item.label}</button>
               ))}
             </div>
@@ -2596,7 +1816,7 @@ export default function Home() {
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #7c3aed' }}><p style={styles.statLabel}>⏳ Gözləyən müraciətlər</p><p style={{ ...styles.statValue, color: '#7c3aed' }}>{allRideRequestsAdmin.filter(r => r.status === 'pending').length}</p></div>
               </div>
               <div style={styles.statsGrid}>
-                {[ { label: 'Cəmi İstifadəçi', value: adminUsers.length, color: '#2563eb' }, { label: 'Cəmi Elan', value: allRidesAdmin.length, color: '#0891b2' }, { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' }, { label: 'Cəmi Mesaj', value: allMessagesAdmin.length, color: '#059669' }, { label: 'Cəmi Review', value: allReviewsAdmin.length, color: '#d97706' }, { label: 'Cəmi Report', value: adminReports.length, color: '#dc2626' }, ].map(item => (
+                {[{ label: 'Cəmi İstifadəçi', value: adminUsers.length, color: '#2563eb' }, { label: 'Cəmi Elan', value: allRidesAdmin.length, color: '#0891b2' }, { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' }, { label: 'Cəmi Mesaj', value: allMessagesAdmin.length, color: '#059669' }, { label: 'Cəmi Review', value: allReviewsAdmin.length, color: '#d97706' }, { label: 'Cəmi Report', value: adminReports.length, color: '#dc2626' },].map(item => (
                   <div key={item.label} style={styles.adminStatsCard}><p style={styles.statLabel}>{item.label}</p><p style={{ ...styles.statValue, color: item.color }}>{item.value}</p><div style={{ marginTop: 8, height: 5, borderRadius: 4, background: '#e2e8f0' }}><div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} /></div></div>
                 ))}
               </div>
@@ -2608,8 +1828,8 @@ export default function Home() {
                   <button type="button" onClick={() => setAdminSection('rides')} style={styles.closeButton}>🚗 Elanlar</button>
                   <button type="button" onClick={() => setAdminSection('requests')} style={styles.primaryButton}>⏳ Müraciətlər</button>
                   <button type="button" onClick={() => setAdminSection('conversations')} style={styles.successButton}>💬 Çatlar</button>
-                  <button type="button" onClick={() => setAdminSection('messages')} style={{...styles.ghostButton, borderColor: '#3b82f6', color: '#3b82f6'}}>✉️ Mesajlar</button>
-                  <button type="button" onClick={() => setAdminSection('reviews')} style={{...styles.ghostButton, borderColor: '#d97706', color: '#d97706'}}>⭐ Rəylər</button>
+                  <button type="button" onClick={() => setAdminSection('messages')} style={{ ...styles.ghostButton, borderColor: '#3b82f6', color: '#3b82f6' }}>✉️ Mesajlar</button>
+                  <button type="button" onClick={() => setAdminSection('reviews')} style={{ ...styles.ghostButton, borderColor: '#d97706', color: '#d97706' }}>⭐ Rəylər</button>
                   <button type="button" onClick={() => setAdminSection('audit')} style={styles.ghostButton}>📋 Audit log</button>
                   <button type="button" onClick={() => void getAdminData()} style={styles.secondaryButton}>🔄 Təzələ</button>
                 </div>
@@ -2818,15 +2038,15 @@ export default function Home() {
                 <h2 style={styles.sectionTitle}>Reviews</h2>
                 <div style={styles.ridesGrid}>
                   {allReviewsAdmin.map((item) => (
-                  <div key={item.id} style={styles.adminCard}>
-                    <div style={styles.adminBadge}>Review #{item.id}</div>
-                    <p style={styles.infoRow}><strong>Reviewer:</strong> {item.reviewer_id}</p>
-                    <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
-                    <p style={styles.infoRow}><strong>Rating:</strong> {item.rating}</p>
-                    <p style={styles.infoRow}><strong>Comment:</strong> {item.comment_text || '-'}</p>
-                    <div style={styles.actionRow}><button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>Edit</button><button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteReview(item)}>Delete</button></div>
-                  </div>
-                ))}
+                    <div key={item.id} style={styles.adminCard}>
+                      <div style={styles.adminBadge}>Review #{item.id}</div>
+                      <p style={styles.infoRow}><strong>Reviewer:</strong> {item.reviewer_id}</p>
+                      <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
+                      <p style={styles.infoRow}><strong>Rating:</strong> {item.rating}</p>
+                      <p style={styles.infoRow}><strong>Comment:</strong> {item.comment_text || '-'}</p>
+                      <div style={styles.actionRow}><button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>Edit</button><button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteReview(item)}>Delete</button></div>
+                    </div>
+                  ))}
                 </div>
               </section>
 
@@ -2855,8 +2075,8 @@ export default function Home() {
                     <p style={styles.infoRow}><strong>Target:</strong> {report.target_user_id || '-'}</p>
                     <p style={styles.infoRow}><strong>Reason:</strong> {report.reason}</p>
                     <p style={styles.infoRow}><strong>Details:</strong> {report.details || '-'}</p>
-                    <div style={styles.fieldWrap}><label style={styles.label}>Status</label><select value={adminReportStatusMap[report.id] || report.status} onChange={(e) => setAdminReportStatusMap((prev) => ({ ...prev, [report.id]: e.target.value as ReportStatus, })) } style={styles.select}><option value="open">open</option><option value="in_review">in_review</option><option value="resolved">resolved</option><option value="dismissed">dismissed</option></select></div>
-                    <div style={styles.fieldWrap}><label style={styles.label}>Admin note</label><textarea rows={3} value={adminReportNoteMap[report.id] || ''} onChange={(e) => setAdminReportNoteMap((prev) => ({ ...prev, [report.id]: e.target.value, })) } style={styles.textarea} /></div>
+                    <div style={styles.fieldWrap}><label style={styles.label}>Status</label><select value={adminReportStatusMap[report.id] || report.status} onChange={(e) => setAdminReportStatusMap((prev) => ({ ...prev, [report.id]: e.target.value as ReportStatus, }))} style={styles.select}><option value="open">open</option><option value="in_review">in_review</option><option value="resolved">resolved</option><option value="dismissed">dismissed</option></select></div>
+                    <div style={styles.fieldWrap}><label style={styles.label}>Admin note</label><textarea rows={3} value={adminReportNoteMap[report.id] || ''} onChange={(e) => setAdminReportNoteMap((prev) => ({ ...prev, [report.id]: e.target.value, }))} style={styles.textarea} /></div>
                     <div style={styles.actionRow}><button type="button" style={styles.primaryButton} disabled={adminLoadingId === report.id} onClick={() => void handleAdminUpdateReport(report)}>Update report</button></div>
                   </div>
                 ))}
@@ -2881,42 +2101,40 @@ export default function Home() {
           )}
         </>
       )}
-{/* ── SABİT ALT MENYU (BOTTOM NAV) ── */}
-      <div style={styles.bottomNav}>
-        <button style={{ ...styles.navItem, ...(activeTab === 'dashboard' || activeTab === 'search' ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('dashboard'); window.scrollTo({ top: 0 }); }}>
-          <span style={{ fontSize: 24, marginBottom: 4 }}>🏠</span>
-          Kəşf Et
-        </button>
-        <button style={{ ...styles.navItem, ...(activeTab === 'history' ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('history'); window.scrollTo({ top: 0 }); }}>
-          <span style={{ fontSize: 24, marginBottom: 4 }}>🚗</span>
-          Səfərlərim
-        </button>
-        <button style={{ ...styles.navItem, ...((activeTab === 'chat' || activeTab === 'requests') ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('chat'); window.scrollTo({ top: 0 }); }}>
-          <div style={{ position: 'relative' }}>
-            <span style={{ fontSize: 24, marginBottom: 4 }}>💬</span>
-            {(unreadTotal + incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active').length) > 0 && (
-              <span style={{ position: 'absolute', top: -4, right: -8, background: '#ef4444', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 10 }}>
-                {unreadTotal + incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active').length}
-              </span>
-            )}
-          </div>
-          Gələnlər
-        </button>
-        <button style={{ ...styles.navItem, ...((activeTab === 'profile' || activeTab === 'support' || activeTab === 'admin') ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('profile'); window.scrollTo({ top: 0 }); }}>
-          <span style={{ fontSize: 24, marginBottom: 4 }}>👤</span>
-          Profil
-        </button>
-      </div>
 
-      {/* ── AĞILLI ÜZƏN DÜYMƏ (FAB) ── */}
-      {profile && ['dashboard', 'history', 'profile'].includes(activeTab) && (
-        <button 
-          style={{...styles.fab, background: profile.role === 'driver' ? '#16a34a' : '#2563eb'}} 
-          onClick={() => { setActiveTab(profile.role === 'driver' ? 'create' : 'search'); window.scrollTo({ top: 0 }); }}
-        >
-          {profile.role === 'driver' ? '➕ Elan Ver' : '🔍 Səfər Axtar'}
-        </button>
+      {/* ── SABİT ALT MENYU (BOTTOM NAV) ── */}
+      {!isAdminMode && (
+        <div style={styles.bottomNav}>
+          <button style={{ ...styles.navItem, ...(activeTab === 'dashboard' ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('dashboard'); window.scrollTo({ top: 0 }); }}>
+            <span style={{ fontSize: 24, marginBottom: 4 }}>🏠</span>
+            Kəşf Et
+          </button>
+          <button style={{ ...styles.navItem, ...(activeTab === 'search' ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('search'); window.scrollTo({ top: 0 }); }}>
+            <span style={{ fontSize: 24, marginBottom: 4 }}>🔍</span>
+            Axtarış
+          </button>
+          <button style={{ ...styles.navItem, ...(activeTab === 'create' ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('create'); window.scrollTo({ top: 0 }); }}>
+            <span style={{ fontSize: 24, marginBottom: 4 }}>➕</span>
+            Yarat
+          </button>
+          <button style={{ ...styles.navItem, ...((activeTab === 'chat' || activeTab === 'requests') ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('chat'); window.scrollTo({ top: 0 }); }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ fontSize: 24, marginBottom: 4 }}>💬</span>
+              {(unreadTotal + incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active').length) > 0 && (
+                <span style={{ position: 'absolute', top: -4, right: -8, background: '#ef4444', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 10 }}>
+                  {unreadTotal + incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active').length}
+                </span>
+              )}
+            </div>
+            Gələnlər
+          </button>
+          <button style={{ ...styles.navItem, ...((activeTab === 'profile' || activeTab === 'support' || activeTab === 'history') ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('profile'); window.scrollTo({ top: 0 }); }}>
+            <span style={{ fontSize: 24, marginBottom: 4 }}>👤</span>
+            Profil
+          </button>
+        </div>
       )}
+
       {/* ── Qlobal Toast Bildirişi ── */}
       {message && (
         <>
@@ -2927,7 +2145,7 @@ export default function Home() {
             }
           `}</style>
           <div style={{
-            position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
+            position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
             background: message.includes('xəta') || message.includes('tapılmadı') || message.includes('doldurun') || message.includes('⚠️') ? '#ef4444' : '#10b981',
             color: '#ffffff', padding: '12px 24px', borderRadius: '50px', fontSize: '14px', fontWeight: 600,
             boxShadow: '0 8px 20px rgba(0,0,0,0.2)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '8px',
