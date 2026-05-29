@@ -196,7 +196,7 @@ const LIMITS = {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: 'Arial, sans-serif', background: '#f8fafc', minHeight: '100vh', color: '#0f172a' },
+  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', background: '#f8fafc', minHeight: '100dvh', color: '#0f172a', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent' },
   headerCard: { background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)', border: '1px solid #e2e8f0', borderRadius: 20, padding: 22, marginBottom: 18, boxShadow: '0 6px 20px rgba(15, 23, 42, 0.06)' },
   title: { margin: 0, fontSize: 30, fontWeight: 800, color: '#0f172a' },
   subtitle: { marginTop: 8, marginBottom: 0, color: '#475569', fontSize: 15, lineHeight: 1.5 },
@@ -227,12 +227,12 @@ const styles: Record<string, React.CSSProperties> = {
   statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' },
   twoColumnGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' },
   adminGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' },
-  statsCard: { border: '1px solid #dbe3ee', borderRadius: 16, padding: 16, background: '#ffffff', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s', },
+  statsCard: { border: '1px solid #e2e8f0', borderRadius: 16, padding: 16, background: '#ffffff', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s' },
   adminStatsCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#faf5ff' },
   statLabel: { margin: 0, fontSize: 13, color: '#64748b', fontWeight: 700 },
   statValue: { margin: '8px 0 0', fontSize: 26, color: '#0f172a', fontWeight: 800 },
   myRideCard: { border: '1px solid #bfdbfe', borderRadius: 16, padding: 16, background: '#eff6ff', color: '#0f172a', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
-  resultCard: { border: '1px solid #cbd5e1', borderRadius: 16, padding: 16, background: '#ffffff', color: '#0f172a', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' },
+  resultCard: { border: '1px solid #cbd5e1', borderRadius: 16, padding: 16, background: '#f8fafc', color: '#0f172a', boxShadow: '0 1px 6px rgba(15, 23, 42, 0.04)' },
   adminCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#fcfaff', color: '#0f172a', boxShadow: '0 1px 6px rgba(124, 58, 237, 0.06)' },
   infoRow: { margin: '6px 0', color: '#1e293b', lineHeight: 1.5 },
   mutedText: { color: '#64748b', fontSize: 14, lineHeight: 1.5 },
@@ -253,9 +253,9 @@ const styles: Record<string, React.CSSProperties> = {
   unreadBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 22, padding: '0 8px', borderRadius: 999, background: '#ef4444', color: '#ffffff', fontSize: 12, fontWeight: 800, marginLeft: 8 },
   chatLayout: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
   conversationList: { display: 'grid', gap: 12 },
-  conversationCard: { border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, background: '#ffffff', cursor: 'pointer', transition: '0.2s' },
+  conversationCard: { border: '1px solid #dbe3ee', borderRadius: 14, padding: 14, background: '#ffffff', cursor: 'pointer', transition: '0.2s' },
   conversationCardActive: { border: '1px solid #2563eb', borderRadius: 14, padding: 14, background: '#eff6ff', cursor: 'pointer' },
-  chatPanel: { border: '1px solid #e2e8f0', borderRadius: 16, background: '#ffffff', padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
+  chatPanel: { border: '1px solid #dbe3ee', borderRadius: 16, background: '#ffffff', padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
   messageList: { display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
   myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: '#2563eb', color: '#ffffff', padding: '10px 14px', borderRadius: '16px 16px 2px 16px' },
   otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: '#f1f5f9', color: '#0f172a', padding: '10px 14px', borderRadius: '16px 16px 16px 2px' },
@@ -263,6 +263,7 @@ const styles: Record<string, React.CSSProperties> = {
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
   th: { textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #e2e8f0', color: '#475569', whiteSpace: 'nowrap' },
   td: { padding: '10px 8px', borderBottom: '1px solid #eef2f7', verticalAlign: 'top' },
+  profileBlock: { padding: 20, background: '#ffffff', borderRadius: 16, border: '1px solid #e2e8f0', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }
 }
 
 function pad(value: number) { return String(value).padStart(2, '0') }
@@ -337,7 +338,6 @@ function getRideBadgeStyle(ride: Ride) {
   return styles.approvedBadge
 }
 
-// Çat daxilində GPS linklərini kliklənə bilən etmək üçün köməkçi funksiya
 const formatMessageText = (text: string, isMine: boolean) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
@@ -438,6 +438,8 @@ export default function Home() {
   const [filterRole, setFilterRole] = useState('all')
   const [filterGender, setFilterGender] = useState('')
   const [filterDate, setFilterDate] = useState('')
+
+  const [searchView, setSearchView] = useState<'list' | 'map'>('list') // YENİ: Xəritə Görüntüsü üçün
 
   const [requestMessageMap, setRequestMessageMap] = useState<Record<string, string>>({})
   const [requestSeatsMap, setRequestSeatsMap] = useState<Record<string, string>>({})
@@ -863,7 +865,7 @@ export default function Home() {
       setRequestMessageMap((prev) => ({ ...prev, [ride.id]: '' }))
       setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: '1' }))
       try { await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ride.driver_id, text: `🚗 <b>YolDash: Yeni müraciət!</b>\n\n<b>Marşrut:</b> ${ride.origin} → ${ride.destination}\n<b>Tarix:</b> ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' }) }) } catch (_) { }
-      await getRideRequests(); setActiveTab('chat')
+      setActiveTab('requests')
     }
     setRideRequestLoading(null)
   }
@@ -974,7 +976,6 @@ export default function Home() {
     setMessageSending(false)
   }
 
-  // ── YENİ: Çatda Lokasiya (GPS) Göndərmək Düyməsi ──
   const handleSendLocation = () => {
     if (!navigator.geolocation) {
       setMessage('Cihazınız konum paylaşmağı dəstəkləmir.');
@@ -985,8 +986,8 @@ export default function Home() {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        // Rəsmi Google Maps Axtarış URL-i
-        const locMsg = `📍 Konumum: https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+        // Düymə kimi görünməsi üçün formatlı mətn
+        const locMsg = `📍 Konumum: https://www.google.com/maps...${lat},${lng}`;
 
         const { error } = await supabase.from('messages').insert({
           conversation_id: selectedConversationId!,
@@ -1222,7 +1223,7 @@ export default function Home() {
 
   if (!tgReady) {
     return (
-      <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
         <div style={{ textAlign: 'center', padding: 40 }}>
           <p style={{ fontSize: 40, marginBottom: 16 }}>🚗</p>
           <p style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>YolDash yüklənir...</p>
@@ -1234,7 +1235,7 @@ export default function Home() {
 
   if (tgReady && !currentUser.driverId) {
     return (
-      <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
         <div style={{ textAlign: 'center', padding: 40 }}>
           <p style={{ fontSize: 40, marginBottom: 16 }}>📱</p>
           <p style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>Telegram tələb olunur</p>
@@ -1296,7 +1297,7 @@ export default function Home() {
               <div style={styles.statsCard} onClick={() => { setActiveTab('history'); window.scrollTo({ top: 0 }); }}><p style={styles.statLabel}>Tarixçədəki elanlar</p><p style={styles.statValue}>{historyRides.length}</p></div>
              <div style={styles.statsCard} onClick={() => { setActiveTab('requests'); window.scrollTo({ top: 0 }); }}><p style={styles.statLabel}>Gələn müraciətlər</p><p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active' && !isRideExpired(x.ride)).length}</p></div>
              <div style={styles.statsCard} onClick={() => { setActiveTab('chat'); window.scrollTo({ top: 0 }); }}><p style={styles.statLabel}>Oxunmamış mesajlar</p><p style={styles.statValue}>{unreadTotal}</p></div>
-              <div style={styles.statsCard} onClick={() => { setActiveTab('history'); window.scrollTo({ top: 0 }); }}><p style={styles.statLabel}>Reytinqim</p><p style={{ ...styles.statValue, color: '#eab308', fontSize: 18 }}>{renderStars(reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0')}</p></div>
+              <div style={{...styles.statsCard, cursor: 'default'}}><p style={styles.statLabel}>Reytinqim</p><p style={{ ...styles.statValue, color: '#eab308', fontSize: 18 }}>{renderStars(reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0')}</p></div>
             </div>
           </section>
 
@@ -1419,11 +1420,19 @@ export default function Home() {
 
       {activeTab === 'search' && (
         <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>Axtarış</h2>
+          <h2 style={styles.sectionTitle}>Axtarış (Kəşf Et)</h2>
           <div style={styles.form}>
             <div style={styles.fieldWrap}>
               <label style={styles.label}>Axtarış</label>
               <input placeholder="Haradan, hara və ya qeyd üzrə axtar" value={searchText} onChange={(e) => setSearchText(e.target.value)} style={styles.input} />
+            </div>
+
+            {/* YENİ: Sürətli Filterlər */}
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, marginBottom: 4, scrollbarWidth: 'none' }}>
+              <button type="button" onClick={() => setFilterDate(toDateInputValue(new Date()))} style={styles.chip}>📅 Bu gün</button>
+              <button type="button" onClick={() => setFilterRole('driver')} style={styles.chip}>🚗 Sürücü axtarıram</button>
+              <button type="button" onClick={() => setFilterRole('passenger')} style={styles.chip}>🧍 Sərnişin axtarıram</button>
+              {profile?.gender === 'female' && <button type="button" onClick={() => setFilterGender('female')} style={{...styles.chip, background: '#fdf4ff', color: '#a21caf', borderColor: '#f0abfc'}}>🌸 Yalnız qadınlar</button>}
             </div>
 
             {(profile?.home_address || profile?.work_address) && (
@@ -1454,7 +1463,6 @@ export default function Home() {
 
             <div style={styles.buttonRow}>
               <button type="button" onClick={() => { setSearchText(''); setFilterRole('all'); setFilterGender(''); setFilterDate(''); }} style={styles.secondaryButton}>Filteri sıfırla</button>
-              <button type="button" onClick={() => void initializeData()} style={styles.ghostButton}>Yenilə</button>
             </div>
           </div>
         </section>
@@ -1462,60 +1470,78 @@ export default function Home() {
 
       {activeTab === 'search' && (
         <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>Aktiv elanlar</h2>
-          {loading ? (
-            <p style={styles.mutedText}>Yüklənir...</p>
-          ) : filteredRides.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '2px dashed #cbd5e1', marginTop: 20 }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-                <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
-                <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
-                <button type="button" onClick={() => setActiveTab('create')} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
-              </div>
-            ) : (
-              <div style={styles.ridesGrid}>
-              {filteredRides.map((ride) => (
-                <div key={ride.id} style={styles.resultCard}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <div style={{...styles.approvedBadge, margin: 0}}>Aktiv</div>
-                    {driverProfilesMap[ride.driver_id] && (
-                      <div style={{ display: 'flex', gap: 10, background: '#f8fafc', padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }}>
-                        <span style={{ fontWeight: 700, color: '#334155' }}>{driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}</span>
-                        <span style={{ fontWeight: 800, color: '#eab308' }}>{renderStars(driverProfilesMap[ride.driver_id].rating)}</span>
-                      </div>
-                    )}
-                  </div>
-                  <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
-                  
-                  {driverProfilesMap[ride.driver_id]?.carBrand && (
-                    <p style={styles.infoRow}>
-                      <strong>Avtomobil:</strong> {driverProfilesMap[ride.driver_id].carBrand} ({driverProfilesMap[ride.driver_id].carColor})
-                    </p>
-                  )}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20, background: '#f1f5f9', padding: 6, borderRadius: 12 }}>
+            <button onClick={() => setSearchView('list')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: searchView === 'list' ? '#ffffff' : 'transparent', color: searchView === 'list' ? '#0f172a' : '#64748b', boxShadow: searchView === 'list' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
+              📋 Siyahı
+            </button>
+            <button onClick={() => setSearchView('map')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: searchView === 'map' ? '#ffffff' : 'transparent', color: searchView === 'map' ? '#0f172a' : '#64748b', boxShadow: searchView === 'map' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
+              🗺️ Canlı Radar (Xəritə)
+            </button>
+          </div>
 
-                  <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
-                  <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
-                  <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
-                  <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
-                  <p style={styles.infoRow}><strong>Qalan yer:</strong> {ride.seats}</p>
-                  <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
-                  {ride.notes && <p style={styles.infoRow}><strong>Qeyd:</strong> {ride.notes}</p>}
-
-                  <div style={styles.fieldWrap}>
-                    <label style={styles.label}>Müraciət mesajı</label>
-                    <textarea rows={2} value={requestMessageMap[ride.id] || ''} onChange={(e) => setRequestMessageMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.textarea} placeholder="Qısa mesaj yaz" />
-                  </div>
-                  <div style={styles.fieldWrap}>
-                    <label style={styles.label}>Neçə yer / nəfər</label>
-                    <input type="number" min="1" max={ride.seats} value={requestSeatsMap[ride.id] || '1'} onChange={(e) => setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.input} />
-                  </div>
-                  <div style={styles.actionRow}>
-                    <button type="button" onClick={() => void handleCreateRideRequest(ride)} style={styles.primaryButton} disabled={rideRequestLoading === ride.id}>{rideRequestLoading === ride.id ? 'Göndərilir...' : 'Müraciət et'}</button>
-                  </div>
+          {searchView === 'map' ? (
+             <div style={{ height: 400, background: '#e2e8f0', borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+               <div style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0.1, background: 'radial-gradient(circle, #2563eb 10%, transparent 10%)', backgroundSize: '20px 20px' }} />
+               <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'rgba(37, 99, 235, 0.2)', animation: 'radarPulse 2s infinite ease-in-out', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                 <span style={{ fontSize: 32 }}>📍</span>
+               </div>
+               <p style={{ marginTop: 16, fontWeight: 800, color: '#334155' }}>Canlı Radar Tezliklə!</p>
+               <p style={{ color: '#64748b', fontSize: 13, textAlign: 'center', padding: '0 20px' }}>Yaxınlıqdakı (5km) bütün sürücü və sərnişinlər bu xəritədə görünəcək.</p>
+             </div>
+          ) : (
+            loading ? (
+              <p style={styles.mutedText}>Yüklənir...</p>
+            ) : filteredRides.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '2px dashed #cbd5e1', marginTop: 20 }}>
+                  <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+                  <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
+                  <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
+                  <button type="button" onClick={() => setActiveTab('create')} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
                 </div>
-              ))}
-            </div>
-          )}
+              ) : (
+                <div style={styles.ridesGrid}>
+                {filteredRides.map((ride) => (
+                  <div key={ride.id} style={styles.resultCard}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{...styles.approvedBadge, margin: 0}}>Aktiv</div>
+                      {driverProfilesMap[ride.driver_id] && (
+                        <div style={{ display: 'flex', gap: 10, background: '#f8fafc', padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }}>
+                          <span style={{ fontWeight: 700, color: '#334155' }}>{driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}</span>
+                          <span style={{ fontWeight: 800, color: '#eab308' }}>{renderStars(driverProfilesMap[ride.driver_id].rating)}</span>
+                        </div>
+                      )}
+                    </div>
+                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
+                    
+                    {driverProfilesMap[ride.driver_id]?.carBrand && (
+                      <p style={styles.infoRow}>
+                        <strong>Avtomobil:</strong> {driverProfilesMap[ride.driver_id].carBrand} ({driverProfilesMap[ride.driver_id].carColor})
+                      </p>
+                    )}
+
+                    <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
+                    <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
+                    <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
+                    <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
+                    <p style={styles.infoRow}><strong>Qalan yer:</strong> {ride.seats}</p>
+                    <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat} AZN</p>
+                    {ride.notes && <p style={styles.infoRow}><strong>Qeyd:</strong> {ride.notes}</p>}
+
+                    <div style={styles.fieldWrap}>
+                      <label style={styles.label}>Müraciət mesajı</label>
+                      <textarea rows={2} value={requestMessageMap[ride.id] || ''} onChange={(e) => setRequestMessageMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.textarea} placeholder="Qısa mesaj yaz" />
+                    </div>
+                    <div style={styles.fieldWrap}>
+                      <label style={styles.label}>Neçə yer / nəfər</label>
+                      <input type="number" min="1" max={ride.seats} value={requestSeatsMap[ride.id] || '1'} onChange={(e) => setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: e.target.value, }))} style={styles.input} />
+                    </div>
+                    <div style={styles.actionRow}>
+                      <button type="button" onClick={() => void handleCreateRideRequest(ride)} style={styles.primaryButton} disabled={rideRequestLoading === ride.id}>{rideRequestLoading === ride.id ? 'Göndərilir...' : 'Müraciət et'}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
         </section>
       )}
 
@@ -1644,12 +1670,12 @@ export default function Home() {
                       {selectedConversation.status !== 'closed' && selectedConversationRide && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                           {selectedConversationRide.origin_lat && (
-                            <a href={`https://www.google.com/maps/search/?api=1&query=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <a href={`http://googleusercontent.com/maps.google.com/?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
                               📍 Başlanğıca get
                             </a>
                           )}
                           {selectedConversationRide.destination_lat && (
-                            <a href={`https://www.google.com/maps/search/?api=1&query=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <a href={`http://googleusercontent.com/maps.google.com/?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
                               🏁 Son nöqtəyə get
                             </a>
                           )}
