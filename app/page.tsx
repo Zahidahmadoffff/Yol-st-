@@ -68,6 +68,7 @@ type Profile = {
   work_address?: string | null
   car_brand: string | null
   license_plate: string | null
+  car_color?: string | null
   is_blocked?: boolean
   admin_note?: string | null
   last_seen_at?: string | null
@@ -828,7 +829,7 @@ const triggerVibration = (type: string = 'medium') => {
   const [adminUsers, setAdminUsers] = useState<UserOverview[]>([])
   const [adminReports, setAdminReports] = useState<UserReport[]>([])
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([])
-  const [driverProfilesMap, setDriverProfilesMap] = useState<Record<number, { name: string, rating: string, gender: string }>>({})
+  const [driverProfilesMap, setDriverProfilesMap] = useState<Record<number, { name: string, rating: string, gender: string, carBrand: string, carColor: string, licensePlate: string }>>({})
 
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [unreadTotal, setUnreadTotal] = useState(0)
@@ -870,6 +871,7 @@ const triggerVibration = (type: string = 'medium') => {
   const [womenOnly, setWomenOnly] = useState(false)
   const [carBrand, setCarBrand] = useState('')
   const [licensePlate, setLicensePlate] = useState('')
+  const [carColor, setCarColor] = useState('')
 
   const [searchText, setSearchText] = useState('')
   const [filterRole, setFilterRole] = useState('all')
@@ -1271,6 +1273,7 @@ const triggerVibration = (type: string = 'medium') => {
       setProfileWorkAddress(p.work_address || '')
       setCarBrand(p.car_brand || '')
       setLicensePlate(p.license_plate || '')
+      setCarColor(p.car_color || (p.role === 'driver' ? 'Qara' : ''))
       setInitialRole(p.role || 'passenger')
     } else {
       setProfile(null)
@@ -1306,13 +1309,14 @@ const triggerVibration = (type: string = 'medium') => {
       const driverIds = [...new Set(rows.map((r) => r.driver_id))]
       if (driverIds.length > 0) {
           const [profilesRes, reviewsRes] = await Promise.all([
-          supabase.from('profiles').select('id, full_name, username, gender').in('id', driverIds),
+          // BURA YENİLƏNDİ: Maşın məlumatları da çəkilir
+          supabase.from('profiles').select('id, full_name, username, gender, car_brand, car_color, license_plate').in('id', driverIds),
           supabase.from('reviews').select('reviewee_id, rating').in('reviewee_id', driverIds)
         ])
 
         const pData = profilesRes.data || []
         const rData = reviewsRes.data || []
-        const newMap: Record<number, { name: string, rating: string, gender: string }> = {}
+        const newMap: Record<number, { name: string, rating: string, gender: string, carBrand: string, carColor: string, licensePlate: string }> = {}
 
         pData.forEach(p => {
           const userReviews = rData.filter(r => r.reviewee_id === p.id)
@@ -1323,7 +1327,10 @@ const triggerVibration = (type: string = 'medium') => {
           newMap[p.id] = {
             name: p.full_name || p.username || 'İstifadəçi',
             rating: avgRating,
-            gender: p.gender || 'male'
+            gender: p.gender || 'male',
+            carBrand: p.car_brand || '',
+            carColor: p.car_color || 'Qara', // Default olaraq Qara
+            licensePlate: p.license_plate || ''
           }
         })
         setDriverProfilesMap(newMap)
@@ -1515,19 +1522,33 @@ const triggerVibration = (type: string = 'medium') => {
     if (rideIds.length > 0) {
       const { data: ridesData } = await supabase.from('ride_listings').select('*').in('id', rideIds)
       rideMap = new Map(((ridesData as Ride[]) || []).map((ride) => [ride.id, ride]))
+
+      // BURA YENİLƏNDİ: Çatdakı sürücülərin maşın (nömrə) məlumatlarını arxa planda çəkirik
+      const driverIds = [...new Set(((ridesData as Ride[]) || []).map(r => r.driver_id))];
+      if (driverIds.length > 0) {
+        const { data: pData } = await supabase.from('profiles').select('id, full_name, username, gender, car_brand, car_color, license_plate').in('id', driverIds);
+        if (pData) {
+          setDriverProfilesMap(prev => {
+            const newMap = { ...prev };
+            pData.forEach(p => {
+              if (!newMap[p.id]) {
+                 newMap[p.id] = { name: p.full_name || p.username || 'User', rating: '5.0', gender: p.gender || 'male', carBrand: p.car_brand || '', carColor: p.car_color || 'Qara', licensePlate: p.license_plate || '' };
+              } else {
+                 newMap[p.id].carBrand = p.car_brand || '';
+                 newMap[p.id].carColor = p.car_color || 'Qara';
+                 newMap[p.id].licensePlate = p.license_plate || '';
+              }
+            });
+            return newMap;
+          });
+        }
+      }
     }
 
     const unreadMap = new Map<number, number>()
-
     const activeConversationIds = rows.filter(c => c.status !== 'closed').map((x) => x.id)
     if (activeConversationIds.length > 0) {
-      const { data: unreadRows } = await supabase
-        .from('messages')
-        .select('conversation_id')
-        .in('conversation_id', activeConversationIds)
-        .eq('is_read', false)
-        .neq('sender_id', current.driverId)
-
+      const { data: unreadRows } = await supabase.from('messages').select('conversation_id').in('conversation_id', activeConversationIds).eq('is_read', false).neq('sender_id', current.driverId)
       for (const row of unreadRows || []) {
         const conversationId = (row as { conversation_id: number }).conversation_id
         unreadMap.set(conversationId, (unreadMap.get(conversationId) || 0) + 1)
@@ -1619,8 +1640,8 @@ const triggerVibration = (type: string = 'medium') => {
 
     const effectiveRole = profile ? profile.role : initialRole
 
-    if (effectiveRole === 'driver' && (!carBrand.trim() || !licensePlate.trim())) {
-      setMessage('⚠️ Sürücü üçün avtomobil markası və nömrə məcburidir.')
+    if (effectiveRole === 'driver' && (!carBrand.trim() || !licensePlate.trim() || !carColor.trim())) {
+      setMessage('⚠️ Sürücü üçün avtomobil markası, nömrəsi və rəngi məcburidir.')
       setProfileSaving(false)
       return
     }
@@ -1637,6 +1658,7 @@ const triggerVibration = (type: string = 'medium') => {
       role: effectiveRole,
       car_brand: carBrand.trim() || null,
       license_plate: licensePlate.trim() || null,
+      car_color: carColor.trim() || 'Qara', // YENİ ƏLAVƏ
       last_seen_at: new Date().toISOString(),
     }
 
@@ -1650,22 +1672,6 @@ const triggerVibration = (type: string = 'medium') => {
     }
     setProfileSaving(false)
   }
-
-  async function handleSubmitRide(e: React.FormEvent) {
-    triggerVibration('medium');
-    e.preventDefault()
-    triggerVibration('heavy');
-    setSubmitting(true)
-    setMessage('')
-
-    const current = getActiveUser()
-
-    if (!profile) {
-      setMessage('Əvvəl profil yaratmaq lazımdır.')
-      setSubmitting(false)
-      return
-    }
-
     if (profile.is_blocked) {
       setMessage('Profil bloklandığı üçün elan yarada bilməzsən.')
       setSubmitting(false)
@@ -2302,8 +2308,8 @@ const triggerVibration = (type: string = 'medium') => {
 
     const newRole: UserRole = profile.role === 'driver' ? 'passenger' : 'driver'
 
-    if (newRole === 'driver' && (!profile.car_brand || !profile.license_plate)) {
-      setMessage('Sürücü olmaq üçün əvvəlcə profil bölməsində avtomobilinizin markasını və nömrəsini daxil edin.')
+    if (newRole === 'driver' && (!profile.car_brand || !profile.license_plate || !profile.car_color)) {
+      setMessage('Sürücü olmaq üçün əvvəlcə profil bölməsində avtomobil markası, nömrəsi və RƏNGİNİ daxil edin.')
       setActiveTab('profile')
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
@@ -3165,6 +3171,11 @@ const triggerVibration = (type: string = 'medium') => {
                       )}
                     </div>
                     <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
+                    {driverProfilesMap[ride.driver_id]?.carBrand && (
+                      <p style={styles.infoRow}>
+                        <strong>Avtomobil:</strong> {driverProfilesMap[ride.driver_id].carBrand} ({driverProfilesMap[ride.driver_id].carColor})
+                      </p>
+                    )}
                     <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
                     <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
                     <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
@@ -3285,7 +3296,15 @@ const triggerVibration = (type: string = 'medium') => {
                   <div style={styles.resultCard}>
                     <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
                     <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
-                    <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {selectedConversationRide ? `${selectedConversationRide.ride_date || '-'} / ${selectedConversationRide.departure_time}` : '-'}</p>
+                    <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {selectedConversationRide ? `${selectedConversationRide.ride_date || '-'} / ${selectedConversationRide.departure_time}` : '-'}</p> {selectedConversationRide && driverProfilesMap[selectedConversationRide.driver_id]?.carBrand && (
+                      <p style={styles.infoRow}>
+                        <strong>Avtomobil:</strong> {driverProfilesMap[selectedConversationRide.driver_id].carBrand} ({driverProfilesMap[selectedConversationRide.driver_id].carColor}) 
+                        {' '}
+                        <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>
+                          {driverProfilesMap[selectedConversationRide.driver_id].licensePlate}
+                        </span>
+                      </p>
+                    )}
                     <p style={styles.infoRow}><strong>Qiymət:</strong> {selectedConversationRide ? `${selectedConversationRide.price_per_seat} AZN` : '-'}</p>
                     <p style={styles.infoRow}><strong>Status:</strong> {selectedConversation.status === 'closed' ? 'Arxivlənib (Bağlı)' : selectedConversation.status}</p>
                     {selectedConversation.status !== 'closed' && (
@@ -3488,6 +3507,10 @@ const triggerVibration = (type: string = 'medium') => {
                   <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
                   <input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} style={styles.input} placeholder="Məs: 99-XX-999" />
                 </div>
+                <div style={styles.fieldWrap}>
+                    <label style={styles.label}>Avtomobil rəngi</label>
+                    <input value={carColor} onChange={(e) => setCarColor(e.target.value)} style={styles.input} placeholder="Məs: Qara" />
+                  </div>
               </div>
             </div>
             <div style={styles.buttonRow}>
