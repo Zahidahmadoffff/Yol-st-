@@ -196,8 +196,7 @@ const LIMITS = {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  // YENİ: iOS Optimizasiyaları (100dvh, overscrollBehavior, -apple-system)
-  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 120px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', background: '#f8fafc', minHeight: '100dvh', color: '#0f172a', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent' },
+  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 120px', fontFamily: 'Arial, sans-serif', background: '#f8fafc', minHeight: '100vh', color: '#0f172a' },
   headerCard: { background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)', border: '1px solid #e2e8f0', borderRadius: 20, padding: 22, marginBottom: 18, boxShadow: '0 6px 20px rgba(15, 23, 42, 0.06)' },
   title: { margin: 0, fontSize: 30, fontWeight: 800, color: '#0f172a' },
   subtitle: { marginTop: 8, marginBottom: 0, color: '#475569', fontSize: 15, lineHeight: 1.5 },
@@ -260,7 +259,6 @@ const styles: Record<string, React.CSSProperties> = {
   bottomNav: { position: 'fixed', bottom: 0, left: 0, right: 0, background: '#ffffff', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-around', paddingBottom: '22px', paddingTop: '10px', zIndex: 1000, boxShadow: '0 -4px 20px rgba(0,0,0,0.05)' },
   navItem: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#64748b', cursor: 'pointer', fontSize: 11, fontWeight: 700, background: 'transparent', border: 'none', outline: 'none', transition: 'color 0.2s' },
   navItemActive: { color: '#2563eb' },
-  profileBlock: { padding: 20, background: '#ffffff', borderRadius: 16, border: '1px solid #e2e8f0', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }
 }
 
 function pad(value: number) { return String(value).padStart(2, '0') }
@@ -315,7 +313,7 @@ function getReportStatusLabel(status: ReportStatus) {
 function isRideExpired(ride: Ride | null | undefined) {
   if (!ride || !ride.ride_date) return false;
   const rideDateTime = new Date(`${ride.ride_date}T${ride.departure_time}:00`);
-  return rideDateTime.getTime() + 2 * 60 * 60 * 1000 < new Date().getTime(); 
+  return rideDateTime.getTime() + 2 * 60 * 60 * 1000 < new Date().getTime(); // 2 saat
 }
 
 function getRideStatusLabel(ride: Ride) {
@@ -411,6 +409,7 @@ export default function Home() {
   const [carColor, setCarColor] = useState('')
   const [licensePlate, setLicensePlate] = useState('')
 
+  // YENİ: Profil Akardionları üçün state
   const [profileAccountOpen, setProfileAccountOpen] = useState(true)
   const [profileAddressOpen, setProfileAddressOpen] = useState(false)
   const [profileDriverOpen, setProfileDriverOpen] = useState(false)
@@ -744,7 +743,7 @@ export default function Home() {
 
     if (effectiveRole === 'driver' && (!carBrand.trim() || !licensePlate.trim() || !carColor.trim())) {
       setMessage('⚠️ Sürücü üçün avtomobil markası, nömrəsi və rəngi məcburidir.')
-      setProfileDriverOpen(true) 
+      setProfileDriverOpen(true) // Avtomatik açır
       setProfileSaving(false)
       return
     }
@@ -1460,12 +1459,12 @@ export default function Home() {
                           <button type="button" style={styles.dangerButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'rejected')}>Rədd et</button>
                         </div>
                       )}
-                      {item.status === 'accepted' && (
-                        <div style={styles.actionRow}>
-                          <button type="button" style={styles.closeButton} disabled={rideRequestLoading === item.id} onClick={() => void handleConfirmDeal(item)}>Deal təsdiqlə (Səfəri rəsmiləşdir)</button>
-                        </div>
-                      )}
                     </>
+                  )}
+                  {reqView === 'incoming' && item.status === 'accepted' && (
+                    <div style={styles.actionRow}>
+                      <button type="button" style={styles.closeButton} disabled={rideRequestLoading === item.id} onClick={() => void handleConfirmDeal(item)}>Deal təsdiqlə (Səfəri rəsmiləşdir)</button>
+                    </div>
                   )}
                 </div>
               ));
@@ -1515,38 +1514,19 @@ export default function Home() {
                 <div style={{ textAlign: 'center', marginTop: 40 }}><span style={{ fontSize: 40 }}>💬</span><p style={{ ...styles.mutedText, marginTop: 12 }}>{chatFilter === 'active' ? 'Göstəriləcək aktiv çat yoxdur.' : 'Göstəriləcək arxiv çat yoxdur.'}</p></div>
               ) : (
                 <>
-                  {/* YENİ: Deal Təsdiqlə Xatırladıcı Banner Çatın Ən Üstündə */}
-                  {(() => {
-                    const chatReq = rideRequests.find(r => r.id === selectedConversation.request_id);
-                    if (chatReq && chatReq.status === 'accepted' && selectedConversationRide?.status === 'active' && !isRideExpired(selectedConversationRide)) {
-                      return (
-                        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', padding: 14, borderRadius: 12, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <p style={{ margin: 0, fontWeight: 800, color: '#92400e', fontSize: 14 }}>🤝 Razılaşma əldə olundu?</p>
-                            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#b45309' }}>Səfərin baş tutması üçün zəhmət olmasa təsdiqləyin.</p>
-                          </div>
-                          <button type="button" onClick={() => void handleConfirmDeal(chatReq)} style={{ ...styles.successButton, padding: '10px 18px' }} disabled={rideRequestLoading === chatReq.id}>
-                            {rideRequestLoading === chatReq.id ? 'Təsdiqlənir...' : '✅ Deal Təsdiqlə'}
-                          </button>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-
                   <div style={styles.resultCard}>
                     <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
                     <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
                     
-                    {/* YENİ: Başlanğıc və Son nöqtəyə Yol Göstər xüsusiyyəti (Google Maps API fix) */}
+                    {/* YENİ: Başlanğıc və Son nöqtəyə Yol Göstər xüsusiyyəti */}
                     <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                       {selectedConversationRide?.origin_lat && (
-                        <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <a href={`https://maps.google.com/?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
                           📍 Başlanğıca get
                         </a>
                       )}
                       {selectedConversationRide?.destination_lat && (
-                        <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <a href={`https://maps.google.com/?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
                           🏁 Son nöqtəyə get
                         </a>
                       )}
@@ -1572,6 +1552,25 @@ export default function Home() {
                       </div>
                     )}
                   </div>
+
+                  {/* YENİ: Deal Təsdiqlə (Xatırladıcı Banner Çatın İçində) */}
+                  {(() => {
+                    const chatReq = rideRequests.find(r => r.id === selectedConversation.request_id);
+                    if (chatReq && chatReq.status === 'accepted' && selectedConversationRide?.status === 'active' && !isRideExpired(selectedConversationRide)) {
+                      return (
+                        <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', padding: 14, borderRadius: 12, marginTop: 16, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <p style={{ margin: 0, fontWeight: 800, color: '#92400e', fontSize: 14 }}>🤝 Razılaşma əldə olundu?</p>
+                            <p style={{ margin: '4px 0 0', fontSize: 12, color: '#b45309' }}>Səfərin baş tutması üçün zəhmət olmasa təsdiqləyin.</p>
+                          </div>
+                          <button type="button" onClick={() => void handleConfirmDeal(chatReq)} style={{ ...styles.successButton, padding: '10px 18px' }} disabled={rideRequestLoading === chatReq.id}>
+                            {rideRequestLoading === chatReq.id ? 'Təsdiqlənir...' : '✅ Deal Təsdiqlə'}
+                          </button>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
 
                   <div style={{ height: 12 }} />
                   {selectedConversationRide?.status === 'active' && selectedConversation.status !== 'closed' && (
@@ -1805,15 +1804,6 @@ export default function Home() {
 
             <div style={styles.buttonRow}>
               <button type="submit" disabled={profileSaving} style={{...styles.primaryButton, width: '100%', padding: '14px', marginTop: 10}}>{profileSaving ? 'Yadda saxlanılır...' : profile ? 'Dəyişiklikləri Yadda Saxla' : 'Profili yarat'}</button>
-            </div>
-            
-            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <button type="button" onClick={() => { setActiveTab('history'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: '#f8fafc', color: '#334155', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-                🕒 Keçmiş Səfərlərim (Tarixçə)
-              </button>
-              <button type="button" onClick={() => { setActiveTab('support'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: '#f8fafc', color: '#334155', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-                🎧 Dəstək və Əlaqə
-              </button>
             </div>
             
           </form>
@@ -2128,6 +2118,35 @@ export default function Home() {
         </>
       )}
 
+      {/* ── SABİT ALT MENYU (BOTTOM NAV) ── */}
+      {!isAdminMode && (
+        <div style={styles.bottomNav}>
+          <button style={{ ...styles.navItem, ...(activeTab === 'search' || activeTab === 'dashboard' ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('search'); window.scrollTo({ top: 0 }); }}>
+            <span style={{ fontSize: 24, marginBottom: 4 }}>🔍</span>
+            Kəşf Et
+          </button>
+          <button style={{ ...styles.navItem, ...(activeTab === 'create' ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('create'); window.scrollTo({ top: 0 }); }}>
+            <span style={{ fontSize: 24, marginBottom: 4 }}>➕</span>
+            Yarat
+          </button>
+          <button style={{ ...styles.navItem, ...((activeTab === 'chat' || activeTab === 'requests') ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('chat'); window.scrollTo({ top: 0 }); }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ fontSize: 24, marginBottom: 4 }}>💬</span>
+              {(unreadTotal + incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active' && !isRideExpired(req.ride)).length) > 0 && (
+                <span style={{ position: 'absolute', top: -4, right: -8, background: '#ef4444', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 10 }}>
+                  {unreadTotal + incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active' && !isRideExpired(req.ride)).length}
+                </span>
+              )}
+            </div>
+            Gələnlər
+          </button>
+          <button style={{ ...styles.navItem, ...((activeTab === 'profile' || activeTab === 'support' || activeTab === 'history') ? styles.navItemActive : {}) }} onClick={() => { setActiveTab('profile'); window.scrollTo({ top: 0 }); }}>
+            <span style={{ fontSize: 24, marginBottom: 4 }}>👤</span>
+            Profil
+          </button>
+        </div>
+      )}
+
       {/* ── Qlobal Toast Bildirişi ── */}
       {message && (
         <>
@@ -2138,7 +2157,7 @@ export default function Home() {
             }
           `}</style>
           <div style={{
-            position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
+            position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
             background: message.includes('xəta') || message.includes('tapılmadı') || message.includes('doldurun') || message.includes('⚠️') ? '#ef4444' : '#10b981',
             color: '#ffffff', padding: '12px 24px', borderRadius: '50px', fontSize: '14px', fontWeight: 600,
             boxShadow: '0 8px 20px rgba(0,0,0,0.2)', zIndex: 9999, display: 'flex', alignItems: 'center', gap: '8px',
