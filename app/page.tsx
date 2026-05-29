@@ -973,36 +973,7 @@ const triggerVibration = (type: string = 'medium') => {
       void getAdminData();
     }
   }, [isAdmin]);
-// ── AĞILLI TELEFON NÖMRƏSİ FORMATI ──
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value;
 
-    // Əgər istifadəçi hər şeyi sildisə və ya prefixi (+994) tamamilə pozmağa çalışırsa, təmizlə
-    if (!input || (input.length < profilePhone.length && input.length <= 4)) {
-      setProfilePhone('');
-      return;
-    }
-
-    let numbers = input.replace(/\D/g, ''); // Yalnız rəqəmləri saxlayırıq
-
-    // Azərbaycan kodunu avtomatik bərpa edirik
-    if (numbers.startsWith('0')) {
-      numbers = '994' + numbers.substring(1);
-    } else if (!numbers.startsWith('994') && numbers.length > 0) {
-      numbers = '994' + numbers;
-    }
-
-    numbers = numbers.substring(0, 12); // Maksimum uzunluğu kəsirik (994 + 9 rəqəm)
-
-    // Vizual formata salırıq: +994 50 123 45 67
-    let formatted = '+994';
-    if (numbers.length > 3) formatted += ' ' + numbers.substring(3, 5);
-    if (numbers.length > 5) formatted += ' ' + numbers.substring(5, 8);
-    if (numbers.length > 8) formatted += ' ' + numbers.substring(8, 10);
-    if (numbers.length > 10) formatted += ' ' + numbers.substring(10, 12);
-
-    setProfilePhone(formatted);
-  };
   function resetRideForm() {
     setEditingRideId(null)
     setOrigin('')
@@ -1624,12 +1595,17 @@ useEffect(() => {
 
     const current = getActiveUser()
 
-    if (!profilePhone.trim()) {
-      setMessage('Telefon nömrəsi məcburidir.')
-      setProfileSaving(false)
-      return
+    // ── 1. AĞILLI NÖMRƏ YOXLAMASI (Tam 12 rəqəm olmalıdır) ──
+    const safePhone = profilePhone || '';
+    const digitsOnly = safePhone.replace(/\D/g, ''); // Bütün boşluq və + işarələrini kənara qoyub ancaq rəqəmləri sayır
+
+    if (digitsOnly.length !== 12) {
+      setMessage('Telefon nömrəsini tam daxil edin (Məs: +994 50 123 45 67)');
+      setProfileSaving(false);
+      return; // Nömrə qısadırsa, kod burada dayanır və bazaya heç nə getmir!
     }
 
+    // ── 2. ROL VƏ MAŞIN YOXLAMASI ──
     const effectiveRole = profile ? profile.role : initialRole
 
     if (effectiveRole === 'driver' && (!carBrand.trim() || !licensePlate.trim())) {
@@ -3398,104 +3374,7 @@ async function handleCloseConversation(conversationId: number) {
         </>
       )}
 
-      {activeTab === 'requests' && (
-        <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>Müraciətlər</h2>
-
-          {/* --- SƏVİYYƏ 1: GƏLƏNLƏR VƏ GÖNDƏRİLƏNLƏR TABLARI --- */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => { setReqView('incoming'); setReqStatus('active'); }}
-              style={reqView === 'incoming' ? styles.primaryButton : styles.ghostButton}
-            >
-              📥 Gələnlər ({incomingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})
-            </button>
-            <button
-              type="button"
-              onClick={() => { setReqView('outgoing'); setReqStatus('active'); }}
-              style={reqView === 'outgoing' ? styles.primaryButton : styles.ghostButton}
-            >
-              📤 Göndərdiklərim ({outgoingRideRequests.filter(req => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active')).length})
-            </button>
-          </div>
-
-          {/* --- SƏVİYYƏ 2: AKTİV VƏ ARXİV TABLARI --- */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
-            <button
-              type="button"
-              onClick={() => setReqStatus('active')}
-              style={reqStatus === 'active' ? styles.chipActive : styles.chip}
-            >
-              🟢 Aktiv
-            </button>
-            <button
-              type="button"
-              onClick={() => setReqStatus('archived')}
-              style={reqStatus === 'archived' ? styles.chipActive : styles.chip}
-            >
-              🗄️ Arxiv
-            </button>
-          </div>
-
-          {/* --- MƏLUMATLARIN (KARTLARIN) GÖSTƏRİLMƏSİ --- */}
-          <div style={styles.ridesGrid}>
-            {(() => {
-              // Hazırkı müraciət siyahısını təyin edirik
-              const currentList = reqView === 'incoming' ? incomingRideRequests : outgoingRideRequests;
-              
-              // Müraciətin "Aktiv" olub-olmadığını yoxlayan məntiq
-              const isReqActive = (req: any) => req.status === 'pending' || (req.status === 'accepted' && req.ride?.status === 'active');
-              
-              // Siyahını filterdən keçiririk
-              const filteredList = currentList.filter(req => reqStatus === 'active' ? isReqActive(req) : !isReqActive(req));
-
-              // Əgər siyahı boşdursa
-              if (filteredList.length === 0) {
-                return (
-                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 10px', background: '#f8fafc', borderRadius: 16, border: '1px dashed #cbd5e1' }}>
-                    <span style={{ fontSize: 40 }}>{reqStatus === 'active' ? '📬' : '🗄️'}</span>
-                    <p style={{ ...styles.mutedText, marginTop: 12, fontWeight: 600 }}>
-                      {reqStatus === 'active' ? 'Göstəriləcək aktiv müraciət yoxdur.' : 'Arxiv boşdur.'}
-                    </p>
-                  </div>
-                );
-              }
-
-              // Siyahı dolu isə kartları çəkirik
-              return filteredList.map((item) => (
-                <div key={item.id} style={{ ...styles.resultCard, opacity: reqStatus === 'archived' ? 0.65 : 1 }}>
-                  <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
-                  <p style={styles.infoRow}>
-                    <strong>Rol:</strong> {getRoleLabel(reqView === 'incoming' ? item.requester_role : item.owner_role)}
-                  </p>
-                  <p style={styles.infoRow}><strong>İstənən yer:</strong> {item.seats_requested}</p>
-                  {item.message_text && <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text}</p>}
-                  {item.ride && <p style={styles.infoRow}><strong>Marşrut:</strong> {item.ride.origin} → {item.ride.destination}</p>}
-                  <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
-
-                  {/* DÜYMƏLƏR - YALNIZ "GƏLƏNLƏR" VƏ "AKTİV" BÖLMƏSİNDƏ GÖRÜNÜR */}
-                  {reqView === 'incoming' && reqStatus === 'active' && (
-                    <>
-                      {item.status === 'pending' && item.ride?.status === 'active' && (
-                        <div style={styles.actionRow}>
-                          <button type="button" style={styles.successButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'accepted')}>Qəbul et</button>
-                          <button type="button" style={styles.dangerButton} disabled={rideRequestLoading === item.id} onClick={() => void handleRideRequestDecision(item, 'rejected')}>Rədd et</button>
-                        </div>
-                      )}
-                      {item.status === 'accepted' && item.ride?.status === 'active' && (
-                        <div style={styles.actionRow}>
-                          <button type="button" style={styles.closeButton} disabled={rideRequestLoading === item.id} onClick={() => void handleConfirmDeal(item)}>Deal təsdiqlə</button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              ));
-            })()}
-          </div>
-        </section>
-      )}
+      
       {activeTab === 'chat' && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Chat</h2>
@@ -3820,14 +3699,7 @@ async function handleCloseConversation(conversationId: number) {
 
                 <div style={styles.fieldWrap}>
                   <label style={styles.label}>Telefon</label>
-                  <input 
-                    type="tel"
-                    value={profilePhone} 
-                    onChange={handlePhoneChange} 
-                    style={{ ...styles.input, letterSpacing: '1px', fontWeight: 600, color: '#1e293b' }} 
-                    placeholder="+994 50 123 45 67"
-                    required 
-                  />
+                  <input value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} style={styles.input} required />
                 </div>
               </div>
 
