@@ -68,6 +68,7 @@ type Profile = {
   work_address?: string | null
   car_brand: string | null
   license_plate: string | null
+  car_color?: string | null
   is_blocked?: boolean
   admin_note?: string | null
   last_seen_at?: string | null
@@ -871,6 +872,7 @@ const triggerVibration = (type: string = 'medium') => {
   const [womenOnly, setWomenOnly] = useState(false)
   const [carBrand, setCarBrand] = useState('')
   const [licensePlate, setLicensePlate] = useState('')
+  const [carColor, setCarColor] = useState('') // YENİ: Rəng dəyişəni
 
   const [searchText, setSearchText] = useState('')
   const [filterRole, setFilterRole] = useState('all')
@@ -1249,6 +1251,7 @@ useEffect(() => {
       setProfileWorkAddress(p.work_address || '')
       setCarBrand(p.car_brand || '')
       setLicensePlate(p.license_plate || '')
+      setCarColor(p.car_color || '') // YENİ: Bazadan çəkilən rəng
       setInitialRole(p.role || 'passenger')
     } else {
       setProfile(null)
@@ -1595,21 +1598,21 @@ useEffect(() => {
 
     const current = getActiveUser()
 
-    // ── 1. AĞILLI NÖMRƏ YOXLAMASI (Tam 12 rəqəm olmalıdır) ──
+    // ── 1. SƏRT NÖMRƏ YOXLAMASI ──
     const safePhone = profilePhone || '';
-    const digitsOnly = safePhone.replace(/\D/g, ''); // Bütün boşluq və + işarələrini kənara qoyub ancaq rəqəmləri sayır
+    const digitsOnly = safePhone.replace(/\D/g, ''); // Sadəcə rəqəmləri sayır
 
     if (digitsOnly.length !== 12) {
       setMessage('Telefon nömrəsini tam daxil edin (Məs: +994 50 123 45 67)');
       setProfileSaving(false);
-      return; // Nömrə qısadırsa, kod burada dayanır və bazaya heç nə getmir!
+      return; 
     }
 
-    // ── 2. ROL VƏ MAŞIN YOXLAMASI ──
+    // ── 2. ROL VƏ MAŞIN DƏTALLARI (RƏNG DƏXİL) YOXLAMASI ──
     const effectiveRole = profile ? profile.role : initialRole
 
-    if (effectiveRole === 'driver' && (!carBrand.trim() || !licensePlate.trim())) {
-      setMessage('Sürücü üçün avtomobil markası və nömrə məcburidir.')
+    if (effectiveRole === 'driver' && (!carBrand.trim() || !licensePlate.trim() || !carColor.trim())) {
+      setMessage('Sürücü üçün avtomobil markası, nömrəsi və rəngi məcburidir.')
       setProfileSaving(false)
       return
     }
@@ -1624,9 +1627,9 @@ useEffect(() => {
       home_address: profileHomeAddress.trim() || null,
       work_address: profileWorkAddress.trim() || null,
       role: effectiveRole,
-      // DƏYİŞİKLİK BURADADIR: Artıq rolundan asılı olmayaraq maşın məlumatı yadda saxlanılacaq
       car_brand: carBrand.trim() || null,
       license_plate: licensePlate.trim() || null,
+      car_color: carColor.trim() || null, // YENİ: Rəng bazaya göndərilir
       last_seen_at: new Date().toISOString(),
     }
 
@@ -3758,6 +3761,11 @@ async function handleCloseConversation(conversationId: number) {
                   <div style={styles.fieldWrap}>
                     <label style={styles.label}>Dövlət qeydiyyat nömrəsi</label>
                     <input value={licensePlate} onChange={(e) => setLicensePlate(e.target.value)} style={styles.input} placeholder="Məs: 99-XX-999" />
+                  </div>
+                  {/* YENİ: Maşının rəngi xanası */}
+                  <div style={styles.fieldWrap}>
+                    <label style={styles.label}>Avtomobil rəngi</label>
+                    <input value={carColor} onChange={(e) => setCarColor(e.target.value)} style={styles.input} placeholder="Məs: Ağ" />
                   </div>
                 </div>
               </div>
