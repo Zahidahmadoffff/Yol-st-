@@ -1602,21 +1602,23 @@ useEffect(() => {
     const safePhone = profilePhone || '';
     const digitsOnly = safePhone.replace(/\D/g, ''); // Sadəcə rəqəmləri sayır
 
+    // Əgər nömrə tam 12 rəqəm (994 və 9 rəqəm) deyilsə, BURADA DAYAN!
     if (digitsOnly.length !== 12) {
-      setMessage('Telefon nömrəsini tam daxil edin (Məs: +994 50 123 45 67)');
+      setMessage('⚠️ Telefon nömrəsini tam daxil edin (Məs: +994 50 123 45 67)');
       setProfileSaving(false);
       return; 
     }
 
-    // ── 2. ROL VƏ MAŞIN DƏTALLARI (RƏNG DƏXİL) YOXLAMASI ──
+    // ── 2. ROL VƏ MAŞIN YOXLAMASI ──
     const effectiveRole = profile ? profile.role : initialRole
 
     if (effectiveRole === 'driver' && (!carBrand.trim() || !licensePlate.trim() || !carColor.trim())) {
-      setMessage('Sürücü üçün avtomobil markası, nömrəsi və rəngi məcburidir.')
+      setMessage('⚠️ Sürücü üçün avtomobil markası, nömrəsi və rəngi məcburidir.')
       setProfileSaving(false)
-      return
+      return;
     }
 
+    // Əgər yuxarıdakı maneələrdən keçdisə, deməli məlumat 100% doğrudur, bazaya yaz:
     const payload = {
       id: current.driverId,
       full_name: profileFullName.trim(),
@@ -1629,7 +1631,7 @@ useEffect(() => {
       role: effectiveRole,
       car_brand: carBrand.trim() || null,
       license_plate: licensePlate.trim() || null,
-      car_color: carColor.trim() || null, // YENİ: Rəng bazaya göndərilir
+      car_color: carColor.trim() || null,
       last_seen_at: new Date().toISOString(),
     }
 
@@ -1638,7 +1640,7 @@ useEffect(() => {
     if (error) {
       setMessage('Profil yadda saxlanmadı.')
     } else {
-      setMessage('Profil yadda saxlanıldı.')
+      setMessage('✅ Profil uğurla yadda saxlanıldı.')
       await getProfile()
     }
     setProfileSaving(false)
@@ -2305,9 +2307,9 @@ async function handleCloseConversation(conversationId: number) {
 
     const newRole: UserRole = profile.role === 'driver' ? 'passenger' : 'driver'
 
-    // YENİ ƏLAVƏ: Sürücüyə keçirsə və maşın məlumatı yoxdursa, profilə yönləndir
-    if (newRole === 'driver' && (!profile.car_brand || !profile.license_plate)) {
-      setMessage('Sürücü olmaq üçün əvvəlcə profil bölməsində avtomobilinizin markasını və nömrəsini daxil edin.')
+    // Sürücüyə keçirsə və maşın məlumatları (rəng də daxil) yoxdursa, profilə yönləndir
+    if (newRole === 'driver' && (!profile.car_brand || !profile.license_plate || !profile.car_color)) {
+      setMessage('⚠️ Sürücü olmaq üçün əvvəlcə profil bölməsində avtomobil markası, nömrəsi və RƏNGİNİ daxil edin.')
       setActiveTab('profile')
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
@@ -2327,12 +2329,6 @@ async function handleCloseConversation(conversationId: number) {
       await getAllMyRides()
     }
   }
-
-  async function handleCreateReport() {
-    if (!reportTargetUserId.trim() || !reportReason.trim()) {
-      setMessage('Target user və reason məcburidir.')
-      return
-    }
 
     const targetUserIdNum = Number(reportTargetUserId)
     if (!Number.isFinite(targetUserIdNum)) {
