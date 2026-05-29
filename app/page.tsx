@@ -195,7 +195,7 @@ const styles: Record<string, React.CSSProperties> = {
   page: {
     maxWidth: 1280,
     margin: '0 auto',
-    padding: '20px 16px 120px', // Alt menyuya görə rahat boşluq
+    padding: '20px 16px 120px', 
     fontFamily: 'Arial, sans-serif',
     background: '#f8fafc',
     minHeight: '100vh',
@@ -253,7 +253,7 @@ const styles: Record<string, React.CSSProperties> = {
   rejectedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fee2e2', color: '#991b1b' },
   fullBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#ede9fe', color: '#5b21b6' },
   completedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#d1fae5', color: '#065f46' },
-  warningBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef9c3', color: '#b45309' }, // YENİ: Expired badge
+  warningBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef9c3', color: '#b45309' }, 
   unreadBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 22, padding: '0 8px', borderRadius: 999, background: '#2563eb', color: '#ffffff', fontSize: 12, fontWeight: 800, marginLeft: 8 },
   chatLayout: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
   conversationList: { display: 'grid', gap: 12 },
@@ -292,6 +292,19 @@ function getRequestStatusLabel(status: RideRequestStatus) {
   if (status === 'rejected') return 'Rədd edildi'
   if (status === 'cancelled') return 'Ləğv edildi'
   return 'Gözləmədə'
+}
+
+function getRequestBadgeStyle(status: RideRequestStatus) {
+  if (status === 'accepted') return styles.approvedBadge
+  if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge
+  return styles.pendingBadge
+}
+
+function getReportBadgeStyle(status: ReportStatus) {
+  if (status === 'resolved') return styles.approvedBadge
+  if (status === 'dismissed') return styles.rejectedBadge
+  if (status === 'in_review') return styles.fullBadge
+  return styles.pendingBadge
 }
 
 // ── YENİ: Reytinq Ulduzları ──
@@ -611,7 +624,6 @@ export default function Home() {
     setLoading(false)
   }
 
-  // YENİ: Səfərlər History bölməsinə avtomatik daşınır
   async function getAllMyRides() {
     const current = getActiveUser()
     const { data, error } = await supabase.from('ride_listings').select('*').eq('driver_id', current.driverId).order('created_at', { ascending: false })
@@ -619,7 +631,7 @@ export default function Home() {
 
     const rows = (data as Ride[]) || []
     const active = rows.filter(r => r.status === 'active' && !isRideExpired(r));
-    const history = rows.filter(r => r.status !== 'active' || isRideExpired(r));
+    const history = rows.filter(r => !active.includes(r));
 
     setAllMyRides(rows)
     setMyRides(active)
@@ -864,7 +876,6 @@ export default function Home() {
     return (newConversation as Conversation).id
   }
 
-  // YENİ: Qəbul/Rədd ediləndə Bota bildiriş
   async function handleRideRequestDecision(request: RideRequestWithRide, decision: 'accepted' | 'rejected') {
     setRideRequestLoading(request.id)
     const { error } = await supabase.from('ride_requests').update({ status: decision, updated_at: new Date().toISOString() }).eq('id', request.id)
@@ -895,7 +906,6 @@ export default function Home() {
     setRideRequestLoading(null)
   }
 
-  // YENİ: Deal təsdiqlənəndə Bota bildiriş
   async function handleConfirmDeal(request: RideRequestWithRide) {
     const ride = allMyRides.find((item) => item.id === request.ride_id)
     if (!ride) { setMessage('Elan tapılmadı.'); return }
@@ -933,7 +943,6 @@ export default function Home() {
     if (error) { setMessage('Çat bağlanmadı.'); } else { setMessage('Çat bağlandı.'); await getConversations(true); if (selectedConversationId === conversationId) { setSelectedConversationId(null); } }
   }
 
-  // YENİ: Mesaj göndəriləndə Bota bildiriş
   async function handleSendMessage() {
     if (!selectedConversationId) { setMessage('Əvvəl chat seç.'); return }
     if (!chatInput.trim()) return
