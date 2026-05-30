@@ -232,7 +232,7 @@ const styles: Record<string, React.CSSProperties> = {
   statLabel: { margin: 0, fontSize: 13, color: '#64748b', fontWeight: 700 },
   statValue: { margin: '8px 0 0', fontSize: 26, color: '#0f172a', fontWeight: 800 },
   myRideCard: { border: '1px solid #bfdbfe', borderRadius: 16, padding: 16, background: '#eff6ff', color: '#0f172a', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
-  resultCard: { border: '1px solid #cbd5e1', borderRadius: 16, padding: 16, background: '#f8fafc', color: '#0f172a', boxShadow: '0 1px 6px rgba(15, 23, 42, 0.04)' },
+  resultCard: { border: '1px solid #cbd5e1', borderRadius: 16, padding: 16, background: '#ffffff', color: '#0f172a', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' },
   adminCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#fcfaff', color: '#0f172a', boxShadow: '0 1px 6px rgba(124, 58, 237, 0.06)' },
   infoRow: { margin: '6px 0', color: '#1e293b', lineHeight: 1.5 },
   mutedText: { color: '#64748b', fontSize: 14, lineHeight: 1.5 },
@@ -253,9 +253,9 @@ const styles: Record<string, React.CSSProperties> = {
   unreadBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 22, padding: '0 8px', borderRadius: 999, background: '#ef4444', color: '#ffffff', fontSize: 12, fontWeight: 800, marginLeft: 8 },
   chatLayout: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
   conversationList: { display: 'grid', gap: 12 },
-  conversationCard: { border: '1px solid #dbe3ee', borderRadius: 14, padding: 14, background: '#ffffff', cursor: 'pointer', transition: '0.2s' },
+  conversationCard: { border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, background: '#ffffff', cursor: 'pointer', transition: '0.2s' },
   conversationCardActive: { border: '1px solid #2563eb', borderRadius: 14, padding: 14, background: '#eff6ff', cursor: 'pointer' },
-  chatPanel: { border: '1px solid #dbe3ee', borderRadius: 16, background: '#ffffff', padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
+  chatPanel: { border: '1px solid #e2e8f0', borderRadius: 16, background: '#ffffff', padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
   messageList: { display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
   myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: '#2563eb', color: '#ffffff', padding: '10px 14px', borderRadius: '16px 16px 2px 16px' },
   otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: '#f1f5f9', color: '#0f172a', padding: '10px 14px', borderRadius: '16px 16px 16px 2px' },
@@ -573,12 +573,9 @@ export default function Home() {
     if (selectedConversationId === null || !selectedStillExists) { setSelectedConversationId(conversations[0].id) }
   }, [conversations, selectedConversationId, isAdmin])
 
-  // YENİ: Yalnızca Chat tabı aktiv olanda mesajları "Oxundu" edir. Arxa planda oxundu etmir!
   useEffect(() => {
-    if (isAdmin) return; 
-    if (!selectedConversationId) return; 
-    void getMessages(selectedConversationId, activeTab === 'chat');
-  }, [selectedConversationId, isAdmin, activeTab]);
+    if (isAdmin) return; if (!selectedConversationId) return; void getMessages(selectedConversationId, activeTab === 'chat')
+  }, [selectedConversationId, isAdmin, activeTab])
 
   useEffect(() => {
     const fastInterval = setInterval(() => { if (document.hidden) return; getRideRequests(); getConversations(true); getAllMyRides(); if (selectedConversationIdRef.current) { getMessages(selectedConversationIdRef.current, false); } }, 10000);
@@ -866,7 +863,7 @@ export default function Home() {
       setRequestMessageMap((prev) => ({ ...prev, [ride.id]: '' }))
       setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: '1' }))
       try { await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ride.driver_id, text: `🚗 <b>YolDash: Yeni müraciət!</b>\n\n<b>Marşrut:</b> ${ride.origin} → ${ride.destination}\n<b>Tarix:</b> ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' }) }) } catch (_) { }
-      setActiveTab('requests')
+      setActiveTab('chat')
     }
     setRideRequestLoading(null)
   }
@@ -1256,7 +1253,7 @@ export default function Home() {
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {isRealAdmin && (
-              <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setActiveTab(!isAdminMode ? 'admin' : 'dashboard') }} style={{ background: isAdminMode ? '#475569' : '#7c3aed', color: '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)' }}>
+              <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setActiveTab(!isAdminMode ? 'admin' : 'dashboard') }} style={{ background: isAdminMode ? '#475569' : '#7c3aed', color: '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)', }}>
                 {isAdminMode ? '👤 İstifadəçi rejimi' : '👨‍💻 Admin rejimi'}
               </button>
             )}
@@ -1435,31 +1432,9 @@ export default function Home() {
 
       {activeTab === 'search' && (
         <>
-          <section style={{ ...styles.sectionCard, padding: 0, overflow: 'hidden', position: 'relative', height: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#e2e8f0', border: 'none' }}>
-             <div style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0.1, background: 'radial-gradient(circle, #2563eb 10%, transparent 10%)', backgroundSize: '20px 20px' }} />
-             <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(37, 99, 235, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'radarPulse 2s infinite ease-in-out' }}>
-               <span style={{ fontSize: 32 }}>📍</span>
-             </div>
-             <p style={{ marginTop: 12, fontWeight: 800, color: '#334155', position: 'relative', zIndex: 2 }}>Canlı Radar (5 km)</p>
-             <p style={{ color: '#64748b', fontSize: 12, textAlign: 'center', padding: '0 20px', position: 'relative', zIndex: 2 }}>Yaxınlıqdakı sürücü və sərnişinlər tezliklə burada görünəcək.</p>
-             <style>{`
-               @keyframes radarPulse {
-                 0% { transform: scale(0.8); opacity: 1; }
-                 100% { transform: scale(2.5); opacity: 0; }
-               }
-             `}</style>
-          </section>
-
           <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>Axtarış</h2>
             <div style={styles.form}>
-              
-              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, scrollbarWidth: 'none' }}>
-                <button type="button" onClick={() => setFilterDate(toDateInputValue(new Date()))} style={styles.chip}>📅 Bu gün</button>
-                <button type="button" onClick={() => setFilterRole('driver')} style={styles.chip}>🚗 Sürücü axtarıram</button>
-                <button type="button" onClick={() => setFilterRole('passenger')} style={styles.chip}>🧍 Sərnişin axtarıram</button>
-                {profile?.gender === 'female' && <button type="button" onClick={() => setFilterGender('female')} style={{...styles.chip, background: '#fdf4ff', color: '#a21caf', borderColor: '#f0abfc'}}>🌸 Yalnız qadınlar</button>}
-              </div>
-
               <div style={styles.fieldWrap}>
                 <label style={styles.label}>Axtarış</label>
                 <input placeholder="Haradan, hara və ya qeyd üzrə axtar" value={searchText} onChange={(e) => setSearchText(e.target.value)} style={styles.input} />
@@ -1553,7 +1528,8 @@ export default function Home() {
                 ))}
               </div>
             )}
-        </section>
+          </section>
+        </>
       )}
 
       {(activeTab === 'requests' || activeTab === 'chat') && (
@@ -1654,6 +1630,7 @@ export default function Home() {
                   <div style={{ textAlign: 'center', marginTop: 40 }}><span style={{ fontSize: 40 }}>💬</span><p style={{ ...styles.mutedText, marginTop: 12 }}>{chatFilter === 'active' ? 'Göstəriləcək aktiv çat yoxdur.' : 'Göstəriləcək arxiv çat yoxdur.'}</p></div>
                 ) : (
                   <>
+                    {/* YENİ: Deal Təsdiqlə Xatırladıcı Banner Çatın Ən Üstündə */}
                     {(() => {
                       const chatReq = rideRequests.find(r => r.id === selectedConversation.request_id);
                       if (chatReq && chatReq.status === 'accepted' && selectedConversationRide?.status === 'active' && !isRideExpired(selectedConversationRide)) {
@@ -1676,6 +1653,7 @@ export default function Home() {
                       <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
                       <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
                       
+                      {/* YENİ: Başlanğıc və Son nöqtəyə Yol Göstər xüsusiyyəti (Chat bağlı deyilsə görünür) */}
                       {selectedConversation.status !== 'closed' && selectedConversationRide && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                           {selectedConversationRide.origin_lat && (
@@ -1749,6 +1727,81 @@ export default function Home() {
               </div>
             </div>
           )}
+        </section>
+      )}
+
+      {activeTab === 'history' && (
+        <>
+          <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>Səfəri qiymətləndir (Review yaz)</h2>
+            <div style={styles.form}>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Təsdiqlənmiş müraciət seç</label>
+                <select value={reviewTargetRequestId ?? ''} onChange={(e) => setReviewTargetRequestId(e.target.value ? Number(e.target.value) : null)} style={styles.select}>
+                  <option value="">Seç</option>
+                  {rideRequests.filter((item) => item.status === 'accepted').map((item) => (
+                    <option key={item.id} value={item.id}>#{item.id} - {item.ride?.origin || '-'} → {item.ride?.destination || '-'}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Reytinq (1-5)</label>
+                <select value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} style={styles.select}>
+                  <option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+                </select>
+              </div>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Rəy (Gizli qalacaq)</label>
+                <textarea rows={3} value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={styles.textarea} placeholder="Səfər barədə fikirlərini yaz..." />
+              </div>
+              <div style={styles.actionRow}>
+                <button type="button" onClick={() => void handleCreateReview()} style={styles.primaryButton}>Review göndər</button>
+              </div>
+            </div>
+          </section>
+
+          <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>Elan tarixçəsi</h2>
+            {historyRides.length === 0 ? (
+              <p style={styles.mutedText}>Tarixçədə elan yoxdur.</p>
+            ) : (
+              <div style={styles.ridesGrid}>
+                {historyRides.map((ride) => (
+                  <div key={ride.id} style={styles.resultCard}>
+                    <div style={getRideBadgeStyle(ride)}>{getRideStatusLabel(ride)}</div>
+                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
+                    <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
+                    <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
+                    <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
+                    <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
+                    <p style={styles.infoRow}><strong>Yer:</strong> {ride.seats}</p>
+                    <p style={styles.infoRow}><strong>Səbəb:</strong> {ride.closed_reason || '-'}</p>
+                    <p style={styles.infoRow}><strong>Bitmə tarixi:</strong> {formatDateTime(ride.completed_at)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      )}
+
+      {activeTab === 'support' && (
+        <section style={styles.sectionCard}>
+          <h2 style={styles.sectionTitle}>Dəstək və Əlaqə</h2>
+          <p style={styles.mutedText}>Təklif, istək və ya şikayətlərinizi bizə göndərin. Müraciətləriniz birbaşa adminə çatdırılacaq.</p>
+          <form onSubmit={handleCreateSupport} style={styles.form}>
+            <div style={styles.fieldWrap}>
+              <label style={styles.label}>E-poçt (Email) ünvanınız</label>
+              <input type="email" required value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} style={styles.input} placeholder="Məs: adiniz@mail.com" />
+            </div>
+            <div style={styles.fieldWrap}>
+              <label style={styles.label}>Müraciətiniz (Təklif, Şikayət və s.)</label>
+              <textarea rows={4} required value={supportMessage} onChange={(e) => setSupportMessage(e.target.value)} style={styles.textarea} placeholder="Mesajınızı buraya yazın..." />
+            </div>
+            <div style={styles.actionRow}>
+              <button type="submit" disabled={supportLoading} style={styles.primaryButton}>{supportLoading ? 'Göndərilir...' : 'Göndər'}</button>
+            </div>
+          </form>
         </section>
       )}
 
@@ -1867,15 +1920,6 @@ export default function Home() {
 
             <div style={styles.buttonRow}>
               <button type="submit" disabled={profileSaving} style={{...styles.primaryButton, width: '100%', padding: '14px', marginTop: 10}}>{profileSaving ? 'Yadda saxlanılır...' : profile ? 'Dəyişiklikləri Yadda Saxla' : 'Profili yarat'}</button>
-            </div>
-            
-            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <button type="button" onClick={() => { setActiveTab('history'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: '#f8fafc', color: '#334155', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-                🕒 Keçmiş Səfərlərim (Tarixçə)
-              </button>
-              <button type="button" onClick={() => { setActiveTab('support'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: '#f8fafc', color: '#334155', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-                🎧 Dəstək və Əlaqə
-              </button>
             </div>
             
           </form>
