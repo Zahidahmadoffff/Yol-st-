@@ -77,6 +77,7 @@ type AdminAuditLog = { id: number; admin_user_id: number; action_type: string; e
 
 const LIMITS = { messageMax: 1000, rideRequestMessageMax: 1000, reviewCommentMax: 1000, notesMax: 2000, adminNoteMax: 2000, reportReasonMax: 300, reportDetailsMax: 2000 }
 
+// CSS Dəyişənləri və Yeni Admin Cədvəl Stilləri
 const styles: Record<string, React.CSSProperties> = {
   page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', background: 'var(--bg-page)', minHeight: '100dvh', color: 'var(--text-main)', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent', transition: 'background 0.3s, color 0.3s' },
   headerCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, padding: 22, marginBottom: 18, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)', transition: 'background 0.3s' },
@@ -119,11 +120,9 @@ const styles: Record<string, React.CSSProperties> = {
   chipRow: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, marginBottom: 10 },
   chip: { padding: '8px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' },
   chipActive: { padding: '8px 12px', borderRadius: 999, border: '1px solid var(--primary)', background: 'var(--primary)', color: '#ffffff', cursor: 'pointer', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap' },
-  chipAdmin: { padding: '8px 12px', borderRadius: 999, border: '1px solid #7c3aed', background: 'var(--bg-hover)', color: '#7c3aed', cursor: 'pointer', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap' },
   buttonRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 4 },
   actionRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 },
   badge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: 'var(--bg-hover)', color: 'var(--text-main)' },
-  adminBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#7c3aed', color: '#ffffff' },
   pendingBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef3c7', color: '#92400e' },
   approvedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#dcfce7', color: '#166534' },
   rejectedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fee2e2', color: '#991b1b' },
@@ -139,10 +138,13 @@ const styles: Record<string, React.CSSProperties> = {
   messageList: { display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
   myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: 'var(--primary)', color: '#ffffff', padding: '10px 14px', borderRadius: '16px 16px 2px 16px' },
   otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '10px 14px', borderRadius: '16px 16px 16px 2px' },
+  profileBlock: { padding: 20, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' },
+  
+  // YENİ: Səliqəli Admin Cədvəl Stilləri (Dark Mode dəstəkli)
   adminTableWrap: { overflowX: 'auto', background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', marginTop: 16, boxShadow: '0 4px 6px rgba(0,0,0,0.02)' },
   adminTable: { width: '100%', minWidth: 800, borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 },
-  adminTh: { padding: '14px 16px', borderBottom: '2px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-muted)', fontWeight: 800, whiteSpace: 'nowrap' },
-  adminTd: { padding: '14px 16px', borderBottom: '1px solid var(--border)', color: 'var(--text-main)', verticalAlign: 'middle' },
+  adminTh: { padding: '14px 16px', borderBottom: '2px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-main)', fontWeight: 800, whiteSpace: 'nowrap' },
+  adminTd: { padding: '14px 16px', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', verticalAlign: 'middle' },
 }
 
 function pad(value: number) { return String(value).padStart(2, '0') }
@@ -171,10 +173,11 @@ function getReportStatusLabel(status: ReportStatus) {
   return 'Açıq'
 }
 
+// ── DÜZƏLDİLDİ: 1 Saatlıq Avtomatik Ləğv ──
 function isRideExpired(ride: Ride | null | undefined) {
   if (!ride || !ride.ride_date || !ride.departure_time) return false;
   const rideDateTime = new Date(`${ride.ride_date}T${ride.departure_time}:00`);
-  return rideDateTime.getTime() + (2 * 60 * 60 * 1000) < new Date().getTime(); 
+  return rideDateTime.getTime() + (1 * 60 * 60 * 1000) < new Date().getTime(); 
 }
 
 function getRideStatusLabel(ride: Ride) {
@@ -193,6 +196,7 @@ function getRideBadgeStyle(ride: Ride) {
   return styles.approvedBadge
 }
 
+// ── Haversine (Məsafə) Hesablayıcı ──
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -202,6 +206,7 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * c;
 }
 
+// Çatda göndərilən Rəsmi Google Maps linklərini kliklənə bilən formata salır
 const formatMessageText = (text: string, isMine: boolean) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
@@ -218,7 +223,7 @@ const formatMessageText = (text: string, isMine: boolean) => {
 };
 
 const triggerVibration = (type: string = 'medium') => {
-  try { if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) { (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type); } } catch (e: any) { }
+  try { if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) { (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type); } } catch (e) { }
 };
 
 export default function Home() {
@@ -436,6 +441,7 @@ export default function Home() {
 
   useEffect(() => { selectedConversationIdRef.current = selectedConversationId }, [selectedConversationId])
 
+  // Tətbiq açılanda GPS oxumaq və Profilə (DB) yazmaq
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp
     if (tg) { tg.ready(); tg.expand() }
@@ -508,6 +514,7 @@ export default function Home() {
     }
   }
 
+  // DÜZƏLDİLDİ: Ağıllı Avtomatik Expire Kalkulyatoru və Arxa plan Cascade
   async function getRides() {
     setLoading(true)
     const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
@@ -516,7 +523,10 @@ export default function Home() {
       const validRows = [];
       for (const r of rows) {
         if (isRideExpired(r)) {
+          // Vaxtı keçibsə DB-də ləğv edir (Tarixçəyə atır) və müraciətləri bağlayır
           supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired_system' }).eq('id', r.id).then();
+          supabase.from('ride_requests').update({ status: 'cancelled' }).eq('ride_id', r.id).in('status', ['pending', 'accepted']).then();
+          supabase.from('conversations').update({ status: 'closed' }).eq('ride_id', r.id).eq('status', 'active').then();
         } else {
           validRows.push(r);
         }
@@ -553,6 +563,9 @@ export default function Home() {
     for (const r of rows) {
       if (r.status === 'active' && isRideExpired(r)) {
          supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired_system' }).eq('id', r.id).then();
+         supabase.from('ride_requests').update({ status: 'cancelled' }).eq('ride_id', r.id).in('status', ['pending', 'accepted']).then();
+         supabase.from('conversations').update({ status: 'closed' }).eq('ride_id', r.id).eq('status', 'active').then();
+         
          r.status = 'completed';
          r.closed_reason = 'expired_system';
          history.push(r);
@@ -919,6 +932,7 @@ export default function Home() {
     setMessageSending(false)
   }
 
+  // DÜZƏLDİLDİ: Çatda Rəsmi Google Maps GPS linki göndərmək
   const handleSendLocation = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız konum paylaşmağı dəstəkləmir.'); return; }
     setMessageSending(true);
@@ -926,7 +940,7 @@ export default function Home() {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps?q=${lat},${lng}`;
+        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps/dir/?api=1&destination=...${lat},${lng}`;
 
         const { error } = await supabase.from('messages').insert({ conversation_id: selectedConversationId!, sender_id: currentUser.driverId, message_text: locMsg, is_read: false });
 
@@ -1124,6 +1138,7 @@ export default function Home() {
     })
   }, [rides, searchText, filterRole, filterDate, isAdmin, driverProfilesMap, profile?.gender])
 
+  // DÜZƏLDİLDİ: Radar məntiqi (Radius 15 km qaldırıldı və hamını tapır)
   const handleStartRadar = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız GPS dəstəkləmir.'); return; }
     setIsRadarActive(true);
@@ -1137,15 +1152,19 @@ export default function Home() {
           await supabase.from('profiles').update({ last_lat: lat, last_lng: lng }).eq('id', currentUser.driverId);
         }
 
+        // Bütün profilləri (özümüz xaric) axtarırıq
         const { data } = await supabase.from('profiles').select('*').neq('id', currentUser.driverId);
         
         if (data) {
            const nearby = data.filter(u => {
-              if (!u.last_lat || !u.last_lng) return false;
-              const dist = getDistance(lat, lng, u.last_lat, u.last_lng);
+              const uLat = Number(u.last_lat);
+              const uLng = Number(u.last_lng);
+              if (isNaN(uLat) || isNaN(uLng) || uLat === 0 || uLng === 0) return false;
+              
+              const dist = getDistance(lat, lng, uLat, uLng);
               return dist <= 15; // 15 km Radius
-           }).map(u => ({ ...u, distance: getDistance(lat, lng, u.last_lat!, u.last_lng!) }))
-           .sort((a,b) => (a as any).distance - (b as any).distance);
+           }).map(u => ({ ...u, distance: getDistance(lat, lng, Number(u.last_lat), Number(u.last_lng)) }))
+           .sort((a,b) => a.distance - b.distance);
            
            setRadarUsers(nearby);
         }
@@ -1211,19 +1230,6 @@ export default function Home() {
   return (
     <main style={styles.page}>
       
-      {/* CSS Dəyişənləri (Gecə Rejimi) */}
-      <style>{`
-        :root {
-          --bg-page: #f8fafc; --bg-card: #ffffff; --bg-input: #ffffff; --bg-hover: #f1f5f9; --bg-active-ride: #eff6ff;
-          --text-main: #0f172a; --text-muted: #64748b; --border: #cbd5e1; --primary: #2563eb;
-        }
-        [data-theme='dark'] {
-          --bg-page: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a; --bg-hover: #334155; --bg-active-ride: #1e3a8a;
-          --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155; --primary: #3b82f6;
-        }
-        body { background-color: var(--bg-page); color: var(--text-main); margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
-      `}</style>
-
       <div style={styles.headerCard}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <div>
@@ -1704,15 +1710,16 @@ export default function Home() {
                       <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
                       <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
                       
+                      {/* DÜZƏLDİLDİ: Rəsmi Google Maps Linkləri */}
                       {selectedConversation.status !== 'closed' && selectedConversationRide && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                           {selectedConversationRide.origin_lat && (
-                            <a href={`https://www.google.com/maps?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps/dir/?api=1&destination=...${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               📍 Başlanğıca get
                             </a>
                           )}
                           {selectedConversationRide.destination_lat && (
-                            <a href={`https://www.google.com/maps?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps/dir/?api=1&destination=...${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               🏁 Son nöqtəyə get
                             </a>
                           )}
