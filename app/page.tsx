@@ -136,6 +136,7 @@ const styles: Record<string, React.CSSProperties> = {
   profileBlock: { padding: 20, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }
 }
 
+// ── Köməkçi Funksiyalar ──
 function pad(value: number) { return String(value).padStart(2, '0') }
 function addDays(base: Date, days: number) { const d = new Date(base); d.setDate(d.getDate() + days); return d }
 function toDateInputValue(date: Date) { return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` }
@@ -144,9 +145,25 @@ function roundToNextMinutes(date: Date, step = 5) { const d = new Date(date); d.
 function formatDateTime(value: string | null | undefined) { if (!value) return '-'; try { return new Date(value).toLocaleString() } catch { return String(value) } }
 function normalizeText(value: string | null | undefined) { return (value || '').toLowerCase().trim() }
 function getRoleLabel(role: UserRole | null) { return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
+function getAppRoleLabel(role: AppRole) { if (role === 'admin') return 'Admin'; return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
+
 function getRequestStatusLabel(status: RideRequestStatus) { if (status === 'accepted') return 'Qəbul edildi'; if (status === 'rejected') return 'Rədd edildi'; if (status === 'cancelled') return 'Ləğv edildi'; return 'Gözləmədə' }
 function getRequestBadgeStyle(status: RideRequestStatus) { if (status === 'accepted') return styles.approvedBadge; if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge; return styles.pendingBadge }
-function getReportBadgeStyle(status: ReportStatus) { if (status === 'resolved') return styles.approvedBadge; if (status === 'dismissed') return styles.rejectedBadge; if (status === 'in_review') return styles.fullBadge; return styles.pendingBadge }
+
+// BURA BƏRPA EDİLDİ: Report Status və Rəng Funksiyaları
+function getReportStatusLabel(status: ReportStatus) {
+  if (status === 'in_review') return 'Baxılır'
+  if (status === 'resolved') return 'Həll edildi'
+  if (status === 'dismissed') return 'Ləğv edilib'
+  return 'Açıq'
+}
+
+function getReportBadgeStyle(status: ReportStatus) {
+  if (status === 'resolved') return styles.approvedBadge
+  if (status === 'dismissed') return styles.rejectedBadge
+  if (status === 'in_review') return styles.warningBadge
+  return styles.pendingBadge
+}
 
 function renderStars(ratingStr: string | number) {
   const r = Number(ratingStr); if (isNaN(r) || r === 0) return '★★★★★ (5.0)'; const full = Math.round(r); const empty = Math.max(0, 5 - full);
@@ -175,7 +192,7 @@ function getRideBadgeStyle(ride: Ride) {
   return styles.approvedBadge
 }
 
-// ── Haversine (Məsafə) Hesablayıcı ──
+// Haversine Məsafə Kalkulyatoru (KM)
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -185,7 +202,7 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * c;
 }
 
-// Çatda göndərilən Google Maps linklərini kliklənə bilən formata salır
+// Çatda göndərilən Rəsmi Google Maps linklərini kliklənə bilən formata salır
 const formatMessageText = (text: string, isMine: boolean) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
@@ -214,7 +231,7 @@ export default function Home() {
   const [adminSection, setAdminSection] = useState<AdminSection>('overview')
 
   const [tgReady, setTgReady] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(false) // YENİ: Qaranlıq Rejim State
+  const [isDarkMode, setIsDarkMode] = useState(false)
 
   const [rides, setRides] = useState<Ride[]>([])
   const [allRidesAdmin, setAllRidesAdmin] = useState<Ride[]>([])
@@ -340,7 +357,10 @@ export default function Home() {
   const prevUnreadRef = useRef(0);
 
   useEffect(() => {
-    if (unreadTotal > prevUnreadRef.current) { setMessage('🔔 Yeni mesajınız var!'); triggerVibration('medium'); }
+    if (unreadTotal > prevUnreadRef.current) {
+      setMessage('🔔 Yeni mesajınız var!');
+      triggerVibration('medium');
+    }
     prevUnreadRef.current = unreadTotal || 0;
   }, [unreadTotal]);
   
@@ -348,7 +368,7 @@ export default function Home() {
     if (message) { const timer = setTimeout(() => { setMessage('') }, 4000); return () => clearTimeout(timer) }
   }, [message])
 
-  // YENİ: Telegram Geri Düyməsi (BackButton) İdarəsi
+  // Telegram Geri Düyməsi (BackButton) İdarəsi
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp;
     if (tg && tg.BackButton) {
@@ -407,7 +427,7 @@ export default function Home() {
 
   useEffect(() => { selectedConversationIdRef.current = selectedConversationId }, [selectedConversationId])
 
-  // YENİ: Tətbiq açılanda GPS oxumaq və Profilə (DB) yazmaq
+  // Tətbiq açılanda GPS oxumaq və Profilə (DB) yazmaq
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp
     if (tg) { tg.ready(); tg.expand() }
@@ -480,7 +500,7 @@ export default function Home() {
     }
   }
 
-  // ── YENİ: Ağıllı "Cron Job" Alternativi (Avtomatik Expire) ──
+  // Ağıllı Avtomatik Expire Kalkulyatoru
   async function getRides() {
     setLoading(true)
     const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
@@ -723,7 +743,7 @@ export default function Home() {
     setRideActionLoading(null)
   }
 
-  // ── YENİ: Ağıllı "Cari Konum" Düyməsi (Xəritə API ilə Mətn Tapır) ──
+  // Ağıllı "Cari Konum" Düyməsi (Xəritə API ilə Mətn Tapır)
   const handleGetCurrentLocationForOrigin = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız konum dəstəkləmir.'); return; }
     setMessage('Konum tapılır...');
@@ -886,7 +906,7 @@ export default function Home() {
     setMessageSending(false)
   }
 
-  // ── YENİ: Çatda Lokasiya (GPS) Göndərmək Düyməsi (Xəta Düzəldildi) ──
+  // Çatda Lokasiya (GPS) Göndərmək Düyməsi
   const handleSendLocation = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız konum paylaşmağı dəstəkləmir.'); return; }
     setMessageSending(true);
@@ -894,7 +914,7 @@ export default function Home() {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const locMsg = `📍 Konumum: https://www.google.com/maps?q=${lat},${lng}`;
+        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps?q=${lat},${lng}`;
 
         const { error } = await supabase.from('messages').insert({ conversation_id: selectedConversationId!, sender_id: currentUser.driverId, message_text: locMsg, is_read: false });
 
@@ -1092,7 +1112,7 @@ export default function Home() {
     })
   }, [rides, searchText, filterRole, filterDate, isAdmin, driverProfilesMap, profile?.gender])
 
-  // YENİ: Radar məntiqi (5 km radiusdakı istifadəçilər)
+  // Radar məntiqi (5 km radiusdakı istifadəçilər)
   const handleStartRadar = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız GPS dəstəkləmir.'); return; }
     setIsRadarActive(true);
@@ -1181,29 +1201,15 @@ export default function Home() {
   return (
     <main style={styles.page}>
       
-      {/* ── YENİ: CSS Dəyişənləri (Gecə Rejimi) ── */}
+      {/* CSS Dəyişənləri (Gecə Rejimi) */}
       <style>{`
         :root {
-          --bg-page: #f8fafc;
-          --bg-card: #ffffff;
-          --bg-input: #ffffff;
-          --bg-hover: #f1f5f9;
-          --bg-active-ride: #eff6ff;
-          --text-main: #0f172a;
-          --text-muted: #64748b;
-          --border: #cbd5e1;
-          --primary: #2563eb;
+          --bg-page: #f8fafc; --bg-card: #ffffff; --bg-input: #ffffff; --bg-hover: #f1f5f9; --bg-active-ride: #eff6ff;
+          --text-main: #0f172a; --text-muted: #64748b; --border: #cbd5e1; --primary: #2563eb;
         }
         [data-theme='dark'] {
-          --bg-page: #0f172a;
-          --bg-card: #1e293b;
-          --bg-input: #0f172a;
-          --bg-hover: #334155;
-          --bg-active-ride: #1e3a8a;
-          --text-main: #f8fafc;
-          --text-muted: #94a3b8;
-          --border: #334155;
-          --primary: #3b82f6;
+          --bg-page: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a; --bg-hover: #334155; --bg-active-ride: #1e3a8a;
+          --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155; --primary: #3b82f6;
         }
       `}</style>
       <div dangerouslySetInnerHTML={{ __html: `<script>document.body.setAttribute("data-theme", "${isDarkMode ? 'dark' : 'light'}");</script>` }} />
@@ -1257,15 +1263,15 @@ export default function Home() {
                 <p style={styles.statLabel}>Aktiv elanlarım</p>
                 <p style={styles.statValue}>{myRides.length}</p>
               </div>
-              <div style={styles.statsCard} onClick={() => { setActiveTab('profile'); setTimeout(()=>window.scrollTo({ top: 9999 }), 100); }}>
+              <div style={styles.statsCard} onClick={() => { setActiveTab('history'); window.scrollTo({ top: 0 }); }}>
                 <p style={styles.statLabel}>Tarixçədəki elanlar</p>
                 <p style={styles.statValue}>{historyRides.length}</p>
               </div>
-             <div style={styles.statsCard} onClick={() => { setActiveTab('chat'); }}>
+             <div style={styles.statsCard} onClick={() => { setActiveTab('requests'); window.scrollTo({ top: 0 }); }}>
                 <p style={styles.statLabel}>Gələn müraciətlər</p>
                 <p style={styles.statValue}>{incomingRideRequests.filter((x) => x.status === 'pending' && x.ride?.status === 'active' && !isRideExpired(x.ride)).length}</p>
               </div>
-             <div style={styles.statsCard} onClick={() => { setActiveTab('chat'); }}>
+             <div style={styles.statsCard} onClick={() => { setActiveTab('chat'); window.scrollTo({ top: 0 }); }}>
                 <p style={styles.statLabel}>Oxunmamış mesajlar</p>
                 <p style={styles.statValue}>{unreadTotal}</p>
               </div>
@@ -1447,7 +1453,6 @@ export default function Home() {
                             </div>
                             <div style={styles.actionRow}>
                               <button type="button" onClick={() => { 
-                                 // Sürətli Çat Aç funksiyası (Gələcəkdə birbaşa ride-siz chat üçün aktiv edilə bilər)
                                  alert('Tezliklə: Ətrafdakı şəxslərlə birbaşa Çat yaradıla biləcək!');
                               }} style={{ ...styles.primaryButton, width: '100%', padding: '8px', fontSize: 14 }}>💬 Çat Aç</button>
                             </div>
@@ -1689,7 +1694,6 @@ export default function Home() {
                       <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
                       <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
                       
-                      {/* YENİ: Başlanğıc və Son nöqtəyə Yol Göstər xüsusiyyəti (Chat bağlı deyilsə görünür) */}
                       {selectedConversation.status !== 'closed' && selectedConversationRide && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                           {selectedConversationRide.origin_lat && (
@@ -1766,11 +1770,85 @@ export default function Home() {
         </section>
       )}
 
+      {activeTab === 'history' && (
+        <>
+          <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>Səfəri qiymətləndir (Review yaz)</h2>
+            <div style={styles.form}>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Təsdiqlənmiş müraciət seç</label>
+                <select value={reviewTargetRequestId ?? ''} onChange={(e) => setReviewTargetRequestId(e.target.value ? Number(e.target.value) : null)} style={styles.select}>
+                  <option value="">Seç</option>
+                  {rideRequests.filter((item) => item.status === 'accepted').map((item) => (
+                    <option key={item.id} value={item.id}>#{item.id} - {item.ride?.origin || '-'} → {item.ride?.destination || '-'}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Reytinq (1-5)</label>
+                <select value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} style={styles.select}>
+                  <option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option>
+                </select>
+              </div>
+              <div style={styles.fieldWrap}>
+                <label style={styles.label}>Rəy (Gizli qalacaq)</label>
+                <textarea rows={3} value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} style={styles.textarea} placeholder="Səfər barədə fikirlərini yaz..." />
+              </div>
+              <div style={styles.actionRow}>
+                <button type="button" onClick={() => void handleCreateReview()} style={styles.primaryButton}>Review göndər</button>
+              </div>
+            </div>
+          </section>
+
+          <section style={styles.sectionCard}>
+            <h2 style={styles.sectionTitle}>Elan tarixçəsi</h2>
+            {historyRides.length === 0 ? (
+              <p style={styles.mutedText}>Tarixçədə elan yoxdur.</p>
+            ) : (
+              <div style={styles.ridesGrid}>
+                {historyRides.map((ride) => (
+                  <div key={ride.id} style={styles.resultCard}>
+                    <div style={getRideBadgeStyle(ride)}>{getRideStatusLabel(ride)}</div>
+                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(ride.role)}</p>
+                    <p style={styles.infoRow}><strong>Haradan:</strong> {ride.origin}</p>
+                    <p style={styles.infoRow}><strong>Hara:</strong> {ride.destination}</p>
+                    <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'}</p>
+                    <p style={styles.infoRow}><strong>Saat:</strong> {ride.departure_time}</p>
+                    <p style={styles.infoRow}><strong>Yer:</strong> {ride.seats}</p>
+                    <p style={styles.infoRow}><strong>Səbəb:</strong> {ride.closed_reason || '-'}</p>
+                    <p style={styles.infoRow}><strong>Bitmə tarixi:</strong> {formatDateTime(ride.completed_at)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
+      )}
+
+      {activeTab === 'support' && (
+        <section style={styles.sectionCard}>
+          <h2 style={styles.sectionTitle}>Dəstək və Əlaqə</h2>
+          <p style={styles.mutedText}>Təklif, istək və ya şikayətlərinizi bizə göndərin. Müraciətləriniz birbaşa adminə çatdırılacaq.</p>
+          <form onSubmit={handleCreateSupport} style={styles.form}>
+            <div style={styles.fieldWrap}>
+              <label style={styles.label}>E-poçt (Email) ünvanınız</label>
+              <input type="email" required value={supportEmail} onChange={(e) => setSupportEmail(e.target.value)} style={styles.input} placeholder="Məs: adiniz@mail.com" />
+            </div>
+            <div style={styles.fieldWrap}>
+              <label style={styles.label}>Müraciətiniz (Təklif, Şikayət və s.)</label>
+              <textarea rows={4} required value={supportMessage} onChange={(e) => setSupportMessage(e.target.value)} style={styles.textarea} placeholder="Mesajınızı buraya yazın..." />
+            </div>
+            <div style={styles.actionRow}>
+              <button type="submit" disabled={supportLoading} style={styles.primaryButton}>{supportLoading ? 'Göndərilir...' : 'Göndər'}</button>
+            </div>
+          </form>
+        </section>
+      )}
+
       {activeTab === 'profile' && (
         <section style={styles.sectionCard}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <h2 style={{...styles.sectionTitle, margin: 0}}>{profile ? 'Profil idarəetməsi' : 'Profil yarat'}</h2>
-            {/* YENİ: Qaranlıq Rejim Düyməsi */}
             <button type="button" onClick={() => setIsDarkMode(!isDarkMode)} style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 20, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
               {isDarkMode ? '☀️ Gündüz' : '🌙 Gecə'}
             </button>
