@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
 
+// LiveMap SSR olmadan yüklənir
 const LiveMap = dynamic(() => import('./components/LiveMap'), { ssr: false })
 const LocationPicker = dynamic(() => import('./components/LocationPicker'), { ssr: false })
 
@@ -85,7 +86,7 @@ const styles: Record<string, React.CSSProperties> = {
   topTabs: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 },
   tabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700, fontSize: 14, transition: '0.2s' },
   activeTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid var(--primary)', background: 'var(--primary)', color: '#ffffff', cursor: 'pointer', fontWeight: 700, fontSize: 14, transition: '0.2s', boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)' },
-  adminTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #7c3aed', background: 'var(--bg-hover)', color: '#7c3aed', cursor: 'pointer', fontWeight: 800, fontSize: 14 },
+  adminTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #7c3aed', background: '#faf5ff', color: '#6d28d9', cursor: 'pointer', fontWeight: 800, fontSize: 14 },
   adminActiveTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #7c3aed', background: '#7c3aed', color: '#ffffff', cursor: 'pointer', fontWeight: 800, fontSize: 14 },
   sectionCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, padding: 20, marginBottom: 18, boxShadow: '0 3px 14px rgba(0, 0, 0, 0.03)', transition: 'background 0.3s' },
   sectionTitle: { marginTop: 0, marginBottom: 16, fontSize: 22, fontWeight: 800, color: 'var(--text-main)' },
@@ -103,13 +104,13 @@ const styles: Record<string, React.CSSProperties> = {
   warningButton: { padding: '10px 14px', background: '#f59e0b', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
   closeButton: { padding: '10px 14px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
   cancelButton: { padding: '12px 16px', background: '#94a3b8', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800 },
+  message: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#dbeafe', color: '#1e3a8a', border: '1px solid #bfdbfe', fontSize: 14 },
+  adminMessage: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe', fontSize: 14 },
   ridesGrid: { display: 'grid', gap: 16 },
   statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' },
   twoColumnGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' },
+  adminGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' },
   statsCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s', },
-  adminStatsCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)' },
-  statLabel: { margin: 0, fontSize: 13, color: 'var(--text-muted)', fontWeight: 700 },
-  statValue: { margin: '8px 0 0', fontSize: 26, color: 'var(--text-main)', fontWeight: 800 },
   myRideCard: { border: '1px solid var(--primary)', borderRadius: 16, padding: 16, background: 'var(--bg-active-ride)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
   resultCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(0, 0, 0, 0.04)' },
   adminCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(0, 0, 0, 0.04)' },
@@ -150,17 +151,41 @@ function addDays(base: Date, days: number) { const d = new Date(base); d.setDate
 function toDateInputValue(date: Date) { return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` }
 function toTimeInputValue(date: Date) { return `${pad(date.getHours())}:${pad(date.getMinutes())}` }
 function roundToNextMinutes(date: Date, step = 5) { const d = new Date(date); d.setSeconds(0, 0); const minutes = d.getMinutes(); const rounded = Math.ceil(minutes / step) * step; if (rounded === 60) { d.setHours(d.getHours() + 1); d.setMinutes(0); } else { d.setMinutes(rounded); } return d }
-function formatDateTime(value: string | null | undefined) { if (!value) return '-'; try { return new Date(value).toLocaleString() } catch { return String(value) } }
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return '-'
+  try { return new Date(value).toLocaleString() } catch (e: any) { return String(value) }
+}
+
 function normalizeText(value: string | null | undefined) { return (value || '').toLowerCase().trim() }
 function getRoleLabel(role: UserRole | null) { return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
 function getAppRoleLabel(role: AppRole) { if (role === 'admin') return 'Admin'; return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
 
-function getRequestStatusLabel(status: RideRequestStatus) { if (status === 'accepted') return 'Qəbul edildi'; if (status === 'rejected') return 'Rədd edildi'; if (status === 'cancelled') return 'Ləğv edildi'; return 'Gözləmədə' }
-function getRequestBadgeStyle(status: RideRequestStatus) { if (status === 'accepted') return styles.approvedBadge; if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge; return styles.pendingBadge }
-function getReportBadgeStyle(status: ReportStatus) { if (status === 'resolved') return styles.approvedBadge; if (status === 'dismissed') return styles.rejectedBadge; if (status === 'in_review') return styles.fullBadge; return styles.pendingBadge }
+function getRequestStatusLabel(status: RideRequestStatus) {
+  if (status === 'accepted') return 'Qəbul edildi'
+  if (status === 'rejected') return 'Rədd edildi'
+  if (status === 'cancelled') return 'Ləğv edildi'
+  return 'Gözləmədə'
+}
+
+function getRequestBadgeStyle(status: RideRequestStatus) {
+  if (status === 'accepted') return styles.approvedBadge
+  if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge
+  return styles.pendingBadge
+}
+
+function getReportBadgeStyle(status: ReportStatus) {
+  if (status === 'resolved') return styles.approvedBadge
+  if (status === 'dismissed') return styles.rejectedBadge
+  if (status === 'in_review') return styles.fullBadge
+  return styles.pendingBadge
+}
 
 function renderStars(ratingStr: string | number) {
-  const r = Number(ratingStr); if (isNaN(r) || r === 0) return '★★★★★ (5.0)'; const full = Math.round(r); const empty = Math.max(0, 5 - full);
+  const r = Number(ratingStr)
+  if (isNaN(r) || r === 0) return '★★★★★ (5.0)'
+  const full = Math.round(r)
+  const empty = Math.max(0, 5 - full)
   return '★'.repeat(full) + '☆'.repeat(empty) + ` (${r.toFixed(1)})`
 }
 
@@ -193,7 +218,6 @@ function getRideBadgeStyle(ride: Ride) {
   return styles.approvedBadge
 }
 
-// ── Haversine (Məsafə) Hesablayıcı ──
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -203,7 +227,6 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * c;
 }
 
-// Çatda göndərilən Google Maps linklərini kliklənə bilən formata salır
 const formatMessageText = (text: string, isMine: boolean) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
@@ -220,7 +243,7 @@ const formatMessageText = (text: string, isMine: boolean) => {
 };
 
 const triggerVibration = (type: string = 'medium') => {
-  try { if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) { (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type); } } catch (e) { }
+  try { if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) { (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type); } } catch (e: any) { }
 };
 
 export default function Home() {
@@ -357,13 +380,11 @@ export default function Home() {
 
   const prevUnreadRef = useRef(0);
 
-  // Qaranlıq Rejim (Dark Mode) Aktivasiyası
   useEffect(() => {
     document.body.setAttribute("data-theme", isDarkMode ? "dark" : "light");
     document.body.style.backgroundColor = isDarkMode ? '#0f172a' : '#f8fafc';
   }, [isDarkMode]);
 
-  // Telegram Geri Düyməsi (BackButton) İdarəsi
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp;
     if (!tg || !tg.BackButton) return;
@@ -438,7 +459,6 @@ export default function Home() {
 
   useEffect(() => { selectedConversationIdRef.current = selectedConversationId }, [selectedConversationId])
 
-  // Tətbiq açılanda GPS oxumaq və Profilə (DB) yazmaq
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp
     if (tg) { tg.ready(); tg.expand() }
@@ -511,7 +531,6 @@ export default function Home() {
     }
   }
 
-  // Ağıllı Avtomatik Expire Kalkulyatoru (Bazada Təmizləmə)
   async function getRides() {
     setLoading(true)
     const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
@@ -719,7 +738,7 @@ export default function Home() {
     if (duplicateActiveRide) { setMessage('Bu marşrut, tarix və saat üçün artıq aktiv elan var.'); setSubmitting(false); return }
 
     if (editingRideId) {
-      const { error } = await supabase.from('ride_listings').update({ role: profile.role, origin: cleanOrigin, destination: cleanDestination, ride_date: rideDate, departure_time: departureTime, seats: seatsNumber, price_per_seat: priceNumber, women_only: womenOnly, notes: cleanNotes || null, updated_at: new Date().toISOString(), }).eq('id', editingRideId)
+      const { error } = await supabase.from('ride_listings').update({ role: profile.role, origin: cleanOrigin, destination: cleanDestination, origin_lat: originLat, origin_lng: originLng, destination_lat: destLat, destination_lng: destLng, ride_date: rideDate, departure_time: departureTime, seats: seatsNumber, price_per_seat: priceNumber, women_only: womenOnly, notes: cleanNotes || null, updated_at: new Date().toISOString(), }).eq('id', editingRideId)
       if (error) { setMessage('Elan yenilənmədi.') } else { setMessage('Elan yeniləndi.'); resetRideForm(); await initializeData(); setActiveTab('dashboard') }
     } else {
       const { error } = await supabase.from('ride_listings').insert({ driver_id: current.driverId, role: profile.role, origin: cleanOrigin, destination: cleanDestination, origin_lat: originLat, origin_lng: originLng, destination_lat: destLat, destination_lng: destLng, ride_date: rideDate, departure_time: departureTime, seats: seatsNumber, price_per_seat: priceNumber, is_recurring: false, women_only: womenOnly, notes: cleanNotes || null, status: 'active', })
@@ -730,6 +749,7 @@ export default function Home() {
 
   function handleEditRide(ride: Ride) {
     setEditingRideId(ride.id); setOrigin(ride.origin || ''); setDestination(ride.destination || ''); setRideDate(ride.ride_date || ''); setDepartureTime(ride.departure_time || ''); setSeats(String(ride.seats ?? 1)); setPricePerSeat(String(ride.price_per_seat ?? '')); setNotes(ride.notes || ''); setWomenOnly(ride.women_only || false);
+    setOriginLat(ride.origin_lat || null); setOriginLng(ride.origin_lng || null); setDestLat(ride.destination_lat || null); setDestLng(ride.destination_lng || null);
     setActiveTab('create'); window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -771,7 +791,7 @@ export default function Home() {
           const address = data.display_name || '📍 Cari Konumum';
           setOrigin(address);
           setMessage('Konum uğurla əlavə edildi!');
-        } catch (e) {
+        } catch (e: any) {
           setOrigin('📍 Cari Konumum');
           setMessage('Konum tapıldı, lakin ad oxuna bilmədi.');
         }
@@ -807,7 +827,7 @@ export default function Home() {
       setMessage('Müraciət göndərildi. ✅')
       setRequestMessageMap((prev) => ({ ...prev, [ride.id]: '' }))
       setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: '1' }))
-      try { await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ride.driver_id, text: `🚗 <b>YolDash: Yeni müraciət!</b>\n\n<b>Marşrut:</b> ${ride.origin} → ${ride.destination}\n<b>Tarix:</b> ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' }) }) } catch (_) { }
+      try { await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ride.driver_id, text: `🚗 <b>YolDash: Yeni müraciət!</b>\n\n<b>Marşrut:</b> ${ride.origin} → ${ride.destination}\n<b>Tarix:</b> ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' }) }) } catch (e: any) { }
       setActiveTab('requests')
     }
     setRideRequestLoading(null)
@@ -851,7 +871,7 @@ export default function Home() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: request.requester_id, text: `🔔 <b>YolDash: Müraciətiniz ${statusAz}!</b>\n\n<b>Marşrut:</b> ${request.ride?.origin || '-'} → ${request.ride?.destination || '-'}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' })
       });
-    } catch (_) {}
+    } catch (e: any) {}
 
     setRideRequestLoading(null)
   }
@@ -877,7 +897,7 @@ export default function Home() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: request.requester_id, text: `🤝 <b>YolDash: Səfər (Deal) Təsdiqləndi!</b>\n\nSürücü sizinlə səfəri rəsmiləşdirdi. Xoş yollar!\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' })
       });
-    } catch (_) {}
+    } catch (e: any) {}
 
     await Promise.all([getRideRequests(), getRides(), getAllMyRides()])
     setRideRequestLoading(null)
@@ -910,7 +930,7 @@ export default function Home() {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: receiverId, text: `💬 <b>YolDash: Yeni mesajınız var!</b>\n\n<b>Kimdən:</b> ${profile?.full_name || profile?.username || 'İstifadəçi'}\n<b>Mesaj:</b> ${chatInput.trim()}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' })
           });
-        } catch (_) {}
+        } catch (e: any) {}
       }
 
       setChatInput(''); await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', selectedConversationId)
@@ -1145,7 +1165,7 @@ export default function Home() {
               if (u.role !== targetRole) return false;
               if (!u.last_lat || !u.last_lng) return false;
               const dist = getDistance(lat, lng, u.last_lat, u.last_lng);
-              return dist <= 15; // Radar radiusu
+              return dist <= 15; // 15 km Radius
            }).map(u => ({ ...u, distance: getDistance(lat, lng, u.last_lat!, u.last_lng!) }))
            .sort((a,b) => a.distance - b.distance);
            
@@ -1213,7 +1233,7 @@ export default function Home() {
   return (
     <main style={styles.page}>
       
-      {/* CSS Dəyişənləri (Gecə Rejimi) */}
+      {/* YENİ: CSS Dəyişənləri (Gecə Rejimi) */}
       <style>{`
         :root {
           --bg-page: #f8fafc; --bg-card: #ffffff; --bg-input: #ffffff; --bg-hover: #f1f5f9; --bg-active-ride: #eff6ff;
@@ -1223,8 +1243,8 @@ export default function Home() {
           --bg-page: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a; --bg-hover: #334155; --bg-active-ride: #1e3a8a;
           --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155; --primary: #3b82f6;
         }
-        body { background-color: var(--bg-page); color: var(--text-main); margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
       `}</style>
+      <div dangerouslySetInnerHTML={{ __html: `<script>document.body.setAttribute("data-theme", "${isDarkMode ? 'dark' : 'light'}");</script>` }} />
 
       <div style={styles.headerCard}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
@@ -1234,7 +1254,7 @@ export default function Home() {
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {isRealAdmin && (
-              <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setActiveTab(!isAdminMode ? 'admin' : 'dashboard') }} style={{ background: isAdminMode ? 'var(--text-muted)' : '#7c3aed', color: '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)' }}>
+              <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setActiveTab(!isAdminMode ? 'admin' : 'dashboard') }} style={{ background: isAdminMode ? 'var(--bg-hover)' : '#7c3aed', color: isAdminMode ? 'var(--text-main)' : '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)' }}>
                 {isAdminMode ? '👤 İstifadəçi rejimi' : '👨‍💻 Admin rejimi'}
               </button>
             )}
@@ -1363,7 +1383,7 @@ export default function Home() {
                 {destLat && <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>📍 {destLat.toFixed(5)}, {destLng?.toFixed(5)}</p>}
               </div>
 
-              {locationPickerOpen && <LocationPicker title={locationPickerTarget === 'origin' ? 'Haradan — başlanğıc nöqtəsi' : 'Hara — son nöqtə'} onClose={() => setLocationPickerOpen(false)} onSelect={(lat, lng, address) => { if (locationPickerTarget === 'origin') { setOrigin(address); setOriginLat(lat); setOriginLng(lng); } else { setDestination(address); setDestLat(lat); setDestLng(lng); } setLocationPickerOpen(false); }} />}
+              {locationPickerOpen && <LocationPicker title={locationPickerTarget === 'origin' ? 'Haradan — başlanğıc nöqtəsi' : 'Hara — son nöqtə'} onClose={() => setLocationPickerOpen(false)} onSelect={(lat: number, lng: number, address: string) => { if (locationPickerTarget === 'origin') { setOrigin(address); setOriginLat(lat); setOriginLng(lng); } else { setDestination(address); setDestLat(lat); setDestLng(lng); } setLocationPickerOpen(false); }} />}
 
               <div style={styles.twoColumnGrid}>
                 <div style={styles.fieldWrap}>
@@ -1684,6 +1704,7 @@ export default function Home() {
                   <div style={{ textAlign: 'center', marginTop: 40 }}><span style={{ fontSize: 40 }}>💬</span><p style={{ ...styles.mutedText, marginTop: 12 }}>{chatFilter === 'active' ? 'Göstəriləcək aktiv çat yoxdur.' : 'Göstəriləcək arxiv çat yoxdur.'}</p></div>
                 ) : (
                   <>
+                    {/* YENİ: Deal Təsdiqlə Xatırladıcı Banner Çatın Ən Üstündə */}
                     {(() => {
                       const chatReq = rideRequests.find(r => r.id === selectedConversation.request_id);
                       if (chatReq && chatReq.status === 'accepted' && selectedConversationRide?.status === 'active' && !isRideExpired(selectedConversationRide)) {
@@ -2009,7 +2030,7 @@ export default function Home() {
             <section style={styles.sectionCard}>
               <h2 style={styles.sectionTitle}>Overview</h2>
               <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px,1fr))', marginBottom: 20 }}>
-                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #dc2626' }}><p style={styles.statLabel}>🔴 Açıq reportlar</p><p style={{ ...styles.statValue, color: '#dc2626' }}>{adminReports.filter(r => r.status === 'open').length}</p></div>
+                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #dc2626', background: adminReports.filter(r => r.status === 'open').length > 0 ? 'rgba(220,38,38,0.1)' : 'var(--bg-hover)' }}><p style={styles.statLabel}>🔴 Açıq reportlar</p><p style={{ ...styles.statValue, color: adminReports.filter(r => r.status === 'open').length > 0 ? '#dc2626' : 'var(--text-main)' }}>{adminReports.filter(r => r.status === 'open').length}</p></div>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #f59e0b' }}><p style={styles.statLabel}>🔒 Bloklanmış</p><p style={{ ...styles.statValue, color: '#f59e0b' }}>{adminUsers.filter(u => u.is_blocked).length}</p></div>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #2563eb' }}><p style={styles.statLabel}>🚗 Aktiv elanlar</p><p style={{ ...styles.statValue, color: '#2563eb' }}>{allRidesAdmin.filter(r => r.status === 'active').length}</p></div>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #7c3aed' }}><p style={styles.statLabel}>⏳ Gözləyən müraciətlər</p><p style={{ ...styles.statValue, color: '#7c3aed' }}>{allRideRequestsAdmin.filter(r => r.status === 'pending').length}</p></div>
