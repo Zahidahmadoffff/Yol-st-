@@ -27,7 +27,6 @@ export default function LocationPicker({ title, onClose, onSelect }: any) {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Xəritədə Axtarış API (Nominatim)
   const handleSearch = async () => {
     if (!search.trim()) return
     setLoading(true)
@@ -36,12 +35,8 @@ export default function LocationPicker({ title, onClose, onSelect }: any) {
       const data = await res.json()
       if (data && data.length > 0) {
         setPos([parseFloat(data[0].lat), parseFloat(data[0].lon)])
-      } else {
-        alert('Məkan tapılmadı. Daha dəqiq ad yazın.')
-      }
-    } catch (e) {
-      console.error(e)
-    }
+      } else { alert('Məkan tapılmadı. Daha dəqiq ad yazın.') }
+    } catch (e) {}
     setLoading(false)
   }
 
@@ -56,25 +51,16 @@ export default function LocationPicker({ title, onClose, onSelect }: any) {
   }
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--bg-page, #f8fafc)', zIndex: 99999, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: 16, background: 'var(--bg-card, #ffffff)', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid var(--border, #cbd5e1)' }}>
-        <button onClick={onClose} style={{ padding: '8px 12px', background: 'var(--bg-hover, #e2e8f0)', color: 'var(--text-main, #0f172a)', border: 'none', borderRadius: 8, fontWeight: 700 }}>Geri</button>
-        <h3 style={{ margin: 0, flex: 1, fontSize: 16, textAlign: 'center', color: 'var(--text-main, #0f172a)' }}>{title}</h3>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#f8fafc', zIndex: 99999, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: 16, background: '#ffffff', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid #cbd5e1' }}>
+        <button onClick={onClose} style={{ padding: '8px 12px', background: '#e2e8f0', color: '#0f172a', border: 'none', borderRadius: 8, fontWeight: 700 }}>Geri</button>
+        <h3 style={{ margin: 0, flex: 1, fontSize: 16, textAlign: 'center', color: '#0f172a' }}>{title}</h3>
         <button onClick={confirm} style={{ padding: '8px 12px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700 }}>Təsdiqlə</button>
       </div>
       
-      {/* YENİ: Axtarış Xanası */}
-      <div style={{ padding: 10, display: 'flex', gap: 8, background: 'var(--bg-card, #ffffff)', zIndex: 1000 }}>
-        <input 
-          value={search} 
-          onChange={e => setSearch(e.target.value)} 
-          placeholder="Küçə və ya Obyekt axtar..." 
-          style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border, #cbd5e1)', background: 'var(--bg-input, #ffffff)', color: 'var(--text-main, #0f172a)', outline: 'none' }} 
-          onKeyDown={e => e.key === 'Enter' && handleSearch()} 
-        />
-        <button onClick={handleSearch} style={{ padding: '10px 16px', background: 'var(--text-main, #0f172a)', color: 'var(--bg-page, #ffffff)', borderRadius: 8, border: 'none', fontWeight: 700 }}>
-          {loading ? '⏳' : 'Axtar'}
-        </button>
+      <div style={{ padding: 10, display: 'flex', gap: 8, background: '#ffffff', zIndex: 1000, boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Küçə və ya Obyekt axtar (Məs: Gənclik Mall)..." style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', outline: 'none', fontSize: 14 }} onKeyDown={e => e.key === 'Enter' && handleSearch()} />
+        <button onClick={handleSearch} style={{ padding: '10px 16px', background: '#0f172a', color: '#ffffff', borderRadius: 8, border: 'none', fontWeight: 700 }}>{loading ? '⏳' : 'Axtar'}</button>
       </div>
 
       <div style={{ flex: 1, position: 'relative' }}>
@@ -84,8 +70,8 @@ export default function LocationPicker({ title, onClose, onSelect }: any) {
           <MapEvents setPos={setPos} />
           <MapUpdater center={pos} />
         </MapContainer>
-        <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 1000, background: 'rgba(255,255,255,0.9)', padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, color: '#0f172a', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-          👆 Xəritədə istədiyiniz yerə toxunun
+        <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(255,255,255,0.95)', padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 800, color: '#2563eb', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+          👆 Xəritədə yeri toxunaraq seçin
         </div>
       </div>
     </div>
