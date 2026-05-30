@@ -79,15 +79,15 @@ const LIMITS = { messageMax: 1000, rideRequestMessageMax: 1000, reviewCommentMax
 
 // CSS Dəyişənləri ilə Dinamik Stillər (Dark Mode Dəstəyi)
 const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', minHeight: '100dvh', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent', transition: 'background 0.3s, color 0.3s' },
+  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', background: 'var(--bg-page)', minHeight: '100dvh', color: 'var(--text-main)', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent', transition: 'background 0.3s, color 0.3s' },
   headerCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, padding: 22, marginBottom: 18, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)', transition: 'background 0.3s' },
   title: { margin: 0, fontSize: 30, fontWeight: 800, color: 'var(--text-main)' },
   subtitle: { marginTop: 8, marginBottom: 0, color: 'var(--text-muted)', fontSize: 15, lineHeight: 1.5 },
   topTabs: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 },
   tabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700, fontSize: 14, transition: '0.2s' },
   activeTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid var(--primary)', background: 'var(--primary)', color: '#ffffff', cursor: 'pointer', fontWeight: 700, fontSize: 14, transition: '0.2s', boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)' },
-  adminTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #7c3aed', background: '#faf5ff', color: '#6d28d9', cursor: 'pointer', fontWeight: 800, fontSize: 14 },
-  adminActiveTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #7c3aed', background: '#7c3aed', color: '#ffffff', cursor: 'pointer', fontWeight: 800, fontSize: 14 },
+  adminTabButton: { padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap' },
+  adminActiveTabButton: { padding: '8px 12px', borderRadius: 8, border: '1px solid var(--primary)', background: 'var(--primary)', color: '#ffffff', cursor: 'pointer', fontWeight: 800, fontSize: 13, whiteSpace: 'nowrap' },
   sectionCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, padding: 20, marginBottom: 18, boxShadow: '0 3px 14px rgba(0, 0, 0, 0.03)', transition: 'background 0.3s' },
   sectionTitle: { marginTop: 0, marginBottom: 16, fontSize: 22, fontWeight: 800, color: 'var(--text-main)' },
   form: { display: 'grid', gap: 14 },
@@ -104,13 +104,22 @@ const styles: Record<string, React.CSSProperties> = {
   warningButton: { padding: '10px 14px', background: '#f59e0b', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
   closeButton: { padding: '10px 14px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
   cancelButton: { padding: '12px 16px', background: '#94a3b8', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800 },
+  message: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#dbeafe', color: '#1e3a8a', border: '1px solid #bfdbfe', fontSize: 14 },
+  adminMessage: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe', fontSize: 14 },
   ridesGrid: { display: 'grid', gap: 16 },
   statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' },
   twoColumnGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' },
+  adminGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' },
   statsCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s', },
-  myRideCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-active-ride)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
+  adminStatsCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)' },
+  statLabel: { margin: 0, fontSize: 13, color: 'var(--text-muted)', fontWeight: 700 },
+  statValue: { margin: '8px 0 0', fontSize: 26, color: 'var(--text-main)', fontWeight: 800 },
+  myRideCard: { border: '1px solid var(--primary)', borderRadius: 16, padding: 16, background: 'var(--bg-active-ride)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
   resultCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(0, 0, 0, 0.04)' },
-  adminCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: 'var(--bg-card)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(124, 58, 237, 0.06)' },
+  
+  // YENİ: Səliqəli Admin Kartoçkaları (List view)
+  adminCard: { border: '1px solid var(--border)', borderRadius: 12, padding: 16, background: 'var(--bg-page)', color: 'var(--text-main)', marginBottom: 12 },
+  
   infoRow: { margin: '6px 0', color: 'var(--text-main)', lineHeight: 1.5 },
   mutedText: { color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.5 },
   chipRow: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, marginBottom: 10 },
@@ -119,7 +128,6 @@ const styles: Record<string, React.CSSProperties> = {
   buttonRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 4 },
   actionRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 },
   badge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: 'var(--bg-hover)', color: 'var(--text-main)' },
-  adminBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#f3e8ff', color: '#6b21a8' },
   pendingBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef3c7', color: '#92400e' },
   approvedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#dcfce7', color: '#166534' },
   rejectedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fee2e2', color: '#991b1b' },
@@ -135,10 +143,11 @@ const styles: Record<string, React.CSSProperties> = {
   messageList: { display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
   myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: 'var(--primary)', color: '#ffffff', padding: '10px 14px', borderRadius: '16px 16px 2px 16px' },
   otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '10px 14px', borderRadius: '16px 16px 16px 2px' },
-  tableWrap: { overflowX: 'auto' },
+  tableWrap: { overflowX: 'auto', background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
-  th: { textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', whiteSpace: 'nowrap' },
-  td: { padding: '10px 8px', borderBottom: '1px solid var(--border)', verticalAlign: 'top', color: 'var(--text-main)' },
+  th: { textAlign: 'left', padding: '12px 10px', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', whiteSpace: 'nowrap' },
+  td: { padding: '12px 10px', borderBottom: '1px solid var(--border)', verticalAlign: 'middle', color: 'var(--text-main)' },
+  profileBlock: { padding: 20, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }
 }
 
 function pad(value: number) { return String(value).padStart(2, '0') }
@@ -146,40 +155,17 @@ function addDays(base: Date, days: number) { const d = new Date(base); d.setDate
 function toDateInputValue(date: Date) { return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` }
 function toTimeInputValue(date: Date) { return `${pad(date.getHours())}:${pad(date.getMinutes())}` }
 function roundToNextMinutes(date: Date, step = 5) { const d = new Date(date); d.setSeconds(0, 0); const minutes = d.getMinutes(); const rounded = Math.ceil(minutes / step) * step; if (rounded === 60) { d.setHours(d.getHours() + 1); d.setMinutes(0); } else { d.setMinutes(rounded); } return d }
-
-function formatDateTime(value: string | null | undefined) {
-  if (!value) return '-'
-  try { return new Date(value).toLocaleString() } catch { return String(value) }
-}
-
+function formatDateTime(value: string | null | undefined) { if (!value) return '-'; try { return new Date(value).toLocaleString() } catch { return String(value) } }
 function normalizeText(value: string | null | undefined) { return (value || '').toLowerCase().trim() }
 function getRoleLabel(role: UserRole | null) { return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
+function getAppRoleLabel(role: AppRole) { if (role === 'admin') return 'Admin'; return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
 
-function getRequestStatusLabel(status: RideRequestStatus) {
-  if (status === 'accepted') return 'Qəbul edildi'
-  if (status === 'rejected') return 'Rədd edildi'
-  if (status === 'cancelled') return 'Ləğv edildi'
-  return 'Gözləmədə'
-}
-
-function getRequestBadgeStyle(status: RideRequestStatus) {
-  if (status === 'accepted') return styles.approvedBadge
-  if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge
-  return styles.pendingBadge
-}
-
-function getReportBadgeStyle(status: ReportStatus) {
-  if (status === 'resolved') return styles.approvedBadge
-  if (status === 'dismissed') return styles.rejectedBadge
-  if (status === 'in_review') return styles.fullBadge
-  return styles.pendingBadge
-}
+function getRequestStatusLabel(status: RideRequestStatus) { if (status === 'accepted') return 'Qəbul edildi'; if (status === 'rejected') return 'Rədd edildi'; if (status === 'cancelled') return 'Ləğv edildi'; return 'Gözləmədə' }
+function getRequestBadgeStyle(status: RideRequestStatus) { if (status === 'accepted') return styles.approvedBadge; if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge; return styles.pendingBadge }
+function getReportBadgeStyle(status: ReportStatus) { if (status === 'resolved') return styles.approvedBadge; if (status === 'dismissed') return styles.rejectedBadge; if (status === 'in_review') return styles.fullBadge; return styles.pendingBadge }
 
 function renderStars(ratingStr: string | number) {
-  const r = Number(ratingStr)
-  if (isNaN(r) || r === 0) return '★★★★★ (5.0)'
-  const full = Math.round(r)
-  const empty = Math.max(0, 5 - full)
+  const r = Number(ratingStr); if (isNaN(r) || r === 0) return '★★★★★ (5.0)'; const full = Math.round(r); const empty = Math.max(0, 5 - full);
   return '★'.repeat(full) + '☆'.repeat(empty) + ` (${r.toFixed(1)})`
 }
 
@@ -191,9 +177,10 @@ function getReportStatusLabel(status: ReportStatus) {
 }
 
 function isRideExpired(ride: Ride | null | undefined) {
-  if (!ride || !ride.ride_date) return false;
+  if (!ride || !ride.ride_date || !ride.departure_time) return false;
+  // Saat və Tarixi birləşdirib yoxlayırıq (2 saat)
   const rideDateTime = new Date(`${ride.ride_date}T${ride.departure_time}:00`);
-  return rideDateTime.getTime() + 2 * 60 * 60 * 1000 < new Date().getTime(); 
+  return rideDateTime.getTime() + (2 * 60 * 60 * 1000) < new Date().getTime(); 
 }
 
 function getRideStatusLabel(ride: Ride) {
@@ -212,15 +199,17 @@ function getRideBadgeStyle(ride: Ride) {
   return styles.approvedBadge
 }
 
+// ── Haversine (Məsafə) Hesablayıcı ──
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+  return R * c; // KM
 }
 
+// DÜZƏLDİLDİ: Rəsmi Google Maps Linkləri
 const formatMessageText = (text: string, isMine: boolean) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
@@ -380,10 +369,10 @@ export default function Home() {
     document.body.style.backgroundColor = isDarkMode ? '#0f172a' : '#f8fafc';
   }, [isDarkMode]);
 
-  // Telegram Geri Düyməsi (BackButton) İdarəsi
+  // DÜZƏLDİLDİ: Telegram Geri Düyməsi (BackButton) İdarəsi
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp;
-    if (!tg) return;
+    if (!tg || !tg.BackButton) return;
 
     const handleBack = () => {
       setActiveTab('dashboard');
@@ -403,10 +392,7 @@ export default function Home() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (unreadTotal > prevUnreadRef.current) {
-      setMessage('🔔 Yeni mesajınız var!');
-      triggerVibration('medium');
-    }
+    if (unreadTotal > prevUnreadRef.current) { setMessage('🔔 Yeni mesajınız var!'); triggerVibration('medium'); }
     prevUnreadRef.current = unreadTotal || 0;
   }, [unreadTotal]);
   
@@ -531,6 +517,7 @@ export default function Home() {
     }
   }
 
+  // DÜZƏLDİLDİ: Ağıllı Avtomatik Expire Kalkulyatoru (Bazada Təmizləmə)
   async function getRides() {
     setLoading(true)
     const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
@@ -539,7 +526,8 @@ export default function Home() {
       const validRows = [];
       for (const r of rows) {
         if (isRideExpired(r)) {
-          supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired' }).eq('id', r.id).then();
+          // Sistem avtomatik bazada vaxtı bitmişi arxivə atır
+          supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired_system' }).eq('id', r.id).then();
         } else {
           validRows.push(r);
         }
@@ -572,7 +560,7 @@ export default function Home() {
     const rows = (data as Ride[]) || []
     const active = rows.filter(r => {
       if (r.status === 'active' && isRideExpired(r)) {
-         supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired' }).eq('id', r.id).then();
+         supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired_system' }).eq('id', r.id).then();
          return false;
       }
       return r.status === 'active';
@@ -734,7 +722,7 @@ export default function Home() {
     if (duplicateActiveRide) { setMessage('Bu marşrut, tarix və saat üçün artıq aktiv elan var.'); setSubmitting(false); return }
 
     if (editingRideId) {
-      const { error } = await supabase.from('ride_listings').update({ role: profile.role, origin: cleanOrigin, destination: cleanDestination, ride_date: rideDate, departure_time: departureTime, seats: seatsNumber, price_per_seat: priceNumber, women_only: womenOnly, notes: cleanNotes || null, updated_at: new Date().toISOString(), }).eq('id', editingRideId)
+      const { error } = await supabase.from('ride_listings').update({ role: profile.role, origin: cleanOrigin, destination: cleanDestination, origin_lat: originLat, origin_lng: originLng, destination_lat: destLat, destination_lng: destLng, ride_date: rideDate, departure_time: departureTime, seats: seatsNumber, price_per_seat: priceNumber, women_only: womenOnly, notes: cleanNotes || null, updated_at: new Date().toISOString(), }).eq('id', editingRideId)
       if (error) { setMessage('Elan yenilənmədi.') } else { setMessage('Elan yeniləndi.'); resetRideForm(); await initializeData(); setActiveTab('dashboard') }
     } else {
       const { error } = await supabase.from('ride_listings').insert({ driver_id: current.driverId, role: profile.role, origin: cleanOrigin, destination: cleanDestination, origin_lat: originLat, origin_lng: originLng, destination_lat: destLat, destination_lng: destLng, ride_date: rideDate, departure_time: departureTime, seats: seatsNumber, price_per_seat: priceNumber, is_recurring: false, women_only: womenOnly, notes: cleanNotes || null, status: 'active', })
@@ -745,6 +733,7 @@ export default function Home() {
 
   function handleEditRide(ride: Ride) {
     setEditingRideId(ride.id); setOrigin(ride.origin || ''); setDestination(ride.destination || ''); setRideDate(ride.ride_date || ''); setDepartureTime(ride.departure_time || ''); setSeats(String(ride.seats ?? 1)); setPricePerSeat(String(ride.price_per_seat ?? '')); setNotes(ride.notes || ''); setWomenOnly(ride.women_only || false);
+    setOriginLat(ride.origin_lat || null); setOriginLng(ride.origin_lng || null); setDestLat(ride.destination_lat || null); setDestLng(ride.destination_lng || null);
     setActiveTab('create'); window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -786,7 +775,7 @@ export default function Home() {
           const address = data.display_name || '📍 Cari Konumum';
           setOrigin(address);
           setMessage('Konum uğurla əlavə edildi!');
-        } catch (e) {
+        } catch (e: any) {
           setOrigin('📍 Cari Konumum');
           setMessage('Konum tapıldı, lakin ad oxuna bilmədi.');
         }
@@ -822,7 +811,7 @@ export default function Home() {
       setMessage('Müraciət göndərildi. ✅')
       setRequestMessageMap((prev) => ({ ...prev, [ride.id]: '' }))
       setRequestSeatsMap((prev) => ({ ...prev, [ride.id]: '1' }))
-      try { await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ride.driver_id, text: `🚗 <b>YolDash: Yeni müraciət!</b>\n\n<b>Marşrut:</b> ${ride.origin} → ${ride.destination}\n<b>Tarix:</b> ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' }) }) } catch (_) { }
+      try { await fetch(`https://api.telegram.org/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: ride.driver_id, text: `🚗 <b>YolDash: Yeni müraciət!</b>\n\n<b>Marşrut:</b> ${ride.origin} → ${ride.destination}\n<b>Tarix:</b> ${ride.ride_date || '-'} ${ride.departure_time}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' }) }) } catch (e: any) { }
       setActiveTab('requests')
     }
     setRideRequestLoading(null)
@@ -866,7 +855,7 @@ export default function Home() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: request.requester_id, text: `🔔 <b>YolDash: Müraciətiniz ${statusAz}!</b>\n\n<b>Marşrut:</b> ${request.ride?.origin || '-'} → ${request.ride?.destination || '-'}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' })
       });
-    } catch (_) {}
+    } catch (e: any) {}
 
     setRideRequestLoading(null)
   }
@@ -892,7 +881,7 @@ export default function Home() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: request.requester_id, text: `🤝 <b>YolDash: Səfər (Deal) Təsdiqləndi!</b>\n\nSürücü sizinlə səfəri rəsmiləşdirdi. Xoş yollar!\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' })
       });
-    } catch (_) {}
+    } catch (e: any) {}
 
     await Promise.all([getRideRequests(), getRides(), getAllMyRides()])
     setRideRequestLoading(null)
@@ -925,7 +914,7 @@ export default function Home() {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: receiverId, text: `💬 <b>YolDash: Yeni mesajınız var!</b>\n\n<b>Kimdən:</b> ${profile?.full_name || profile?.username || 'İstifadəçi'}\n<b>Mesaj:</b> ${chatInput.trim()}\n\nYolDash-ı açın: @yolustubot`, parse_mode: 'HTML' })
           });
-        } catch (_) {}
+        } catch (e: any) {}
       }
 
       setChatInput(''); await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', selectedConversationId)
@@ -934,6 +923,7 @@ export default function Home() {
     setMessageSending(false)
   }
 
+  // DÜZƏLDİLDİ: Çatda Rəsmi Google Maps GPS linki göndərmək
   const handleSendLocation = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız konum paylaşmağı dəstəkləmir.'); return; }
     setMessageSending(true);
@@ -941,7 +931,7 @@ export default function Home() {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps?q=...{lat},${lng}`;
+        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps?q=${lat},${lng}`;
 
         const { error } = await supabase.from('messages').insert({ conversation_id: selectedConversationId!, sender_id: currentUser.driverId, message_text: locMsg, is_read: false });
 
@@ -1139,6 +1129,7 @@ export default function Home() {
     })
   }, [rides, searchText, filterRole, filterDate, isAdmin, driverProfilesMap, profile?.gender])
 
+  // DÜZƏLDİLDİ: Radar məntiqi (Radius 15 km qaldırıldı)
   const handleStartRadar = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız GPS dəstəkləmir.'); return; }
     setIsRadarActive(true);
@@ -1157,10 +1148,11 @@ export default function Home() {
         
         if (data) {
            const nearby = data.filter(u => {
+              // QARŞI TƏRƏFİN ROLUNU AXARIRIQ (Sürücü <-> Sərnişin)
               if (u.role !== targetRole) return false;
               if (!u.last_lat || !u.last_lng) return false;
               const dist = getDistance(lat, lng, u.last_lat, u.last_lng);
-              return dist <= 5;
+              return dist <= 15; // 15 km Radius
            }).map(u => ({ ...u, distance: getDistance(lat, lng, u.last_lat!, u.last_lng!) }))
            .sort((a,b) => a.distance - b.distance);
            
@@ -1249,7 +1241,7 @@ export default function Home() {
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {isRealAdmin && (
-              <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setActiveTab(!isAdminMode ? 'admin' : 'dashboard') }} style={{ background: isAdminMode ? 'var(--text-muted)' : '#7c3aed', color: '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)' }}>
+              <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setActiveTab(!isAdminMode ? 'admin' : 'dashboard') }} style={{ background: isAdminMode ? 'var(--bg-hover)' : '#7c3aed', color: isAdminMode ? 'var(--text-main)' : '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)' }}>
                 {isAdminMode ? '👤 İstifadəçi rejimi' : '👨‍💻 Admin rejimi'}
               </button>
             )}
@@ -1378,7 +1370,7 @@ export default function Home() {
                 {destLat && <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>📍 {destLat.toFixed(5)}, {destLng?.toFixed(5)}</p>}
               </div>
 
-              {locationPickerOpen && <LocationPicker title={locationPickerTarget === 'origin' ? 'Haradan — başlanğıc nöqtəsi' : 'Hara — son nöqtə'} onClose={() => setLocationPickerOpen(false)} onSelect={(lat, lng, address) => { if (locationPickerTarget === 'origin') { setOrigin(address); setOriginLat(lat); setOriginLng(lng); } else { setDestination(address); setDestLat(lat); setDestLng(lng); } setLocationPickerOpen(false); }} />}
+              {locationPickerOpen && <LocationPicker title={locationPickerTarget === 'origin' ? 'Haradan — başlanğıc nöqtəsi' : 'Hara — son nöqtə'} onClose={() => setLocationPickerOpen(false)} onSelect={(lat: number, lng: number, address: string) => { if (locationPickerTarget === 'origin') { setOrigin(address); setOriginLat(lat); setOriginLng(lng); } else { setDestination(address); setDestLat(lat); setDestLng(lng); } setLocationPickerOpen(false); }} />}
 
               <div style={styles.twoColumnGrid}>
                 <div style={styles.fieldWrap}>
@@ -1444,7 +1436,7 @@ export default function Home() {
                 {!isRadarActive ? (
                   <div style={{ textAlign: 'center', padding: '40px 10px' }}>
                     <div style={{ fontSize: 48, marginBottom: 12 }}>📡</div>
-                    <h3 style={{ margin: '0 0 8px', color: 'var(--text-main)', fontSize: 18, fontWeight: 800 }}>Canlı Radar (5 km)</h3>
+                    <h3 style={{ margin: '0 0 8px', color: 'var(--text-main)', fontSize: 18, fontWeight: 800 }}>Canlı Radar (15 km)</h3>
                     <p style={styles.mutedText}>Cari konumunuzu tapıb ətrafınızdakı {profile?.role === 'driver' ? 'sərnişinləri' : 'sürücüləri'} görmək üçün radarı başladın.</p>
                     <button onClick={handleStartRadar} style={{ ...styles.primaryButton, marginTop: 12 }}>📍 Radarı Başlat</button>
                   </div>
@@ -1466,7 +1458,7 @@ export default function Home() {
                     {radarUsers.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '20px 0' }}>
                         <p style={{ fontSize: 32, margin: '0 0 10px' }}>🏜️</p>
-                        <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>5 km radiusda heç kim tapılmadı.</p>
+                        <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>15 km radiusda heç kim tapılmadı.</p>
                       </div>
                     ) : (
                       <div style={{ display: 'grid', gap: 12 }}>
@@ -1699,6 +1691,7 @@ export default function Home() {
                   <div style={{ textAlign: 'center', marginTop: 40 }}><span style={{ fontSize: 40 }}>💬</span><p style={{ ...styles.mutedText, marginTop: 12 }}>{chatFilter === 'active' ? 'Göstəriləcək aktiv çat yoxdur.' : 'Göstəriləcək arxiv çat yoxdur.'}</p></div>
                 ) : (
                   <>
+                    {/* YENİ: Deal Təsdiqlə Xatırladıcı Banner Çatın Ən Üstündə */}
                     {(() => {
                       const chatReq = rideRequests.find(r => r.id === selectedConversation.request_id);
                       if (chatReq && chatReq.status === 'accepted' && selectedConversationRide?.status === 'active' && !isRideExpired(selectedConversationRide)) {
@@ -1721,15 +1714,16 @@ export default function Home() {
                       <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
                       <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
                       
+                      {/* DÜZƏLDİLDİ: Başlanğıc və Son nöqtəyə Yol Göstər xüsusiyyəti (Chat bağlı deyilsə görünür) */}
                       {selectedConversation.status !== 'closed' && selectedConversationRide && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                           {selectedConversationRide.origin_lat && (
-                            <a href={`https://www.google.com/maps?q=...?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               📍 Başlanğıca get
                             </a>
                           )}
                           {selectedConversationRide.destination_lat && (
-                            <a href={`https://www.google.com/maps?q=...?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               🏁 Son nöqtəyə get
                             </a>
                           )}
@@ -1882,10 +1876,10 @@ export default function Home() {
           </div>
 
           {profile && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', marginBottom: 24, background: profile.role === 'driver' ? 'var(--bg-active-ride)' : '#f0fdf4', border: `1px solid ${profile.role === 'driver' ? '#bfdbfe' : '#bbf7d0'}`, borderRadius: 14, }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', marginBottom: 24, background: profile.role === 'driver' ? 'var(--bg-active-ride)' : 'var(--bg-hover)', border: `1px solid ${profile.role === 'driver' ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 14, }}>
               <div>
-                <p style={{ margin: 0, fontWeight: 800, fontSize: 16, color: '#0f172a' }}>{profile.role === 'driver' ? '🚗 Sürücü rejimi' : '🧑‍✈️ Sərnişin rejimi'}</p>
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#475569' }}>{profile.role === 'driver' ? 'Elan verib sərnişin götürürsən' : 'Sürücü axtarışındasan'}</p>
+                <p style={{ margin: 0, fontWeight: 800, fontSize: 16, color: 'var(--text-main)' }}>{profile.role === 'driver' ? '🚗 Sürücü rejimi' : '🧑‍✈️ Sərnişin rejimi'}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>{profile.role === 'driver' ? 'Elan verib sərnişin götürürsən' : 'Sürücü axtarışındasan'}</p>
               </div>
               <button type="button" onClick={() => void handleSwitchRole()} style={{ padding: '10px 16px', background: profile.role === 'driver' ? '#16a34a' : 'var(--primary)', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', }}>{profile.role === 'driver' ? '→ Sərnişinə keç' : '→ Sürücüyə keç'}</button>
             </div>
@@ -2010,43 +2004,36 @@ export default function Home() {
       {activeTab === 'admin' && isAdmin && (
         <>
           <section style={styles.sectionCard}>
-            <h2 style={styles.sectionTitle}>Admin panel</h2>
-            <div style={styles.chipRow}>
-              {[ { key: 'overview', label: 'Overview' }, { key: 'users', label: 'Users' }, { key: 'rides', label: 'Rides' }, { key: 'requests', label: 'Requests' }, { key: 'conversations', label: 'Conversations' }, { key: 'messages', label: 'Messages' }, { key: 'reviews', label: 'Reviews' }, { key: 'reports', label: 'Reports' }, { key: 'audit', label: 'Audit' }, ].map((item) => (
-                <button key={item.key} type="button" onClick={() => setAdminSection(item.key as AdminSection)} style={adminSection === item.key ? styles.chipAdmin : styles.chip}>{item.label}</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h2 style={{...styles.sectionTitle, margin: 0}}>Admin panel</h2>
+              <button type="button" onClick={() => setIsDarkMode(!isDarkMode)} style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 20, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {isDarkMode ? '☀️ Gündüz' : '🌙 Gecə'}
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'none' }}>
+              {[ { key: 'overview', label: '📊 Ümumi' }, { key: 'users', label: '👥 İstifadəçilər' }, { key: 'rides', label: '🚗 Elanlar' }, { key: 'requests', label: '⏳ Müraciətlər' }, { key: 'conversations', label: '💬 Çatlar' }, { key: 'messages', label: '✉️ Mesajlar' }, { key: 'reviews', label: '⭐ Rəylər' }, { key: 'reports', label: '🔴 Şikayətlər' }, { key: 'audit', label: '📋 Audit' }, ].map((item) => (
+                <button key={item.key} type="button" onClick={() => setAdminSection(item.key as AdminSection)} style={adminSection === item.key ? styles.adminActiveTabButton : styles.adminTabButton}>{item.label}</button>
               ))}
             </div>
-            <div style={styles.fieldWrap}><label style={styles.label}>Admin search</label><input value={adminGlobalSearch} onChange={(e) => setAdminGlobalSearch(e.target.value)} style={styles.input} placeholder="User, report, id, səbəb..." /></div>
+            <div style={{...styles.fieldWrap, marginTop: 12}}><label style={styles.label}>Admin Axtarış</label><input value={adminGlobalSearch} onChange={(e) => setAdminGlobalSearch(e.target.value)} style={styles.input} placeholder="User, report, id, səbəb axtar..." /></div>
           </section>
 
           {adminSection === 'overview' && (
             <section style={styles.sectionCard}>
-              <h2 style={styles.sectionTitle}>Overview</h2>
+              <h2 style={styles.sectionTitle}>Statistika (Overview)</h2>
               <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px,1fr))', marginBottom: 20 }}>
-                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #dc2626', background: adminReports.filter(r => r.status === 'open').length > 0 ? '#fff5f5' : '#faf5ff' }}><p style={styles.statLabel}>🔴 Açıq reportlar</p><p style={{ ...styles.statValue, color: adminReports.filter(r => r.status === 'open').length > 0 ? '#dc2626' : '#0f172a' }}>{adminReports.filter(r => r.status === 'open').length}</p></div>
+                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #dc2626' }}><p style={styles.statLabel}>🔴 Açıq reportlar</p><p style={{ ...styles.statValue, color: '#dc2626' }}>{adminReports.filter(r => r.status === 'open').length}</p></div>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #f59e0b' }}><p style={styles.statLabel}>🔒 Bloklanmış</p><p style={{ ...styles.statValue, color: '#f59e0b' }}>{adminUsers.filter(u => u.is_blocked).length}</p></div>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #2563eb' }}><p style={styles.statLabel}>🚗 Aktiv elanlar</p><p style={{ ...styles.statValue, color: '#2563eb' }}>{allRidesAdmin.filter(r => r.status === 'active').length}</p></div>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #7c3aed' }}><p style={styles.statLabel}>⏳ Gözləyən müraciətlər</p><p style={{ ...styles.statValue, color: '#7c3aed' }}>{allRideRequestsAdmin.filter(r => r.status === 'pending').length}</p></div>
               </div>
               <div style={styles.statsGrid}>
                 {[ { label: 'Cəmi İstifadəçi', value: adminUsers.length, color: '#2563eb' }, { label: 'Cəmi Elan', value: allRidesAdmin.length, color: '#0891b2' }, { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' }, { label: 'Cəmi Mesaj', value: allMessagesAdmin.length, color: '#059669' }, { label: 'Cəmi Review', value: allReviewsAdmin.length, color: '#d97706' }, { label: 'Cəmi Report', value: adminReports.length, color: '#dc2626' }, ].map(item => (
-                  <div key={item.label} style={styles.adminStatsCard}><p style={styles.statLabel}>{item.label}</p><p style={{ ...styles.statValue, color: item.color }}>{item.value}</p><div style={{ marginTop: 8, height: 5, borderRadius: 4, background: 'var(--border)' }}><div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} /></div></div>
+                  <div key={item.label} style={styles.adminStatsCard}><p style={styles.statLabel}>{item.label}</p><p style={{ ...styles.statValue, color: item.color }}>{item.value}</p><div style={{ marginTop: 8, height: 5, borderRadius: 4, background: 'var(--bg-hover)' }}><div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} /></div></div>
                 ))}
               </div>
-              <div style={{ marginTop: 20, padding: 16, background: '#faf5ff', borderRadius: 14, border: '1px solid #e9d5ff' }}>
-                <p style={{ margin: '0 0 12px', fontWeight: 800, color: '#6d28d9', fontSize: 15 }}>⚡ Sürətli hərəkətlər</p>
-                <div style={styles.buttonRow}>
-                  <button type="button" onClick={() => setAdminSection('reports')} style={{ ...styles.dangerButton, opacity: adminReports.filter(r => r.status === 'open').length === 0 ? 0.5 : 1 }}>🔴 Reportlar ({adminReports.filter(r => r.status === 'open').length})</button>
-                  <button type="button" onClick={() => setAdminSection('users')} style={styles.warningButton}>👥 İstifadəçilər</button>
-                  <button type="button" onClick={() => setAdminSection('rides')} style={styles.closeButton}>🚗 Elanlar</button>
-                  <button type="button" onClick={() => setAdminSection('requests')} style={styles.primaryButton}>⏳ Müraciətlər</button>
-                  <button type="button" onClick={() => setAdminSection('conversations')} style={styles.successButton}>💬 Çatlar</button>
-                  <button type="button" onClick={() => setAdminSection('messages')} style={{...styles.ghostButton, borderColor: '#3b82f6', color: '#3b82f6'}}>✉️ Mesajlar</button>
-                  <button type="button" onClick={() => setAdminSection('reviews')} style={{...styles.ghostButton, borderColor: '#d97706', color: '#d97706'}}>⭐ Rəylər</button>
-                  <button type="button" onClick={() => setAdminSection('audit')} style={styles.ghostButton}>📋 Audit log</button>
-                  <button type="button" onClick={() => void getAdminData()} style={styles.secondaryButton}>🔄 Təzələ</button>
-                </div>
-              </div>
+              
               {adminAuditLogs.length > 0 && (
                 <div style={{ marginTop: 20 }}>
                   <p style={{ fontWeight: 800, fontSize: 15, marginBottom: 10, color: 'var(--text-main)' }}>🕐 Son fəaliyyət</p>
@@ -2065,24 +2052,22 @@ export default function Home() {
 
           {adminSection === 'users' && (
             <section style={styles.sectionCard}>
-              <h2 style={styles.sectionTitle}>Users</h2>
+              <h2 style={styles.sectionTitle}>İstifadəçilər</h2>
               <div style={styles.ridesGrid}>
                 {adminUsersFiltered.map((user) => (
                   <div key={user.id} style={styles.adminCard}>
-                    <div style={styles.adminBadge}>User #{user.id}</div>
-                    <p style={styles.infoRow}><strong>Ad:</strong> {user.full_name || '-'}</p>
-                    <p style={styles.infoRow}><strong>Username:</strong> {user.username || '-'}</p>
+                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 10}}>
+                      <div style={styles.adminBadge}>User #{user.id}</div>
+                      <span style={{fontWeight: 800, color: 'var(--primary)'}}>{getRoleLabel(user.role)}</span>
+                    </div>
+                    <p style={styles.infoRow}><strong>Ad / Username:</strong> {user.full_name || '-'} / {user.username || '-'}</p>
                     <p style={styles.infoRow}><strong>Telefon:</strong> {user.phone || '-'}</p>
-                    <p style={styles.infoRow}><strong>Bio:</strong> {user.bio || '-'}</p>
                     <p style={styles.infoRow}><strong>Avtomobil:</strong> {user.car_brand ? `${user.car_brand} (${user.license_plate})` : '-'}</p>
-                    <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(user.role)}</p>
                     <p style={styles.infoRow}><strong>Blocked:</strong> {adminUserBlockedMap[user.id] ? 'Bəli' : 'Xeyr'}</p>
-                    <p style={styles.infoRow}><strong>Avg rating:</strong> {user.avg_rating || 0}</p>
-                    <p style={styles.infoRow}><strong>Active rides:</strong> {user.active_rides}</p>
-                    <div style={styles.fieldWrap}><label style={styles.label}>Admin note</label><textarea rows={3} value={adminUserNoteMap[user.id] || ''} onChange={(e) => setAdminUserNoteMap((prev) => ({ ...prev, [user.id]: e.target.value }))} style={styles.textarea} /></div>
+                    <div style={styles.fieldWrap}><label style={styles.label}>Admin note</label><textarea rows={2} value={adminUserNoteMap[user.id] || ''} onChange={(e) => setAdminUserNoteMap((prev) => ({ ...prev, [user.id]: e.target.value }))} style={styles.textarea} /></div>
                     <div style={styles.actionRow}>
                       <button type="button" style={adminUserBlockedMap[user.id] ? styles.successButton : styles.warningButton} disabled={adminLoadingId === user.id} onClick={() => void handleAdminToggleUser(user)}>{adminUserBlockedMap[user.id] ? 'Blokdan çıxar' : 'Blokla'}</button>
-                      <button type="button" style={styles.dangerButton} disabled={adminLoadingId === user.id} onClick={() => void handleAdminDeleteUser(user)}>Tamamilə Sil</button>
+                      <button type="button" style={styles.dangerButton} disabled={adminLoadingId === user.id} onClick={() => void handleAdminDeleteUser(user)}>Sil</button>
                     </div>
                   </div>
                 ))}
@@ -2093,7 +2078,7 @@ export default function Home() {
           {adminSection === 'rides' && (
             <>
               <section style={styles.sectionCard}>
-                <h2 style={styles.sectionTitle}>Rides</h2>
+                <h2 style={styles.sectionTitle}>Elanlar</h2>
                 {['active', 'full', 'completed', 'cancelled'].map((status) => {
                   const group = allRidesAdmin.filter((r) => r.status === status)
                   if (group.length === 0) return null
@@ -2105,12 +2090,10 @@ export default function Home() {
                         {group.map((ride) => (
                           <div key={ride.id} style={styles.adminCard}>
                             <div style={getRideBadgeStyle(ride)}>{getRideStatusLabel(ride)}</div>
-                            <p style={styles.infoRow}><strong>ID:</strong> {ride.id}</p>
-                            <p style={styles.infoRow}><strong>Driver ID:</strong> {ride.driver_id}</p>
+                            <p style={styles.infoRow}><strong>ID:</strong> {ride.id} <strong>(Driver: {ride.driver_id})</strong></p>
                             <p style={styles.infoRow}><strong>Marşrut:</strong> {ride.origin} → {ride.destination}</p>
-                            <p style={styles.infoRow}><strong>Tarix/Saat:</strong> {ride.ride_date || '-'} / {ride.departure_time}</p>
-                            <p style={styles.infoRow}><strong>Seats:</strong> {ride.seats}</p>
-                            <p style={styles.infoRow}><strong>Qiymət:</strong> {ride.price_per_seat}</p>
+                            <p style={styles.infoRow}><strong>Tarix:</strong> {ride.ride_date || '-'} / {ride.departure_time}</p>
+                            <p style={styles.infoRow}><strong>Seats / Qiymət:</strong> {ride.seats} yer / {ride.price_per_seat} AZN</p>
                             <div style={styles.actionRow}>
                               <button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRide(ride)}>Edit</button>
                               <button type="button" style={styles.dangerButton} disabled={adminLoadingId === ride.id} onClick={() => void handleAdminDeleteRide(ride)}>Delete</button>
@@ -2145,7 +2128,7 @@ export default function Home() {
           {adminSection === 'requests' && (
             <>
               <section style={styles.sectionCard}>
-                <h2 style={styles.sectionTitle}>Requests</h2>
+                <h2 style={styles.sectionTitle}>Müraciətlər</h2>
                 {['pending', 'accepted', 'rejected', 'cancelled'].map((status) => {
                   const group = allRideRequestsAdmin.filter((r) => r.status === status)
                   if (group.length === 0) return null
@@ -2157,10 +2140,8 @@ export default function Home() {
                         {group.map((item) => (
                           <div key={item.id} style={styles.adminCard}>
                             <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
-                            <p style={styles.infoRow}><strong>ID:</strong> {item.id}</p>
-                            <p style={styles.infoRow}><strong>Ride ID:</strong> {item.ride_id}</p>
-                            <p style={styles.infoRow}><strong>Requester:</strong> {item.requester_id}</p>
-                            <p style={styles.infoRow}><strong>Owner:</strong> {item.owner_id}</p>
+                            <p style={styles.infoRow}><strong>ID / Ride ID:</strong> {item.id} / {item.ride_id}</p>
+                            <p style={styles.infoRow}><strong>Requester:</strong> {item.requester_id} <strong>Owner:</strong> {item.owner_id}</p>
                             <p style={styles.infoRow}><strong>Seats:</strong> {item.seats_requested}</p>
                             <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text || '-'}</p>
                             <div style={styles.actionRow}><button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditRequest(item)}>Edit</button><button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteRequest(item)}>Delete</button></div>
@@ -2201,11 +2182,8 @@ export default function Home() {
                         <div key={conv.id} style={styles.adminCard}>
                           <div style={styles.adminBadge}>Conversation #{conv.id}</div>
                           <p style={styles.infoRow}><strong>Ride ID:</strong> {conv.ride_id}</p>
-                          <p style={styles.infoRow}><strong>Request ID:</strong> {conv.request_id || '-'}</p>
-                          <p style={styles.infoRow}><strong>Driver:</strong> {conv.driver_user_id}</p>
-                          <p style={styles.infoRow}><strong>Passenger:</strong> {conv.passenger_user_id}</p>
+                          <p style={styles.infoRow}><strong>Users:</strong> Driver {conv.driver_user_id} - Pass {conv.passenger_user_id}</p>
                           <p style={styles.infoRow}><strong>Status:</strong> {conv.status}</p>
-                          <p style={styles.infoRow}><strong>Updated:</strong> {formatDateTime(conv.updated_at)}</p>
                           <div style={styles.actionRow}><button type="button" style={styles.primaryButton} onClick={() => void handleOpenConversation(conv.id)}>Çata daxil ol</button></div>
                         </div>
                       ))}
@@ -2215,6 +2193,7 @@ export default function Home() {
               })}
             </section>
           )}
+          
           {adminSection === 'messages' && (
             <>
               <section style={styles.sectionCard}>
@@ -2223,10 +2202,8 @@ export default function Home() {
                   {allMessagesAdmin.map((item) => (
                     <div key={item.id} style={styles.adminCard}>
                       <div style={styles.adminBadge}>Message #{item.id}</div>
-                      <p style={styles.infoRow}><strong>Conversation:</strong> {item.conversation_id}</p>
                       <p style={styles.infoRow}><strong>Sender:</strong> {item.sender_id}</p>
                       <p style={styles.infoRow}><strong>Text:</strong> {item.message_text}</p>
-                      <p style={styles.infoRow}><strong>Tarix:</strong> {formatDateTime(item.created_at)}</p>
                       <div style={styles.actionRow}><button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditMessage(item)}>Edit</button><button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteMessage(item)}>Delete</button></div>
                     </div>
                   ))}
@@ -2253,8 +2230,7 @@ export default function Home() {
                   {allReviewsAdmin.map((item) => (
                   <div key={item.id} style={styles.adminCard}>
                     <div style={styles.adminBadge}>Review #{item.id}</div>
-                    <p style={styles.infoRow}><strong>Reviewer:</strong> {item.reviewer_id}</p>
-                    <p style={styles.infoRow}><strong>Reviewee:</strong> {item.reviewee_id}</p>
+                    <p style={styles.infoRow}><strong>Reviewer:</strong> {item.reviewer_id} <strong>Reviewee:</strong> {item.reviewee_id}</p>
                     <p style={styles.infoRow}><strong>Rating:</strong> {item.rating}</p>
                     <p style={styles.infoRow}><strong>Comment:</strong> {item.comment_text || '-'}</p>
                     <div style={styles.actionRow}><button type="button" style={styles.warningButton} onClick={() => handleAdminStartEditReview(item)}>Edit</button><button type="button" style={styles.dangerButton} disabled={adminLoadingId === item.id} onClick={() => void handleAdminDeleteReview(item)}>Delete</button></div>
@@ -2283,8 +2259,7 @@ export default function Home() {
                 {adminReportsFiltered.map((report) => (
                   <div key={report.id} style={styles.adminCard}>
                     <div style={getReportBadgeStyle(report.status)}>{getReportStatusLabel(report.status)}</div>
-                    <p style={styles.infoRow}><strong>ID:</strong> {report.id}</p>
-                    <p style={styles.infoRow}><strong>Reporter:</strong> {report.reporter_id}</p>
+                    <p style={styles.infoRow}><strong>ID:</strong> {report.id} <strong>Reporter:</strong> {report.reporter_id}</p>
                     <p style={styles.infoRow}><strong>Target:</strong> {report.target_user_id || '-'}</p>
                     <p style={styles.infoRow}><strong>Reason:</strong> {report.reason}</p>
                     <p style={styles.infoRow}><strong>Details:</strong> {report.details || '-'}</p>
