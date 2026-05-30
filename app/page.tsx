@@ -79,7 +79,7 @@ const LIMITS = { messageMax: 1000, rideRequestMessageMax: 1000, reviewCommentMax
 
 // CSS Dəyişənləri ilə Dinamik Stillər (Dark Mode Dəstəyi)
 const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', background: 'var(--bg-page)', minHeight: '100dvh', color: 'var(--text-main)', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent', transition: 'background 0.3s, color 0.3s' },
+  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', minHeight: '100dvh', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent', transition: 'background 0.3s, color 0.3s' },
   headerCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, padding: 22, marginBottom: 18, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)', transition: 'background 0.3s' },
   title: { margin: 0, fontSize: 30, fontWeight: 800, color: 'var(--text-main)' },
   subtitle: { marginTop: 8, marginBottom: 0, color: 'var(--text-muted)', fontSize: 15, lineHeight: 1.5 },
@@ -108,8 +108,9 @@ const styles: Record<string, React.CSSProperties> = {
   statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' },
   twoColumnGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' },
   statsCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s', },
-  myRideCard: { border: '1px solid #bfdbfe', borderRadius: 16, padding: 16, background: 'var(--bg-active-ride)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
+  myRideCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-active-ride)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
   resultCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(0, 0, 0, 0.04)' },
+  adminCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: 'var(--bg-card)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(124, 58, 237, 0.06)' },
   infoRow: { margin: '6px 0', color: 'var(--text-main)', lineHeight: 1.5 },
   mutedText: { color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.5 },
   chipRow: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, marginBottom: 10 },
@@ -118,6 +119,7 @@ const styles: Record<string, React.CSSProperties> = {
   buttonRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 4 },
   actionRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 },
   badge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: 'var(--bg-hover)', color: 'var(--text-main)' },
+  adminBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#f3e8ff', color: '#6b21a8' },
   pendingBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef3c7', color: '#92400e' },
   approvedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#dcfce7', color: '#166534' },
   rejectedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fee2e2', color: '#991b1b' },
@@ -133,41 +135,59 @@ const styles: Record<string, React.CSSProperties> = {
   messageList: { display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
   myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: 'var(--primary)', color: '#ffffff', padding: '10px 14px', borderRadius: '16px 16px 2px 16px' },
   otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '10px 14px', borderRadius: '16px 16px 16px 2px' },
-  profileBlock: { padding: 20, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }
+  tableWrap: { overflowX: 'auto' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
+  th: { textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', whiteSpace: 'nowrap' },
+  td: { padding: '10px 8px', borderBottom: '1px solid var(--border)', verticalAlign: 'top', color: 'var(--text-main)' },
 }
 
-// ── Köməkçi Funksiyalar ──
 function pad(value: number) { return String(value).padStart(2, '0') }
 function addDays(base: Date, days: number) { const d = new Date(base); d.setDate(d.getDate() + days); return d }
 function toDateInputValue(date: Date) { return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` }
 function toTimeInputValue(date: Date) { return `${pad(date.getHours())}:${pad(date.getMinutes())}` }
 function roundToNextMinutes(date: Date, step = 5) { const d = new Date(date); d.setSeconds(0, 0); const minutes = d.getMinutes(); const rounded = Math.ceil(minutes / step) * step; if (rounded === 60) { d.setHours(d.getHours() + 1); d.setMinutes(0); } else { d.setMinutes(rounded); } return d }
-function formatDateTime(value: string | null | undefined) { if (!value) return '-'; try { return new Date(value).toLocaleString() } catch { return String(value) } }
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return '-'
+  try { return new Date(value).toLocaleString() } catch { return String(value) }
+}
+
 function normalizeText(value: string | null | undefined) { return (value || '').toLowerCase().trim() }
 function getRoleLabel(role: UserRole | null) { return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
-function getAppRoleLabel(role: AppRole) { if (role === 'admin') return 'Admin'; return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
 
-function getRequestStatusLabel(status: RideRequestStatus) { if (status === 'accepted') return 'Qəbul edildi'; if (status === 'rejected') return 'Rədd edildi'; if (status === 'cancelled') return 'Ləğv edildi'; return 'Gözləmədə' }
-function getRequestBadgeStyle(status: RideRequestStatus) { if (status === 'accepted') return styles.approvedBadge; if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge; return styles.pendingBadge }
+function getRequestStatusLabel(status: RideRequestStatus) {
+  if (status === 'accepted') return 'Qəbul edildi'
+  if (status === 'rejected') return 'Rədd edildi'
+  if (status === 'cancelled') return 'Ləğv edildi'
+  return 'Gözləmədə'
+}
 
-// BURA BƏRPA EDİLDİ: Report Status və Rəng Funksiyaları
-function getReportStatusLabel(status: ReportStatus) {
-  if (status === 'in_review') return 'Baxılır'
-  if (status === 'resolved') return 'Həll edildi'
-  if (status === 'dismissed') return 'Ləğv edilib'
-  return 'Açıq'
+function getRequestBadgeStyle(status: RideRequestStatus) {
+  if (status === 'accepted') return styles.approvedBadge
+  if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge
+  return styles.pendingBadge
 }
 
 function getReportBadgeStyle(status: ReportStatus) {
   if (status === 'resolved') return styles.approvedBadge
   if (status === 'dismissed') return styles.rejectedBadge
-  if (status === 'in_review') return styles.warningBadge
+  if (status === 'in_review') return styles.fullBadge
   return styles.pendingBadge
 }
 
 function renderStars(ratingStr: string | number) {
-  const r = Number(ratingStr); if (isNaN(r) || r === 0) return '★★★★★ (5.0)'; const full = Math.round(r); const empty = Math.max(0, 5 - full);
+  const r = Number(ratingStr)
+  if (isNaN(r) || r === 0) return '★★★★★ (5.0)'
+  const full = Math.round(r)
+  const empty = Math.max(0, 5 - full)
   return '★'.repeat(full) + '☆'.repeat(empty) + ` (${r.toFixed(1)})`
+}
+
+function getReportStatusLabel(status: ReportStatus) {
+  if (status === 'in_review') return 'Baxılır'
+  if (status === 'resolved') return 'Həll edildi'
+  if (status === 'dismissed') return 'Ləğv edilib'
+  return 'Açıq'
 }
 
 function isRideExpired(ride: Ride | null | undefined) {
@@ -192,7 +212,6 @@ function getRideBadgeStyle(ride: Ride) {
   return styles.approvedBadge
 }
 
-// Haversine Məsafə Kalkulyatoru (KM)
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -202,7 +221,6 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * c;
 }
 
-// Çatda göndərilən Rəsmi Google Maps linklərini kliklənə bilən formata salır
 const formatMessageText = (text: string, isMine: boolean) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
@@ -356,6 +374,34 @@ export default function Home() {
 
   const prevUnreadRef = useRef(0);
 
+  // Qaranlıq Rejim (Dark Mode) Aktivasiyası
+  useEffect(() => {
+    document.body.setAttribute("data-theme", isDarkMode ? "dark" : "light");
+    document.body.style.backgroundColor = isDarkMode ? '#0f172a' : '#f8fafc';
+  }, [isDarkMode]);
+
+  // Telegram Geri Düyməsi (BackButton) İdarəsi
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg) return;
+
+    const handleBack = () => {
+      setActiveTab('dashboard');
+      window.scrollTo(0, 0);
+    };
+
+    if (activeTab !== 'dashboard') {
+      tg.BackButton.show();
+      tg.onEvent('backButtonClicked', handleBack);
+    } else {
+      tg.BackButton.hide();
+    }
+
+    return () => {
+      if (tg.offEvent) tg.offEvent('backButtonClicked', handleBack);
+    };
+  }, [activeTab]);
+
   useEffect(() => {
     if (unreadTotal > prevUnreadRef.current) {
       setMessage('🔔 Yeni mesajınız var!');
@@ -367,21 +413,6 @@ export default function Home() {
   useEffect(() => {
     if (message) { const timer = setTimeout(() => { setMessage('') }, 4000); return () => clearTimeout(timer) }
   }, [message])
-
-  // Telegram Geri Düyməsi (BackButton) İdarəsi
-  useEffect(() => {
-    const tg = (window as any)?.Telegram?.WebApp;
-    if (tg && tg.BackButton) {
-      if (activeTab !== 'dashboard') {
-        tg.BackButton.show();
-        const handleBack = () => { setActiveTab('dashboard'); window.scrollTo(0,0); };
-        tg.BackButton.onClick(handleBack);
-        return () => tg.BackButton.offClick(handleBack);
-      } else {
-        tg.BackButton.hide();
-      }
-    }
-  }, [activeTab]);
 
   function getActiveUser() {
     if (typeof window === 'undefined') { return { driverId: 0, username: '', fullName: '', appRole: 'passenger' as AppRole } }
@@ -500,7 +531,6 @@ export default function Home() {
     }
   }
 
-  // Ağıllı Avtomatik Expire Kalkulyatoru
   async function getRides() {
     setLoading(true)
     const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
@@ -509,7 +539,6 @@ export default function Home() {
       const validRows = [];
       for (const r of rows) {
         if (isRideExpired(r)) {
-          // Arxa planda bazada təmizləyir
           supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired' }).eq('id', r.id).then();
         } else {
           validRows.push(r);
@@ -743,7 +772,6 @@ export default function Home() {
     setRideActionLoading(null)
   }
 
-  // Ağıllı "Cari Konum" Düyməsi (Xəritə API ilə Mətn Tapır)
   const handleGetCurrentLocationForOrigin = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız konum dəstəkləmir.'); return; }
     setMessage('Konum tapılır...');
@@ -906,7 +934,6 @@ export default function Home() {
     setMessageSending(false)
   }
 
-  // Çatda Lokasiya (GPS) Göndərmək Düyməsi
   const handleSendLocation = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız konum paylaşmağı dəstəkləmir.'); return; }
     setMessageSending(true);
@@ -914,7 +941,7 @@ export default function Home() {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps?q=${lat},${lng}`;
+        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps?q=...{lat},${lng}`;
 
         const { error } = await supabase.from('messages').insert({ conversation_id: selectedConversationId!, sender_id: currentUser.driverId, message_text: locMsg, is_read: false });
 
@@ -1112,7 +1139,6 @@ export default function Home() {
     })
   }, [rides, searchText, filterRole, filterDate, isAdmin, driverProfilesMap, profile?.gender])
 
-  // Radar məntiqi (5 km radiusdakı istifadəçilər)
   const handleStartRadar = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız GPS dəstəkləmir.'); return; }
     setIsRadarActive(true);
@@ -1127,10 +1153,11 @@ export default function Home() {
         }
 
         const targetRole = profile?.role === 'driver' ? 'passenger' : 'driver';
-        const { data } = await supabase.from('profiles').select('*').eq('role', targetRole).neq('id', currentUser.driverId);
+        const { data } = await supabase.from('profiles').select('*').neq('id', currentUser.driverId);
         
         if (data) {
            const nearby = data.filter(u => {
+              if (u.role !== targetRole) return false;
               if (!u.last_lat || !u.last_lng) return false;
               const dist = getDistance(lat, lng, u.last_lat, u.last_lng);
               return dist <= 5;
@@ -1211,8 +1238,8 @@ export default function Home() {
           --bg-page: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a; --bg-hover: #334155; --bg-active-ride: #1e3a8a;
           --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155; --primary: #3b82f6;
         }
+        body { background-color: var(--bg-page); color: var(--text-main); margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
       `}</style>
-      <div dangerouslySetInnerHTML={{ __html: `<script>document.body.setAttribute("data-theme", "${isDarkMode ? 'dark' : 'light'}");</script>` }} />
 
       <div style={styles.headerCard}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
@@ -1697,12 +1724,12 @@ export default function Home() {
                       {selectedConversation.status !== 'closed' && selectedConversationRide && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                           {selectedConversationRide.origin_lat && (
-                            <a href={`https://www.google.com/maps?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps?q=...?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               📍 Başlanğıca get
                             </a>
                           )}
                           {selectedConversationRide.destination_lat && (
-                            <a href={`https://www.google.com/maps?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps?q=...?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               🏁 Son nöqtəyə get
                             </a>
                           )}
@@ -2003,7 +2030,7 @@ export default function Home() {
               </div>
               <div style={styles.statsGrid}>
                 {[ { label: 'Cəmi İstifadəçi', value: adminUsers.length, color: '#2563eb' }, { label: 'Cəmi Elan', value: allRidesAdmin.length, color: '#0891b2' }, { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' }, { label: 'Cəmi Mesaj', value: allMessagesAdmin.length, color: '#059669' }, { label: 'Cəmi Review', value: allReviewsAdmin.length, color: '#d97706' }, { label: 'Cəmi Report', value: adminReports.length, color: '#dc2626' }, ].map(item => (
-                  <div key={item.label} style={styles.adminStatsCard}><p style={styles.statLabel}>{item.label}</p><p style={{ ...styles.statValue, color: item.color }}>{item.value}</p><div style={{ marginTop: 8, height: 5, borderRadius: 4, background: '#e2e8f0' }}><div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} /></div></div>
+                  <div key={item.label} style={styles.adminStatsCard}><p style={styles.statLabel}>{item.label}</p><p style={{ ...styles.statValue, color: item.color }}>{item.value}</p><div style={{ marginTop: 8, height: 5, borderRadius: 4, background: 'var(--border)' }}><div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} /></div></div>
                 ))}
               </div>
               <div style={{ marginTop: 20, padding: 16, background: '#faf5ff', borderRadius: 14, border: '1px solid #e9d5ff' }}>
@@ -2022,12 +2049,12 @@ export default function Home() {
               </div>
               {adminAuditLogs.length > 0 && (
                 <div style={{ marginTop: 20 }}>
-                  <p style={{ fontWeight: 800, fontSize: 15, marginBottom: 10, color: '#334155' }}>🕐 Son fəaliyyət</p>
+                  <p style={{ fontWeight: 800, fontSize: 15, marginBottom: 10, color: 'var(--text-main)' }}>🕐 Son fəaliyyət</p>
                   <div style={{ display: 'grid', gap: 8 }}>
                     {adminAuditLogs.slice(0, 5).map(log => (
-                      <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 13 }}>
+                      <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-page)', borderRadius: 10, border: '1px solid var(--border)', fontSize: 13 }}>
                         <span><strong style={{ color: '#7c3aed' }}>{log.action_type}</strong>{' · '}{log.entity_type}{log.note ? ` · ${log.note}` : ''}</span>
-                        <span style={{ color: '#64748b', whiteSpace: 'nowrap', marginLeft: 12 }}>{formatDateTime(log.created_at)}</span>
+                        <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', marginLeft: 12 }}>{formatDateTime(log.created_at)}</span>
                       </div>
                     ))}
                   </div>
@@ -2073,7 +2100,7 @@ export default function Home() {
                   const title = status === 'active' ? '🟢 Aktiv' : status === 'full' ? '🔒 Bağlı (Full)' : status === 'completed' ? '✅ Tamamlanmış' : '❌ Ləğv edilmiş'
                   return (
                     <div key={status} style={{ marginBottom: 28 }}>
-                      <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>{title} ({group.length})</h3>
+                      <h3 style={{ fontSize: 16, color: 'var(--text-main)', paddingBottom: 8, borderBottom: '2px solid var(--border)', marginBottom: 16 }}>{title} ({group.length})</h3>
                       <div style={styles.ridesGrid}>
                         {group.map((ride) => (
                           <div key={ride.id} style={styles.adminCard}>
@@ -2125,7 +2152,7 @@ export default function Home() {
                   const title = status === 'pending' ? '⏳ Gözləyən' : status === 'accepted' ? '✅ Qəbul edilmiş' : status === 'rejected' ? '🚫 Rədd edilmiş' : '❌ Ləğv edilmiş'
                   return (
                     <div key={status} style={{ marginBottom: 28 }}>
-                      <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>{title} ({group.length})</h3>
+                      <h3 style={{ fontSize: 16, color: 'var(--text-main)', paddingBottom: 8, borderBottom: '2px solid var(--border)', marginBottom: 16 }}>{title} ({group.length})</h3>
                       <div style={styles.ridesGrid}>
                         {group.map((item) => (
                           <div key={item.id} style={styles.adminCard}>
@@ -2168,7 +2195,7 @@ export default function Home() {
                 const title = status === 'active' ? '🟢 Aktiv Çatlar' : '🔒 Arxiv (Bağlı)'
                 return (
                   <div key={status} style={{ marginBottom: 28 }}>
-                    <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>{title} ({group.length})</h3>
+                    <h3 style={{ fontSize: 16, color: 'var(--text-main)', paddingBottom: 8, borderBottom: '2px solid var(--border)', marginBottom: 16 }}>{title} ({group.length})</h3>
                     <div style={styles.ridesGrid}>
                       {group.map((conv) => (
                         <div key={conv.id} style={styles.adminCard}>
