@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
 
-// LiveMap SSR olmadan yüklənir (Leaflet browser API tələb edir)
+// LiveMap SSR olmadan yüklənir
 const LiveMap = dynamic(() => import('./components/LiveMap'), { ssr: false })
 const LocationPicker = dynamic(() => import('./components/LocationPicker'), { ssr: false })
 
@@ -15,27 +15,8 @@ type ConversationStatus = 'active' | 'closed'
 type RideRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled'
 type ReportStatus = 'open' | 'in_review' | 'resolved' | 'dismissed'
 
-type TabType =
-  | 'dashboard'
-  | 'create'
-  | 'search'
-  | 'requests'
-  | 'chat'
-  | 'history'
-  | 'support'
-  | 'profile'
-  | 'admin'
-
-type AdminSection =
-  | 'overview'
-  | 'users'
-  | 'rides'
-  | 'requests'
-  | 'conversations'
-  | 'messages'
-  | 'reviews'
-  | 'reports'
-  | 'audit'
+type TabType = 'dashboard' | 'create' | 'search' | 'requests' | 'chat' | 'history' | 'support' | 'profile' | 'admin'
+type AdminSection = 'overview' | 'users' | 'rides' | 'requests' | 'conversations' | 'messages' | 'reviews' | 'reports' | 'audit'
 
 type Ride = {
   id: string
@@ -76,173 +57,68 @@ type Profile = {
   is_blocked?: boolean
   admin_note?: string | null
   last_seen_at?: string | null
+  last_lat?: number | null
+  last_lng?: number | null
 }
 
 type RideRequest = {
-  id: number
-  ride_id: string
-  requester_id: number
-  owner_id: number
-  requester_role: UserRole
-  owner_role: UserRole
-  message_text: string | null
-  seats_requested: number
-  status: RideRequestStatus
-  created_at: string
-  updated_at: string
+  id: number; ride_id: string; requester_id: number; owner_id: number; requester_role: UserRole; owner_role: UserRole; message_text: string | null; seats_requested: number; status: RideRequestStatus; created_at: string; updated_at: string
 }
 
-type RideRequestWithRide = RideRequest & {
-  ride?: Ride | null
-}
+type RideRequestWithRide = RideRequest & { ride?: Ride | null }
+type Conversation = { id: number; ride_id: string; request_id: number | null; driver_user_id: number; passenger_user_id: number; status: ConversationStatus; created_at: string; updated_at: string }
+type ConversationWithMeta = Conversation & { ride?: Ride | null; unread_count?: number }
+type Message = { id: number; conversation_id: number; sender_id: number; message_text: string; is_read: boolean; created_at: string }
+type Review = { id: number; ride_id: string | null; conversation_id: number | null; request_id: number | null; reviewer_id: number; reviewee_id: number; rating: number; comment_text: string | null; created_at: string }
+type ReviewWithMeta = Review & { ride?: Ride | null }
+type UserOverview = { id: number; full_name: string | null; username: string | null; phone: string | null; bio: string | null; role: UserRole; car_brand: string | null; license_plate: string | null; is_blocked: boolean; admin_note: string | null; last_seen_at: string | null; total_rides: number; active_rides: number; total_requests: number; pending_requests: number; received_reviews_count: number; avg_rating: number }
+type UserReport = { id: number; target_user_id: number | null; ride_id: string | null; request_id: number | null; conversation_id: number | null; message_id: number | null; reporter_id: number; reason: string; details: string | null; status: ReportStatus; admin_note: string | null; created_at: string; updated_at: string }
+type AdminAuditLog = { id: number; admin_user_id: number; action_type: string; entity_type: string; entity_id: string; old_data: Record<string, unknown> | null; new_data: Record<string, unknown> | null; note: string | null; created_at: string }
 
-type Conversation = {
-  id: number
-  ride_id: string
-  request_id: number | null
-  driver_user_id: number
-  passenger_user_id: number
-  status: ConversationStatus
-  created_at: string
-  updated_at: string
-}
+const LIMITS = { messageMax: 1000, rideRequestMessageMax: 1000, reviewCommentMax: 1000, notesMax: 2000, adminNoteMax: 2000, reportReasonMax: 300, reportDetailsMax: 2000 }
 
-type ConversationWithMeta = Conversation & {
-  ride?: Ride | null
-  unread_count?: number
-}
-
-type Message = {
-  id: number
-  conversation_id: number
-  sender_id: number
-  message_text: string
-  is_read: boolean
-  created_at: string
-}
-
-type Review = {
-  id: number
-  ride_id: string | null
-  conversation_id: number | null
-  request_id: number | null
-  reviewer_id: number
-  reviewee_id: number
-  rating: number
-  comment_text: string | null
-  created_at: string
-}
-
-type ReviewWithMeta = Review & {
-  ride?: Ride | null
-}
-
-type UserOverview = {
-  id: number
-  full_name: string | null
-  username: string | null
-  phone: string | null
-  bio: string | null
-  role: UserRole
-  car_brand: string | null
-  license_plate: string | null
-  is_blocked: boolean
-  admin_note: string | null
-  last_seen_at: string | null
-  total_rides: number
-  active_rides: number
-  total_requests: number
-  pending_requests: number
-  received_reviews_count: number
-  avg_rating: number
-}
-
-type UserReport = {
-  id: number
-  target_user_id: number | null
-  ride_id: string | null
-  request_id: number | null
-  conversation_id: number | null
-  message_id: number | null
-  reporter_id: number
-  reason: string
-  details: string | null
-  status: ReportStatus
-  admin_note: string | null
-  created_at: string
-  updated_at: string
-}
-
-type AdminAuditLog = {
-  id: number
-  admin_user_id: number
-  action_type: string
-  entity_type: string
-  entity_id: string
-  old_data: Record<string, unknown> | null
-  new_data: Record<string, unknown> | null
-  note: string | null
-  created_at: string
-}
-
-const LIMITS = {
-  messageMax: 1000,
-  rideRequestMessageMax: 1000,
-  reviewCommentMax: 1000,
-  notesMax: 2000,
-  adminNoteMax: 2000,
-  reportReasonMax: 300,
-  reportDetailsMax: 2000,
-}
-
+// CSS Dəyişənləri ilə Dinamik Stillər (Dark Mode Dəstəyi)
 const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', background: '#f8fafc', minHeight: '100dvh', color: '#0f172a', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent' },
-  headerCard: { background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)', border: '1px solid #e2e8f0', borderRadius: 20, padding: 22, marginBottom: 18, boxShadow: '0 6px 20px rgba(15, 23, 42, 0.06)' },
-  title: { margin: 0, fontSize: 30, fontWeight: 800, color: '#0f172a' },
-  subtitle: { marginTop: 8, marginBottom: 0, color: '#475569', fontSize: 15, lineHeight: 1.5 },
+  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', minHeight: '100dvh', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent', transition: 'background 0.3s, color 0.3s' },
+  headerCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, padding: 22, marginBottom: 18, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)', transition: 'background 0.3s' },
+  title: { margin: 0, fontSize: 30, fontWeight: 800, color: 'var(--text-main)' },
+  subtitle: { marginTop: 8, marginBottom: 0, color: 'var(--text-muted)', fontSize: 15, lineHeight: 1.5 },
   topTabs: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 },
-  tabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', cursor: 'pointer', fontWeight: 700, fontSize: 14, transition: '0.2s' },
-  activeTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #2563eb', background: '#2563eb', color: '#ffffff', cursor: 'pointer', fontWeight: 700, fontSize: 14, transition: '0.2s', boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)' },
+  tabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700, fontSize: 14, transition: '0.2s' },
+  activeTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid var(--primary)', background: 'var(--primary)', color: '#ffffff', cursor: 'pointer', fontWeight: 700, fontSize: 14, transition: '0.2s', boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)' },
   adminTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #7c3aed', background: '#faf5ff', color: '#6d28d9', cursor: 'pointer', fontWeight: 800, fontSize: 14 },
   adminActiveTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid #7c3aed', background: '#7c3aed', color: '#ffffff', cursor: 'pointer', fontWeight: 800, fontSize: 14 },
-  sectionCard: { background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 18, padding: 20, marginBottom: 18, boxShadow: '0 3px 14px rgba(15, 23, 42, 0.05)' },
-  sectionTitle: { marginTop: 0, marginBottom: 16, fontSize: 22, fontWeight: 800, color: '#0f172a' },
+  sectionCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, padding: 20, marginBottom: 18, boxShadow: '0 3px 14px rgba(0, 0, 0, 0.03)', transition: 'background 0.3s' },
+  sectionTitle: { marginTop: 0, marginBottom: 16, fontSize: 22, fontWeight: 800, color: 'var(--text-main)' },
   form: { display: 'grid', gap: 14 },
   fieldWrap: { display: 'grid', gap: 6 },
-  label: { fontSize: 14, fontWeight: 700, color: '#334155' },
-  input: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box', transition: 'border 0.2s' },
-  select: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box' },
-  textarea: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontSize: 15, outline: 'none', boxSizing: 'border-box', resize: 'vertical' },
-  primaryButton: { padding: '12px 16px', background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800, boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)' },
-  secondaryButton: { padding: '10px 14px', background: '#e2e8f0', color: '#0f172a', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 14, fontWeight: 700 },
-  ghostButton: { padding: '10px 14px', background: '#ffffff', color: '#0f172a', border: '1px solid #cbd5e1', borderRadius: 12, cursor: 'pointer', fontSize: 14, fontWeight: 700 },
+  label: { fontSize: 14, fontWeight: 700, color: 'var(--text-main)' },
+  input: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: 15, outline: 'none', boxSizing: 'border-box', transition: 'border 0.2s' },
+  select: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: 15, outline: 'none', boxSizing: 'border-box' },
+  textarea: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: 15, outline: 'none', boxSizing: 'border-box', resize: 'vertical' },
+  primaryButton: { padding: '12px 16px', background: 'var(--primary)', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800, boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)' },
+  secondaryButton: { padding: '10px 14px', background: 'var(--bg-hover)', color: 'var(--text-main)', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 14, fontWeight: 700 },
+  ghostButton: { padding: '10px 14px', background: 'transparent', color: 'var(--text-main)', border: '1px solid var(--border)', borderRadius: 12, cursor: 'pointer', fontSize: 14, fontWeight: 700 },
   successButton: { padding: '10px 14px', background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
   dangerButton: { padding: '10px 14px', background: '#dc2626', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
   warningButton: { padding: '10px 14px', background: '#f59e0b', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
   closeButton: { padding: '10px 14px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
   cancelButton: { padding: '12px 16px', background: '#94a3b8', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800 },
-  message: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#dbeafe', color: '#1e3a8a', border: '1px solid #bfdbfe', fontSize: 14 },
-  adminMessage: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe', fontSize: 14 },
   ridesGrid: { display: 'grid', gap: 16 },
   statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' },
   twoColumnGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' },
-  adminGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' },
-  statsCard: { border: '1px solid #dbe3ee', borderRadius: 16, padding: 16, background: '#ffffff', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s', },
-  adminStatsCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#faf5ff' },
-  statLabel: { margin: 0, fontSize: 13, color: '#64748b', fontWeight: 700 },
-  statValue: { margin: '8px 0 0', fontSize: 26, color: '#0f172a', fontWeight: 800 },
-  myRideCard: { border: '1px solid #bfdbfe', borderRadius: 16, padding: 16, background: '#eff6ff', color: '#0f172a', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
-  resultCard: { border: '1px solid #cbd5e1', borderRadius: 16, padding: 16, background: '#f8fafc', color: '#0f172a', boxShadow: '0 1px 6px rgba(15, 23, 42, 0.04)' },
-  adminCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: '#fcfaff', color: '#0f172a', boxShadow: '0 1px 6px rgba(124, 58, 237, 0.06)' },
-  infoRow: { margin: '6px 0', color: '#1e293b', lineHeight: 1.5 },
-  mutedText: { color: '#64748b', fontSize: 14, lineHeight: 1.5 },
+  statsCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s', },
+  myRideCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-active-ride)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
+  resultCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(0, 0, 0, 0.04)' },
+  adminCard: { border: '1px solid #e9d5ff', borderRadius: 16, padding: 16, background: 'var(--bg-card)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(124, 58, 237, 0.06)' },
+  infoRow: { margin: '6px 0', color: 'var(--text-main)', lineHeight: 1.5 },
+  mutedText: { color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.5 },
   chipRow: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, marginBottom: 10 },
-  chip: { padding: '8px 12px', borderRadius: 999, border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' },
-  chipActive: { padding: '8px 12px', borderRadius: 999, border: '1px solid #2563eb', background: '#dbeafe', color: '#1d4ed8', cursor: 'pointer', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap' },
-  chipAdmin: { padding: '8px 12px', borderRadius: 999, border: '1px solid #7c3aed', background: '#faf5ff', color: '#6d28d9', cursor: 'pointer', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap' },
+  chip: { padding: '8px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' },
+  chipActive: { padding: '8px 12px', borderRadius: 999, border: '1px solid var(--primary)', background: 'var(--primary)', color: '#ffffff', cursor: 'pointer', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap' },
   buttonRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 4 },
   actionRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 },
-  badge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#e2e8f0', color: '#0f172a' },
+  badge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: 'var(--bg-hover)', color: 'var(--text-main)' },
   adminBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#f3e8ff', color: '#6b21a8' },
   pendingBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef3c7', color: '#92400e' },
   approvedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#dcfce7', color: '#166534' },
@@ -253,17 +129,16 @@ const styles: Record<string, React.CSSProperties> = {
   unreadBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 22, padding: '0 8px', borderRadius: 999, background: '#ef4444', color: '#ffffff', fontSize: 12, fontWeight: 800, marginLeft: 8 },
   chatLayout: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
   conversationList: { display: 'grid', gap: 12 },
-  conversationCard: { border: '1px solid #e2e8f0', borderRadius: 14, padding: 14, background: '#ffffff', cursor: 'pointer', transition: '0.2s' },
-  conversationCardActive: { border: '1px solid #2563eb', borderRadius: 14, padding: 14, background: '#eff6ff', cursor: 'pointer' },
-  chatPanel: { border: '1px solid #e2e8f0', borderRadius: 16, background: '#ffffff', padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
+  conversationCard: { border: '1px solid var(--border)', borderRadius: 14, padding: 14, background: 'var(--bg-card)', cursor: 'pointer', transition: '0.2s' },
+  conversationCardActive: { border: '1px solid var(--primary)', borderRadius: 14, padding: 14, background: 'var(--bg-active-ride)', cursor: 'pointer' },
+  chatPanel: { border: '1px solid var(--border)', borderRadius: 16, background: 'var(--bg-card)', padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
   messageList: { display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
-  myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: '#2563eb', color: '#ffffff', padding: '10px 14px', borderRadius: '16px 16px 2px 16px' },
-  otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: '#f1f5f9', color: '#0f172a', padding: '10px 14px', borderRadius: '16px 16px 16px 2px' },
+  myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: 'var(--primary)', color: '#ffffff', padding: '10px 14px', borderRadius: '16px 16px 2px 16px' },
+  otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '10px 14px', borderRadius: '16px 16px 16px 2px' },
   tableWrap: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
-  th: { textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #e2e8f0', color: '#475569', whiteSpace: 'nowrap' },
-  td: { padding: '10px 8px', borderBottom: '1px solid #eef2f7', verticalAlign: 'top' },
-  profileBlock: { padding: 20, background: '#ffffff', borderRadius: 16, border: '1px solid #e2e8f0', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }
+  th: { textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', whiteSpace: 'nowrap' },
+  td: { padding: '10px 8px', borderBottom: '1px solid var(--border)', verticalAlign: 'top', color: 'var(--text-main)' },
 }
 
 function pad(value: number) { return String(value).padStart(2, '0') }
@@ -279,7 +154,6 @@ function formatDateTime(value: string | null | undefined) {
 
 function normalizeText(value: string | null | undefined) { return (value || '').toLowerCase().trim() }
 function getRoleLabel(role: UserRole | null) { return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
-function getAppRoleLabel(role: AppRole) { if (role === 'admin') return 'Admin'; return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
 
 function getRequestStatusLabel(status: RideRequestStatus) {
   if (status === 'accepted') return 'Qəbul edildi'
@@ -338,7 +212,6 @@ function getRideBadgeStyle(ride: Ride) {
   return styles.approvedBadge
 }
 
-// Haversine Məsafə Kalkulyatoru (KM)
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -348,14 +221,13 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * c;
 }
 
-// Çat daxilində GPS linklərini kliklənə bilən etmək üçün köməkçi funksiya
 const formatMessageText = (text: string, isMine: boolean) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
   return parts.map((part, i) => {
     if (part.match(urlRegex)) {
       return (
-        <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: isMine ? '#fff' : '#2563eb', textDecoration: 'underline', fontWeight: 800 }}>
+        <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: isMine ? '#fff' : 'var(--primary)', textDecoration: 'underline', fontWeight: 800 }}>
           🗺️ Xəritədə Aç
         </a>
       );
@@ -377,6 +249,7 @@ export default function Home() {
   const [adminSection, setAdminSection] = useState<AdminSection>('overview')
 
   const [tgReady, setTgReady] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(false)
 
   const [rides, setRides] = useState<Ride[]>([])
   const [allRidesAdmin, setAllRidesAdmin] = useState<Ride[]>([])
@@ -396,7 +269,7 @@ export default function Home() {
   const [adminReports, setAdminReports] = useState<UserReport[]>([])
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([])
   
-  const [driverProfilesMap, setDriverProfilesMap] = useState<Record<number, { name: string, rating: string, gender: string, carBrand: string, carColor: string, licensePlate: string }>>({})
+  const [driverProfilesMap, setDriverProfilesMap] = useState<Record<number, { name: string, rating: string, gender: string, carBrand: string, carColor: string, licensePlate: string, lat?: number|null, lng?: number|null }>>({})
 
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null)
   const [unreadTotal, setUnreadTotal] = useState(0)
@@ -449,10 +322,11 @@ export default function Home() {
   const [filterRole, setFilterRole] = useState('all')
   const [filterGender, setFilterGender] = useState('')
   const [filterDate, setFilterDate] = useState('')
-  const [searchView, setSearchView] = useState<'list' | 'map'>('list') // Radar görünüşü üçün
   
+  const [searchView, setSearchView] = useState<'list' | 'map'>('list')
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null)
   const [isRadarActive, setIsRadarActive] = useState(false)
+  const [radarUsers, setRadarUsers] = useState<any[]>([])
 
   const [requestMessageMap, setRequestMessageMap] = useState<Record<string, string>>({})
   const [requestSeatsMap, setRequestSeatsMap] = useState<Record<string, string>>({})
@@ -500,6 +374,34 @@ export default function Home() {
 
   const prevUnreadRef = useRef(0);
 
+  // Qaranlıq Rejim (Dark Mode) Aktivasiyası
+  useEffect(() => {
+    document.body.setAttribute("data-theme", isDarkMode ? "dark" : "light");
+    document.body.style.backgroundColor = isDarkMode ? '#0f172a' : '#f8fafc';
+  }, [isDarkMode]);
+
+  // Telegram Geri Düyməsi (BackButton) İdarəsi
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg) return;
+
+    const handleBack = () => {
+      setActiveTab('dashboard');
+      window.scrollTo(0, 0);
+    };
+
+    if (activeTab !== 'dashboard') {
+      tg.BackButton.show();
+      tg.onEvent('backButtonClicked', handleBack);
+    } else {
+      tg.BackButton.hide();
+    }
+
+    return () => {
+      if (tg.offEvent) tg.offEvent('backButtonClicked', handleBack);
+    };
+  }, [activeTab]);
+
   useEffect(() => {
     if (unreadTotal > prevUnreadRef.current) {
       setMessage('🔔 Yeni mesajınız var!');
@@ -509,10 +411,7 @@ export default function Home() {
   }, [unreadTotal]);
   
   useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => { setMessage('') }, 4000)
-      return () => clearTimeout(timer)
-    }
+    if (message) { const timer = setTimeout(() => { setMessage('') }, 4000); return () => clearTimeout(timer) }
   }, [message])
 
   function getActiveUser() {
@@ -559,17 +458,26 @@ export default function Home() {
 
   useEffect(() => { selectedConversationIdRef.current = selectedConversationId }, [selectedConversationId])
 
+  // Tətbiq açılanda GPS oxumaq və Profilə (DB) yazmaq
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp
     if (tg) { tg.ready(); tg.expand() }
     setTgReady(true)
     void initializeData()
+
+    if (navigator.geolocation && currentUser.driverId) {
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const lat = pos.coords.latitude; const lng = pos.coords.longitude;
+        setUserLocation({lat, lng});
+        await supabase.from('profiles').update({ last_lat: lat, last_lng: lng }).eq('id', currentUser.driverId);
+      }, () => {}, { enableHighAccuracy: true });
+    }
   }, [])
 
   useEffect(() => {
     const activeUserId = getActiveUser().driverId
     const channels = [
-      supabase.channel(`messages-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async () => { const currentSelectedId = selectedConversationIdRef.current; if (currentSelectedId && !isAdmin) { await getMessages(currentSelectedId, false) } await getConversations(false); if (isAdmin) await getAdminData() }).subscribe(),
+      supabase.channel(`messages-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, async () => { const currentSelectedId = selectedConversationIdRef.current; if (currentSelectedId && !isAdmin) { await getMessages(currentSelectedId, activeTab === 'chat') } await getConversations(false); if (isAdmin) await getAdminData() }).subscribe(),
       supabase.channel(`ride-requests-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, async () => { await getRideRequests(); await getAllMyRides(); if (isAdmin) await getAdminData() }).subscribe(),
       supabase.channel(`conversations-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, async () => { await getConversations(false); if (isAdmin) await getAdminData() }).subscribe(),
       supabase.channel(`ride-listings-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'ride_listings' }, async () => { await getRides(); await getAllMyRides(); if (isAdmin) await getAdminData() }).subscribe(),
@@ -579,7 +487,7 @@ export default function Home() {
       supabase.channel(`audit-live-${activeUserId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'admin_audit_logs' }, async () => { if (isAdmin) await getAdminData() }).subscribe(),
     ]
     return () => { channels.forEach((channel) => { void supabase.removeChannel(channel) }) }
-  }, [isAdmin])
+  }, [isAdmin, activeTab])
 
   useEffect(() => {
     if (isAdmin) return
@@ -593,10 +501,10 @@ export default function Home() {
   }, [selectedConversationId, isAdmin, activeTab])
 
   useEffect(() => {
-    const fastInterval = setInterval(() => { if (document.hidden) return; getRideRequests(); getConversations(true); getAllMyRides(); if (selectedConversationIdRef.current) { getMessages(selectedConversationIdRef.current, false); } }, 10000);
+    const fastInterval = setInterval(() => { if (document.hidden) return; getRideRequests(); getConversations(true); getAllMyRides(); if (selectedConversationIdRef.current) { getMessages(selectedConversationIdRef.current, activeTab === 'chat'); } }, 10000);
     const slowInterval = setInterval(() => { if (document.hidden) return; getRides(); }, 60000);
     return () => { clearInterval(fastInterval); clearInterval(slowInterval); };
-  }, []);
+  }, [activeTab]);
 
   async function initializeData() {
     setMessage(''); setSelectedConversationId(null); setMessages([])
@@ -628,20 +536,27 @@ export default function Home() {
     const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
     if (error) { console.error('Ride list error:', error); setMessage('Aktiv elanlar yüklənmədi.') } else {
       const rows = (data as Ride[]) || []
-      const validRows = rows.filter(r => !isRideExpired(r));
+      const validRows = [];
+      for (const r of rows) {
+        if (isRideExpired(r)) {
+          supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired' }).eq('id', r.id).then();
+        } else {
+          validRows.push(r);
+        }
+      }
       setRides(validRows)
 
       const driverIds = [...new Set(validRows.map((r) => r.driver_id))]
       if (driverIds.length > 0) {
           const [profilesRes, reviewsRes] = await Promise.all([
-          supabase.from('profiles').select('id, full_name, username, gender, car_brand, car_color, license_plate').in('id', driverIds),
+          supabase.from('profiles').select('id, full_name, username, gender, car_brand, car_color, license_plate, last_lat, last_lng').in('id', driverIds),
           supabase.from('reviews').select('reviewee_id, rating').in('reviewee_id', driverIds)
         ])
-        const pData = profilesRes.data || []; const rData = reviewsRes.data || []; const newMap: Record<number, { name: string, rating: string, gender: string, carBrand: string, carColor: string, licensePlate: string }> = {}
+        const pData = profilesRes.data || []; const rData = reviewsRes.data || []; const newMap: Record<number, { name: string, rating: string, gender: string, carBrand: string, carColor: string, licensePlate: string, lat?: number|null, lng?: number|null }> = {}
         pData.forEach(p => {
           const userReviews = rData.filter(r => r.reviewee_id === p.id)
           const avgRating = userReviews.length > 0 ? (userReviews.reduce((sum, r) => sum + r.rating, 0) / userReviews.length).toFixed(1) : '5.0'
-          newMap[p.id] = { name: p.full_name || p.username || 'User', rating: avgRating, gender: p.gender || 'male', carBrand: p.car_brand || '', carColor: p.car_color || 'Qara', licensePlate: p.license_plate || '' }
+          newMap[p.id] = { name: p.full_name || p.username || 'User', rating: avgRating, gender: p.gender || 'male', carBrand: p.car_brand || '', carColor: p.car_color || 'Qara', licensePlate: p.license_plate || '', lat: p.last_lat, lng: p.last_lng }
         })
         setDriverProfilesMap(newMap)
       }
@@ -655,7 +570,13 @@ export default function Home() {
     if (error) { console.error('My rides error:', error); return }
 
     const rows = (data as Ride[]) || []
-    const active = rows.filter(r => r.status === 'active' && !isRideExpired(r));
+    const active = rows.filter(r => {
+      if (r.status === 'active' && isRideExpired(r)) {
+         supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired' }).eq('id', r.id).then();
+         return false;
+      }
+      return r.status === 'active';
+    });
     const history = rows.filter(r => !active.includes(r));
 
     setAllMyRides(rows); setMyRides(active); setHistoryRides(history)
@@ -851,20 +772,26 @@ export default function Home() {
     setRideActionLoading(null)
   }
 
-  // YENİ: Haradan xanası üçün Cari Konum düyməsi
   const handleGetCurrentLocationForOrigin = () => {
-    if (!navigator.geolocation) { setMessage('Cihazınız konum paylaşmağı dəstəkləmir.'); return; }
+    if (!navigator.geolocation) { setMessage('Cihazınız konum dəstəkləmir.'); return; }
     setMessage('Konum tapılır...');
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        setOriginLat(lat);
-        setOriginLng(lng);
-        setOrigin('📍 Cari Konumum');
-        setMessage('Konum uğurla əlavə edildi!');
+        setOriginLat(lat); setOriginLng(lng);
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=az`);
+          const data = await res.json();
+          const address = data.display_name || '📍 Cari Konumum';
+          setOrigin(address);
+          setMessage('Konum uğurla əlavə edildi!');
+        } catch (e) {
+          setOrigin('📍 Cari Konumum');
+          setMessage('Konum tapıldı, lakin ad oxuna bilmədi.');
+        }
       },
-      () => setMessage('Konum alına bilmədi. Zəhmət olmasa GPS-ə icazə verin.'),
+      () => setMessage('Konum alına bilmədi. GPS icazəsini yoxlayın.'),
       { enableHighAccuracy: true }
     );
   };
@@ -1014,7 +941,7 @@ export default function Home() {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const locMsg = `📍 Konum göndərildi: http://googleusercontent.com/maps.google.com/?q=${lat},${lng}`;
+        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps?q=...{lat},${lng}`;
 
         const { error } = await supabase.from('messages').insert({ conversation_id: selectedConversationId!, sender_id: currentUser.driverId, message_text: locMsg, is_read: false });
 
@@ -1212,35 +1139,38 @@ export default function Home() {
     })
   }, [rides, searchText, filterRole, filterDate, isAdmin, driverProfilesMap, profile?.gender])
 
-  // YENİ: Radar məntiqi (5 km radiusdakı istifadəçilər)
   const handleStartRadar = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız GPS dəstəkləmir.'); return; }
     setIsRadarActive(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setUserLocation({ lat, lng });
+        
+        if (currentUser.driverId) {
+          await supabase.from('profiles').update({ last_lat: lat, last_lng: lng }).eq('id', currentUser.driverId);
+        }
+
+        const targetRole = profile?.role === 'driver' ? 'passenger' : 'driver';
+        const { data } = await supabase.from('profiles').select('*').neq('id', currentUser.driverId);
+        
+        if (data) {
+           const nearby = data.filter(u => {
+              if (u.role !== targetRole) return false;
+              if (!u.last_lat || !u.last_lng) return false;
+              const dist = getDistance(lat, lng, u.last_lat, u.last_lng);
+              return dist <= 5;
+           }).map(u => ({ ...u, distance: getDistance(lat, lng, u.last_lat!, u.last_lng!) }))
+           .sort((a,b) => a.distance - b.distance);
+           
+           setRadarUsers(nearby);
+        }
+      },
       (err) => { setMessage('Xəritə üçün cihazın GPS icazəsini açın.'); setIsRadarActive(false); },
       { enableHighAccuracy: true }
     );
   };
-
-  const radarRides = useMemo(() => {
-    if (!userLocation || !profile) return [];
-    const targetRole = profile.role === 'driver' ? 'passenger' : 'driver';
-    
-    return rides.filter(r => {
-      if (r.driver_id === currentUser.driverId) return false;
-      if (r.status !== 'active') return false;
-      if (r.role !== targetRole) return false;
-      if (!r.origin_lat || !r.origin_lng) return false;
-      if (isRideExpired(r)) return false;
-      
-      const dist = getDistance(userLocation.lat, userLocation.lng, r.origin_lat, r.origin_lng);
-      return dist <= 5; 
-    }).map(r => ({
-      ...r,
-      distance: getDistance(userLocation.lat, userLocation.lng, r.origin_lat!, r.origin_lng!)
-    })).sort((a,b) => a.distance - b.distance);
-  }, [rides, userLocation, profile, currentUser]);
 
   const incomingRideRequests = useMemo(() => {
     return rideRequests.filter((item) => item.owner_id === currentUser.driverId)
@@ -1275,8 +1205,8 @@ export default function Home() {
       <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
         <div style={{ textAlign: 'center', padding: 40 }}>
           <p style={{ fontSize: 40, marginBottom: 16 }}>🚗</p>
-          <p style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>YolDash yüklənir...</p>
-          <p style={{ fontSize: 14, color: '#64748b', marginTop: 8 }}>Telegram Mini App açılır</p>
+          <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-main)' }}>YolDash yüklənir...</p>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 8 }}>Telegram Mini App açılır</p>
         </div>
       </main>
     )
@@ -1287,9 +1217,9 @@ export default function Home() {
       <main style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
         <div style={{ textAlign: 'center', padding: 40 }}>
           <p style={{ fontSize: 40, marginBottom: 16 }}>📱</p>
-          <p style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>Telegram tələb olunur</p>
-          <p style={{ fontSize: 14, color: '#64748b', marginTop: 8 }}>Bu tətbiq yalnız Telegram Mini App kimi işləyir.</p>
-          <p style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>Botdan açın: @yolustubot</p>
+          <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-main)' }}>Telegram tələb olunur</p>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 8 }}>Bu tətbiq yalnız Telegram Mini App kimi işləyir.</p>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>Botdan açın: @yolustubot</p>
         </div>
       </main>
     )
@@ -1297,6 +1227,20 @@ export default function Home() {
 
   return (
     <main style={styles.page}>
+      
+      {/* CSS Dəyişənləri (Gecə Rejimi) */}
+      <style>{`
+        :root {
+          --bg-page: #f8fafc; --bg-card: #ffffff; --bg-input: #ffffff; --bg-hover: #f1f5f9; --bg-active-ride: #eff6ff;
+          --text-main: #0f172a; --text-muted: #64748b; --border: #cbd5e1; --primary: #2563eb;
+        }
+        [data-theme='dark'] {
+          --bg-page: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a; --bg-hover: #334155; --bg-active-ride: #1e3a8a;
+          --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155; --primary: #3b82f6;
+        }
+        body { background-color: var(--bg-page); color: var(--text-main); margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
+      `}</style>
+
       <div style={styles.headerCard}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <div>
@@ -1305,7 +1249,7 @@ export default function Home() {
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {isRealAdmin && (
-              <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setActiveTab(!isAdminMode ? 'admin' : 'dashboard') }} style={{ background: isAdminMode ? '#475569' : '#7c3aed', color: '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)' }}>
+              <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setActiveTab(!isAdminMode ? 'admin' : 'dashboard') }} style={{ background: isAdminMode ? 'var(--text-muted)' : '#7c3aed', color: '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)' }}>
                 {isAdminMode ? '👤 İstifadəçi rejimi' : '👨‍💻 Admin rejimi'}
               </button>
             )}
@@ -1405,8 +1349,8 @@ export default function Home() {
             <form onSubmit={handleSubmitRide} style={styles.form}>
               {(profile?.home_address || profile?.work_address) && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                  {profile.home_address && <button type="button" onClick={() => { if(!origin) setOrigin(profile.home_address!); else if(!destination) setDestination(profile.home_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>}
-                  {profile.work_address && <button type="button" onClick={() => { if(!origin) setOrigin(profile.work_address!); else if(!destination) setDestination(profile.work_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>}
+                  {profile.home_address && <button type="button" onClick={() => { if(!origin) setOrigin(profile.home_address!); else if(!destination) setDestination(profile.home_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-main)', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>}
+                  {profile.work_address && <button type="button" onClick={() => { if(!origin) setOrigin(profile.work_address!); else if(!destination) setDestination(profile.work_address!); }} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-main)', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>}
                 </div>
               )}
               <div style={styles.fieldWrap}><label style={styles.label}>Aktiv rol</label><input value={getRoleLabel(profile.role)} readOnly style={styles.input} /></div>
@@ -1418,11 +1362,11 @@ export default function Home() {
                   <button type="button" onClick={handleGetCurrentLocationForOrigin} style={{ ...styles.secondaryButton, padding: '12px 14px' }} title="Cari Konumum">📍</button>
                   <button type="button" onClick={() => { setLocationPickerTarget('origin'); setLocationPickerOpen(true) }} style={{ ...styles.secondaryButton, padding: '12px 14px', whiteSpace: 'nowrap' }}>🗺️ Xəritə</button>
                 </div>
-                {originLat && <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>📍 {originLat.toFixed(5)}, {originLng?.toFixed(5)}</p>}
+                {originLat && <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>📍 {originLat.toFixed(5)}, {originLng?.toFixed(5)}</p>}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'center', margin: '-4px 0', position: 'relative', zIndex: 10 }}>
-                <button type="button" title="Haradan və Hara yerlərini dəyiş" onClick={() => { const tOrg = origin; const tLat = originLat; const tLng = originLng; setOrigin(destination); setOriginLat(destLat); setOriginLng(destLng); setDestination(tOrg); setDestLat(tLat); setDestLng(tLng); }} style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '50%', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: '#2563eb', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>⇅</button>
+                <button type="button" title="Haradan və Hara yerlərini dəyiş" onClick={() => { const tOrg = origin; const tLat = originLat; const tLng = originLng; setOrigin(destination); setOriginLat(destLat); setOriginLng(destLng); setDestination(tOrg); setDestLat(tLat); setDestLng(tLng); }} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '50%', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 18, color: 'var(--primary)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>⇅</button>
               </div>
 
               <div style={styles.fieldWrap}>
@@ -1431,7 +1375,7 @@ export default function Home() {
                   <input value={destination} onChange={(e) => setDestination(e.target.value)} required style={{ ...styles.input, flex: 1 }} placeholder="Məkan adı yazın və ya xəritədən seçin" />
                   <button type="button" onClick={() => { setLocationPickerTarget('destination'); setLocationPickerOpen(true) }} style={{ ...styles.secondaryButton, padding: '12px 14px', whiteSpace: 'nowrap' }}>🗺️ Xəritə</button>
                 </div>
-                {destLat && <p style={{ fontSize: 12, color: '#64748b', margin: '4px 0 0' }}>📍 {destLat.toFixed(5)}, {destLng?.toFixed(5)}</p>}
+                {destLat && <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0' }}>📍 {destLat.toFixed(5)}, {destLng?.toFixed(5)}</p>}
               </div>
 
               {locationPickerOpen && <LocationPicker title={locationPickerTarget === 'origin' ? 'Haradan — başlanğıc nöqtəsi' : 'Hara — son nöqtə'} onClose={() => setLocationPickerOpen(false)} onSelect={(lat, lng, address) => { if (locationPickerTarget === 'origin') { setOrigin(address); setOriginLat(lat); setOriginLng(lng); } else { setDestination(address); setDestLat(lat); setDestLng(lng); } setLocationPickerOpen(false); }} />}
@@ -1486,27 +1430,27 @@ export default function Home() {
       {activeTab === 'search' && (
         <>
           <section style={styles.sectionCard}>
-            <div style={{ display: 'flex', gap: 10, marginBottom: 16, background: '#f1f5f9', padding: 6, borderRadius: 12 }}>
-              <button onClick={() => setSearchView('list')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: searchView === 'list' ? '#ffffff' : 'transparent', color: searchView === 'list' ? '#0f172a' : '#64748b', boxShadow: searchView === 'list' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 16, background: 'var(--bg-hover)', padding: 6, borderRadius: 12 }}>
+              <button onClick={() => setSearchView('list')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: searchView === 'list' ? 'var(--bg-card)' : 'transparent', color: searchView === 'list' ? 'var(--text-main)' : 'var(--text-muted)', boxShadow: searchView === 'list' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: '0.2s' }}>
                 📋 Siyahı
               </button>
-              <button onClick={() => setSearchView('map')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: searchView === 'map' ? '#ffffff' : 'transparent', color: searchView === 'map' ? '#0f172a' : '#64748b', boxShadow: searchView === 'map' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
+              <button onClick={() => setSearchView('map')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: searchView === 'map' ? 'var(--bg-card)' : 'transparent', color: searchView === 'map' ? 'var(--text-main)' : 'var(--text-muted)', boxShadow: searchView === 'map' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: '0.2s' }}>
                 🗺️ Canlı Radar
               </button>
             </div>
 
             {searchView === 'map' && (
-              <div style={{ background: '#f8fafc', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden' }}>
                 {!isRadarActive ? (
                   <div style={{ textAlign: 'center', padding: '40px 10px' }}>
                     <div style={{ fontSize: 48, marginBottom: 12 }}>📡</div>
-                    <h3 style={{ margin: '0 0 8px', color: '#0f172a', fontSize: 18, fontWeight: 800 }}>Canlı Radar (5 km)</h3>
+                    <h3 style={{ margin: '0 0 8px', color: 'var(--text-main)', fontSize: 18, fontWeight: 800 }}>Canlı Radar (5 km)</h3>
                     <p style={styles.mutedText}>Cari konumunuzu tapıb ətrafınızdakı {profile?.role === 'driver' ? 'sərnişinləri' : 'sürücüləri'} görmək üçün radarı başladın.</p>
                     <button onClick={handleStartRadar} style={{ ...styles.primaryButton, marginTop: 12 }}>📍 Radarı Başlat</button>
                   </div>
                 ) : !userLocation ? (
                   <div style={{ textAlign: 'center', padding: '50px 10px', position: 'relative' }}>
-                    <div style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0, opacity: 0.05, background: 'radial-gradient(circle, #2563eb 10%, transparent 10%)', backgroundSize: '20px 20px' }} />
+                    <div style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0, opacity: 0.05, background: 'radial-gradient(circle, var(--primary) 10%, transparent 10%)', backgroundSize: '20px 20px' }} />
                     <div style={{ width: 60, height: 60, margin: '0 auto', borderRadius: '50%', background: 'rgba(37, 99, 235, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span style={{ fontSize: 24, animation: 'pulse 1s infinite' }}>📍</span>
                     </div>
@@ -1514,28 +1458,31 @@ export default function Home() {
                   </div>
                 ) : (
                   <div style={{ padding: 16 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
-                      <p style={{ margin: 0, fontWeight: 800, color: '#0f172a' }}>📍 Ətrafda tapıldı: {radarRides.length}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+                      <p style={{ margin: 0, fontWeight: 800, color: 'var(--text-main)' }}>📍 Ətrafda tapıldı: {radarUsers.length}</p>
                       <button onClick={() => {setIsRadarActive(false); setUserLocation(null);}} style={{ ...styles.ghostButton, padding: '6px 12px', fontSize: 12 }}>Yenilə</button>
                     </div>
                     
-                    {radarRides.length === 0 ? (
+                    {radarUsers.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '20px 0' }}>
                         <p style={{ fontSize: 32, margin: '0 0 10px' }}>🏜️</p>
-                        <p style={{ color: '#64748b', fontWeight: 600 }}>5 km radiusda heç kim tapılmadı.</p>
+                        <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>5 km radiusda heç kim tapılmadı.</p>
                       </div>
                     ) : (
                       <div style={{ display: 'grid', gap: 12 }}>
-                        {radarRides.map(ride => (
-                          <div key={ride.id} style={{ padding: 14, background: '#ffffff', borderRadius: 12, border: '1px solid #cbd5e1' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                              <span style={{ fontWeight: 800, color: '#2563eb' }}>{getRoleLabel(ride.role)}</span>
-                              <span style={{ fontWeight: 800, color: '#ef4444', fontSize: 13 }}>{(ride as any).distance.toFixed(1)} km aralıda</span>
+                        {radarUsers.map(user => (
+                          <div key={user.id} style={{ padding: 14, background: 'var(--bg-page)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
+                              <span style={{ fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {user.role === 'driver' ? '🚗 Sürücü' : '🧍 Sərnişin'} - {user.full_name || user.username}
+                              </span>
+                              <span style={{ fontWeight: 800, color: '#ef4444', fontSize: 13 }}>{(user as any).distance.toFixed(1)} km aralıda</span>
                             </div>
-                            <p style={{ margin: '4px 0', fontSize: 14 }}><strong>Haradan:</strong> {ride.origin}</p>
-                            <p style={{ margin: '4px 0', fontSize: 14 }}><strong>Hara:</strong> {ride.destination}</p>
-                            <p style={{ margin: '4px 0', fontSize: 14, color: '#64748b' }}>{ride.departure_time} · {ride.seats} yer</p>
-                            <button type="button" onClick={() => void handleCreateRideRequest(ride)} style={{ ...styles.primaryButton, width: '100%', padding: '8px', marginTop: 10, fontSize: 14 }}>Müraciət Et</button>
+                            <div style={styles.actionRow}>
+                              <button type="button" onClick={() => { 
+                                 alert('Tezliklə: Ətrafdakı şəxslərlə birbaşa Çat yaradıla biləcək!');
+                              }} style={{ ...styles.primaryButton, width: '100%', padding: '8px', fontSize: 14 }}>💬 Çat Aç</button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1561,8 +1508,8 @@ export default function Home() {
 
                 {(profile?.home_address || profile?.work_address) && (
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {profile.home_address && <button type="button" onClick={() => setSearchText(profile.home_address!)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>}
-                    {profile.work_address && <button type="button" onClick={() => setSearchText(profile.work_address!)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>}
+                    {profile.home_address && <button type="button" onClick={() => setSearchText(profile.home_address!)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-main)', fontWeight: 600 }}>🏠 Ev: {profile.home_address}</button>}
+                    {profile.work_address && <button type="button" onClick={() => setSearchText(profile.work_address!)} style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)', fontSize: 13, cursor: 'pointer', color: 'var(--text-main)', fontWeight: 600 }}>💼 İş: {profile.work_address}</button>}
                   </div>
                 )}
 
@@ -1599,11 +1546,11 @@ export default function Home() {
               {loading ? (
                 <p style={styles.mutedText}>Yüklənir...</p>
               ) : filteredRides.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: 16, border: '2px dashed #cbd5e1', marginTop: 20 }}>
+                  <div style={{ textAlign: 'center', padding: '40px 20px', background: 'var(--bg-hover)', borderRadius: 16, border: '2px dashed var(--border)', marginTop: 20 }}>
                     <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
-                    <h3 style={{ margin: '0 0 8px', color: '#334155', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
-                    <p style={{ margin: '0 0 16px', color: '#64748b', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
-                    <button type="button" onClick={() => setActiveTab('create')} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
+                    <h3 style={{ margin: '0 0 8px', color: 'var(--text-main)', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
+                    <p style={{ margin: '0 0 16px', color: 'var(--text-muted)', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
+                    <button type="button" onClick={() => setActiveTab('create')} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
                   </div>
                 ) : (
                   <div style={styles.ridesGrid}>
@@ -1612,8 +1559,8 @@ export default function Home() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                         <div style={{...styles.approvedBadge, margin: 0}}>Aktiv</div>
                         {driverProfilesMap[ride.driver_id] && (
-                          <div style={{ display: 'flex', gap: 10, background: '#f8fafc', padding: '4px 10px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 13 }}>
-                            <span style={{ fontWeight: 700, color: '#334155' }}>{driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}</span>
+                          <div style={{ display: 'flex', gap: 10, background: 'var(--bg-page)', padding: '4px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13 }}>
+                            <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}</span>
                             <span style={{ fontWeight: 800, color: '#eab308' }}>{renderStars(driverProfilesMap[ride.driver_id].rating)}</span>
                           </div>
                         )}
@@ -1656,11 +1603,11 @@ export default function Home() {
 
       {(activeTab === 'requests' || activeTab === 'chat') && (
         <section style={styles.sectionCard}>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 20, background: '#f1f5f9', padding: 6, borderRadius: 12 }}>
-            <button onClick={() => setActiveTab('chat')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: activeTab === 'chat' ? '#ffffff' : 'transparent', color: activeTab === 'chat' ? '#0f172a' : '#64748b', boxShadow: activeTab === 'chat' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20, background: 'var(--bg-hover)', padding: 6, borderRadius: 12 }}>
+            <button onClick={() => setActiveTab('chat')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: activeTab === 'chat' ? 'var(--bg-card)' : 'transparent', color: activeTab === 'chat' ? 'var(--text-main)' : 'var(--text-muted)', boxShadow: activeTab === 'chat' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: '0.2s' }}>
               💬 Mesajlar ({unreadTotal > 0 ? `${unreadTotal} yeni` : conversations.filter(c => c.status !== 'closed').length})
             </button>
-            <button onClick={() => setActiveTab('requests')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: activeTab === 'requests' ? '#ffffff' : 'transparent', color: activeTab === 'requests' ? '#0f172a' : '#64748b', boxShadow: activeTab === 'requests' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
+            <button onClick={() => setActiveTab('requests')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: activeTab === 'requests' ? 'var(--bg-card)' : 'transparent', color: activeTab === 'requests' ? 'var(--text-main)' : 'var(--text-muted)', boxShadow: activeTab === 'requests' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: '0.2s' }}>
               🔔 Müraciətlər ({incomingRideRequests.filter(req => req.status === 'pending' && req.ride?.status === 'active' && !isRideExpired(req.ride)).length})
             </button>
           </div>
@@ -1671,7 +1618,7 @@ export default function Home() {
                 <button type="button" onClick={() => { setReqView('incoming'); setReqStatus('active'); }} style={reqView === 'incoming' ? styles.primaryButton : styles.ghostButton}>📥 Gələnlər ({incomingRideRequests.filter(req => (req.status === 'pending' || req.status === 'accepted') && req.ride?.status === 'active' && !isRideExpired(req.ride)).length})</button>
                 <button type="button" onClick={() => { setReqView('outgoing'); setReqStatus('active'); }} style={reqView === 'outgoing' ? styles.primaryButton : styles.ghostButton}>📤 Göndərdiklərim ({outgoingRideRequests.filter(req => (req.status === 'pending' || req.status === 'accepted') && req.ride?.status === 'active' && !isRideExpired(req.ride)).length})</button>
               </div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
                 <button type="button" onClick={() => setReqStatus('active')} style={reqStatus === 'active' ? styles.chipActive : styles.chip}>🟢 Aktiv</button>
                 <button type="button" onClick={() => setReqStatus('archived')} style={reqStatus === 'archived' ? styles.chipActive : styles.chip}>🗄️ Arxiv (Tarixçə)</button>
               </div>
@@ -1682,7 +1629,7 @@ export default function Home() {
                   const filteredList = currentList.filter(req => reqStatus === 'active' ? isReqActive(req) : !isReqActive(req));
                   if (filteredList.length === 0) {
                     return (
-                      <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 10px', background: '#f8fafc', borderRadius: 16, border: '1px dashed #cbd5e1' }}>
+                      <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '30px 10px', background: 'var(--bg-page)', borderRadius: 16, border: '1px dashed var(--border)' }}>
                         <span style={{ fontSize: 40 }}>{reqStatus === 'active' ? '📬' : '🗄️'}</span>
                         <p style={{ ...styles.mutedText, marginTop: 12, fontWeight: 600 }}>{reqStatus === 'active' ? 'Göstəriləcək aktiv müraciət yoxdur.' : 'Arxiv boşdur.'}</p>
                       </div>
@@ -1691,7 +1638,7 @@ export default function Home() {
                   return filteredList.map((item) => (
                     <div key={item.id} style={{ ...styles.resultCard, opacity: reqStatus === 'archived' ? 0.75 : 1 }}>
                       <div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div>
-                      {reqStatus === 'archived' && <span style={{ marginLeft: 8, fontSize: 11, background: '#e2e8f0', padding: '4px 8px', borderRadius: 6, fontWeight: 700 }}>Vaxtı bitib</span>}
+                      {reqStatus === 'archived' && <span style={{ marginLeft: 8, fontSize: 11, background: 'var(--bg-hover)', padding: '4px 8px', borderRadius: 6, fontWeight: 700 }}>Vaxtı bitib</span>}
                       <p style={styles.infoRow}><strong>Rol:</strong> {getRoleLabel(reqView === 'incoming' ? item.requester_role : item.owner_role)}</p>
                       <p style={styles.infoRow}><strong>İstənən yer:</strong> {item.seats_requested}</p>
                       {item.message_text && <p style={styles.infoRow}><strong>Mesaj:</strong> {item.message_text}</p>}
@@ -1736,7 +1683,7 @@ export default function Home() {
                       return (
                         <div key={conv.id} style={{ ...(selectedConversationId === conv.id ? styles.conversationCardActive : styles.conversationCard), opacity: chatFilter === 'closed' ? 0.6 : 1 }} onClick={() => void handleOpenConversation(conv.id)}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                            <div style={chatFilter === 'closed' ? {...styles.badge, background: '#e2e8f0', color: '#64748b'} : styles.badge}>{chatFilter === 'closed' ? 'Bağlı' : 'Chat'} #{conv.id}</div>
+                            <div style={chatFilter === 'closed' ? {...styles.badge, background: 'var(--bg-hover)', color: 'var(--text-muted)'} : styles.badge}>{chatFilter === 'closed' ? 'Bağlı' : 'Chat'} #{conv.id}</div>
                             {conv.unread_count && chatFilter === 'active' ? <div style={styles.unreadBadge}>{conv.unread_count}</div> : null}
                           </div>
                           <p style={styles.infoRow}><strong>Marşrut:</strong> {ride ? `${ride.origin} → ${ride.destination}` : '-'}</p>
@@ -1777,12 +1724,12 @@ export default function Home() {
                       {selectedConversation.status !== 'closed' && selectedConversationRide && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                           {selectedConversationRide.origin_lat && (
-                            <a href={`http://googleusercontent.com/maps.google.com/?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <a href={`https://www.google.com/maps?q=...?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               📍 Başlanğıca get
                             </a>
                           )}
                           {selectedConversationRide.destination_lat && (
-                            <a href={`http://googleusercontent.com/maps.google.com/?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: '#e2e8f0', color: '#0f172a', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <a href={`https://www.google.com/maps?q=...?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               🏁 Son nöqtəyə get
                             </a>
                           )}
@@ -1795,7 +1742,7 @@ export default function Home() {
                         <p style={styles.infoRow}>
                           <strong>Avtomobil:</strong> {driverProfilesMap[selectedConversationRide.driver_id].carBrand} ({driverProfilesMap[selectedConversationRide.driver_id].carColor}) 
                           {' '}
-                          <span style={{ background: '#f1f5f9', padding: '3px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>
+                          <span style={{ background: 'var(--bg-hover)', padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>
                             {driverProfilesMap[selectedConversationRide.driver_id].licensePlate}
                           </span>
                         </p>
@@ -1840,7 +1787,7 @@ export default function Home() {
                         </div>
                       </>
                     ) : (
-                      <div style={{ marginTop: 16, padding: 14, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', textAlign: 'center' }}><p style={{ margin: 0, fontWeight: 700, color: '#64748b' }}>🔒 Bu çat bağlanıb. Artıq mesaj yazmaq və məkan paylaşmaq mümkün deyil.</p></div>
+                      <div style={{ marginTop: 16, padding: 14, background: 'var(--bg-hover)', borderRadius: 12, border: '1px solid var(--border)', textAlign: 'center' }}><p style={{ margin: 0, fontWeight: 700, color: 'var(--text-muted)' }}>🔒 Bu çat bağlanıb. Artıq mesaj yazmaq və məkan paylaşmaq mümkün deyil.</p></div>
                     )}
                   </>
                 )}
@@ -1927,27 +1874,32 @@ export default function Home() {
 
       {activeTab === 'profile' && (
         <section style={styles.sectionCard}>
-          <h2 style={styles.sectionTitle}>{profile ? 'Profil idarəetməsi' : 'Profil yarat'}</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{...styles.sectionTitle, margin: 0}}>{profile ? 'Profil idarəetməsi' : 'Profil yarat'}</h2>
+            <button type="button" onClick={() => setIsDarkMode(!isDarkMode)} style={{ background: 'var(--bg-hover)', border: '1px solid var(--border)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 20, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+              {isDarkMode ? '☀️ Gündüz' : '🌙 Gecə'}
+            </button>
+          </div>
 
           {profile && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', marginBottom: 24, background: profile.role === 'driver' ? '#eff6ff' : '#f0fdf4', border: `1px solid ${profile.role === 'driver' ? '#bfdbfe' : '#bbf7d0'}`, borderRadius: 14, }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', marginBottom: 24, background: profile.role === 'driver' ? 'var(--bg-active-ride)' : '#f0fdf4', border: `1px solid ${profile.role === 'driver' ? '#bfdbfe' : '#bbf7d0'}`, borderRadius: 14, }}>
               <div>
-                <p style={{ margin: 0, fontWeight: 800, fontSize: 16 }}>{profile.role === 'driver' ? '🚗 Sürücü rejimi' : '🧑‍✈️ Sərnişin rejimi'}</p>
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b' }}>{profile.role === 'driver' ? 'Elan verib sərnişin götürürsən' : 'Sürücü axtarışındasan'}</p>
+                <p style={{ margin: 0, fontWeight: 800, fontSize: 16, color: '#0f172a' }}>{profile.role === 'driver' ? '🚗 Sürücü rejimi' : '🧑‍✈️ Sərnişin rejimi'}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#475569' }}>{profile.role === 'driver' ? 'Elan verib sərnişin götürürsən' : 'Sürücü axtarışındasan'}</p>
               </div>
-              <button type="button" onClick={() => void handleSwitchRole()} style={{ padding: '10px 16px', background: profile.role === 'driver' ? '#16a34a' : '#2563eb', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', }}>{profile.role === 'driver' ? '→ Sərnişinə keç' : '→ Sürücüyə keç'}</button>
+              <button type="button" onClick={() => void handleSwitchRole()} style={{ padding: '10px 16px', background: profile.role === 'driver' ? '#16a34a' : 'var(--primary)', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', }}>{profile.role === 'driver' ? '→ Sərnişinə keç' : '→ Sürücüyə keç'}</button>
             </div>
           )}
 
           <form onSubmit={handleCreateOrUpdateProfile} style={styles.form}>
             
-            <div style={{ border: '1px solid #cbd5e1', borderRadius: 14, overflow: 'hidden' }}>
-              <button type="button" onClick={() => setProfileAccountOpen(!profileAccountOpen)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '16px 20px', border: 'none', borderBottom: profileAccountOpen ? '1px solid #cbd5e1' : 'none', fontWeight: 800, fontSize: 16, color: '#0f172a', cursor: 'pointer' }}>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+              <button type="button" onClick={() => setProfileAccountOpen(!profileAccountOpen)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-hover)', padding: '16px 20px', border: 'none', borderBottom: profileAccountOpen ? '1px solid var(--border)' : 'none', fontWeight: 800, fontSize: 16, color: 'var(--text-main)', cursor: 'pointer' }}>
                 <span>👤 Hesabım (Şəxsi Məlumatlar)</span>
                 <span style={{ transform: profileAccountOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.3s' }}>▼</span>
               </button>
               {profileAccountOpen && (
-                <div style={{ padding: '20px', background: '#ffffff', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ padding: '20px', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div style={styles.fieldWrap}>
                     <label style={styles.label}>Ad soyad</label>
                     <input value={profileFullName} onChange={(e) => setProfileFullName(e.target.value)} style={styles.input} />
@@ -1959,7 +1911,7 @@ export default function Home() {
                     </div>
                     <div style={styles.fieldWrap}>
                       <label style={styles.label}>Telefon</label>
-                      <input type="tel" value={profilePhone} onChange={handlePhoneChange} style={{ ...styles.input, letterSpacing: '1px', fontWeight: 600, color: '#1e293b' }} placeholder="+994 50 123 45 67" required />
+                      <input type="tel" value={profilePhone} onChange={handlePhoneChange} style={{ ...styles.input, letterSpacing: '1px', fontWeight: 600 }} placeholder="+994 50 123 45 67" required />
                     </div>
                   </div>
                   <div style={styles.twoColumnGrid}>
@@ -1991,13 +1943,13 @@ export default function Home() {
               )}
             </div>
 
-            <div style={{ border: '1px solid #cbd5e1', borderRadius: 14, overflow: 'hidden' }}>
-              <button type="button" onClick={() => setProfileAddressOpen(!profileAddressOpen)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '16px 20px', border: 'none', borderBottom: profileAddressOpen ? '1px solid #cbd5e1' : 'none', fontWeight: 800, fontSize: 16, color: '#0f172a', cursor: 'pointer' }}>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+              <button type="button" onClick={() => setProfileAddressOpen(!profileAddressOpen)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-hover)', padding: '16px 20px', border: 'none', borderBottom: profileAddressOpen ? '1px solid var(--border)' : 'none', fontWeight: 800, fontSize: 16, color: 'var(--text-main)', cursor: 'pointer' }}>
                 <span>📍 Ünvanlarım (Sürətli Seçim)</span>
                 <span style={{ transform: profileAddressOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.3s' }}>▼</span>
               </button>
               {profileAddressOpen && (
-                <div style={{ padding: '20px', background: '#ffffff', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ padding: '20px', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div style={styles.twoColumnGrid}>
                     <div style={styles.fieldWrap}>
                       <label style={styles.label}>🏠 Ev ünvanı</label>
@@ -2012,14 +1964,14 @@ export default function Home() {
               )}
             </div>
 
-            <div style={{ border: '1px solid #cbd5e1', borderRadius: 14, overflow: 'hidden' }}>
-              <button type="button" onClick={() => setProfileDriverOpen(!profileDriverOpen)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '16px 20px', border: 'none', borderBottom: profileDriverOpen ? '1px solid #cbd5e1' : 'none', fontWeight: 800, fontSize: 16, color: '#0f172a', cursor: 'pointer' }}>
+            <div style={{ border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+              <button type="button" onClick={() => setProfileDriverOpen(!profileDriverOpen)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-hover)', padding: '16px 20px', border: 'none', borderBottom: profileDriverOpen ? '1px solid var(--border)' : 'none', fontWeight: 800, fontSize: 16, color: 'var(--text-main)', cursor: 'pointer' }}>
                 <span>🚗 Sürücü Məlumatları</span>
                 <span style={{ transform: profileDriverOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.3s' }}>▼</span>
               </button>
               {profileDriverOpen && (
-                <div style={{ padding: '20px', background: '#ffffff', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <p style={{ margin: '0 0 4px', fontSize: 13, color: '#64748b' }}>Sürücü roluna keçmək istəyirsinizsə bu məlumatlar məcburidir.</p>
+                <div style={{ padding: '20px', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--text-muted)' }}>Sürücü roluna keçmək istəyirsinizsə bu məlumatlar məcburidir.</p>
                   <div style={styles.twoColumnGrid}>
                     <div style={styles.fieldWrap}>
                       <label style={styles.label}>Avtomobil markası</label>
@@ -2042,11 +1994,11 @@ export default function Home() {
               <button type="submit" disabled={profileSaving} style={{...styles.primaryButton, width: '100%', padding: '14px', marginTop: 10}}>{profileSaving ? 'Yadda saxlanılır...' : profile ? 'Dəyişiklikləri Yadda Saxla' : 'Profili yarat'}</button>
             </div>
             
-            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <button type="button" onClick={() => { setActiveTab('history'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: '#f8fafc', color: '#334155', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <button type="button" onClick={() => { setActiveTab('history'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: 'var(--bg-hover)', color: 'var(--text-main)', padding: 14, borderRadius: 12, border: '1px solid var(--border)', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
                 🕒 Keçmiş Səfərlərim (Tarixçə)
               </button>
-              <button type="button" onClick={() => { setActiveTab('support'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: '#f8fafc', color: '#334155', padding: 14, borderRadius: 12, border: '1px solid #cbd5e1', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+              <button type="button" onClick={() => { setActiveTab('support'); window.scrollTo({ top: 0 }); }} style={{ width: '100%', background: 'var(--bg-hover)', color: 'var(--text-main)', padding: 14, borderRadius: 12, border: '1px solid var(--border)', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
                 🎧 Dəstək və Əlaqə
               </button>
             </div>
@@ -2078,7 +2030,7 @@ export default function Home() {
               </div>
               <div style={styles.statsGrid}>
                 {[ { label: 'Cəmi İstifadəçi', value: adminUsers.length, color: '#2563eb' }, { label: 'Cəmi Elan', value: allRidesAdmin.length, color: '#0891b2' }, { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' }, { label: 'Cəmi Mesaj', value: allMessagesAdmin.length, color: '#059669' }, { label: 'Cəmi Review', value: allReviewsAdmin.length, color: '#d97706' }, { label: 'Cəmi Report', value: adminReports.length, color: '#dc2626' }, ].map(item => (
-                  <div key={item.label} style={styles.adminStatsCard}><p style={styles.statLabel}>{item.label}</p><p style={{ ...styles.statValue, color: item.color }}>{item.value}</p><div style={{ marginTop: 8, height: 5, borderRadius: 4, background: '#e2e8f0' }}><div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} /></div></div>
+                  <div key={item.label} style={styles.adminStatsCard}><p style={styles.statLabel}>{item.label}</p><p style={{ ...styles.statValue, color: item.color }}>{item.value}</p><div style={{ marginTop: 8, height: 5, borderRadius: 4, background: 'var(--border)' }}><div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} /></div></div>
                 ))}
               </div>
               <div style={{ marginTop: 20, padding: 16, background: '#faf5ff', borderRadius: 14, border: '1px solid #e9d5ff' }}>
@@ -2097,12 +2049,12 @@ export default function Home() {
               </div>
               {adminAuditLogs.length > 0 && (
                 <div style={{ marginTop: 20 }}>
-                  <p style={{ fontWeight: 800, fontSize: 15, marginBottom: 10, color: '#334155' }}>🕐 Son fəaliyyət</p>
+                  <p style={{ fontWeight: 800, fontSize: 15, marginBottom: 10, color: 'var(--text-main)' }}>🕐 Son fəaliyyət</p>
                   <div style={{ display: 'grid', gap: 8 }}>
                     {adminAuditLogs.slice(0, 5).map(log => (
-                      <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 13 }}>
+                      <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-page)', borderRadius: 10, border: '1px solid var(--border)', fontSize: 13 }}>
                         <span><strong style={{ color: '#7c3aed' }}>{log.action_type}</strong>{' · '}{log.entity_type}{log.note ? ` · ${log.note}` : ''}</span>
-                        <span style={{ color: '#64748b', whiteSpace: 'nowrap', marginLeft: 12 }}>{formatDateTime(log.created_at)}</span>
+                        <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', marginLeft: 12 }}>{formatDateTime(log.created_at)}</span>
                       </div>
                     ))}
                   </div>
@@ -2148,7 +2100,7 @@ export default function Home() {
                   const title = status === 'active' ? '🟢 Aktiv' : status === 'full' ? '🔒 Bağlı (Full)' : status === 'completed' ? '✅ Tamamlanmış' : '❌ Ləğv edilmiş'
                   return (
                     <div key={status} style={{ marginBottom: 28 }}>
-                      <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>{title} ({group.length})</h3>
+                      <h3 style={{ fontSize: 16, color: 'var(--text-main)', paddingBottom: 8, borderBottom: '2px solid var(--border)', marginBottom: 16 }}>{title} ({group.length})</h3>
                       <div style={styles.ridesGrid}>
                         {group.map((ride) => (
                           <div key={ride.id} style={styles.adminCard}>
@@ -2200,7 +2152,7 @@ export default function Home() {
                   const title = status === 'pending' ? '⏳ Gözləyən' : status === 'accepted' ? '✅ Qəbul edilmiş' : status === 'rejected' ? '🚫 Rədd edilmiş' : '❌ Ləğv edilmiş'
                   return (
                     <div key={status} style={{ marginBottom: 28 }}>
-                      <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>{title} ({group.length})</h3>
+                      <h3 style={{ fontSize: 16, color: 'var(--text-main)', paddingBottom: 8, borderBottom: '2px solid var(--border)', marginBottom: 16 }}>{title} ({group.length})</h3>
                       <div style={styles.ridesGrid}>
                         {group.map((item) => (
                           <div key={item.id} style={styles.adminCard}>
@@ -2243,7 +2195,7 @@ export default function Home() {
                 const title = status === 'active' ? '🟢 Aktiv Çatlar' : '🔒 Arxiv (Bağlı)'
                 return (
                   <div key={status} style={{ marginBottom: 28 }}>
-                    <h3 style={{ fontSize: 16, color: '#334155', paddingBottom: 8, borderBottom: '2px solid #e2e8f0', marginBottom: 16 }}>{title} ({group.length})</h3>
+                    <h3 style={{ fontSize: 16, color: 'var(--text-main)', paddingBottom: 8, borderBottom: '2px solid var(--border)', marginBottom: 16 }}>{title} ({group.length})</h3>
                     <div style={styles.ridesGrid}>
                       {group.map((conv) => (
                         <div key={conv.id} style={styles.adminCard}>
