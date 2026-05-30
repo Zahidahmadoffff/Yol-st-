@@ -112,6 +112,7 @@ function roundToNextMinutes(date: Date, step = 5) { const d = new Date(date); d.
 function formatDateTime(value: string | null | undefined) { if (!value) return '-'; try { return new Date(value).toLocaleString() } catch { return String(value) } }
 function normalizeText(value: string | null | undefined) { return (value || '').toLowerCase().trim() }
 function getRoleLabel(role: UserRole | null) { return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
+function getAppRoleLabel(role: AppRole) { if (role === 'admin') return 'Admin'; return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
 
 function getRequestStatusLabel(status: RideRequestStatus) { if (status === 'accepted') return 'Qəbul edildi'; if (status === 'rejected') return 'Rədd edildi'; if (status === 'cancelled') return 'Ləğv edildi'; return 'Gözləmədə' }
 function getRequestBadgeStyle(status: RideRequestStatus) { if (status === 'accepted') return styles.approvedBadge; if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge; return styles.pendingBadge }
@@ -413,10 +414,10 @@ export default function Home() {
   // BÜTÜN KÖHNƏ ELANLARI BAZADA TƏMİZLƏYƏN FUNKSİYA
   async function runGlobalCleanup() {
     try {
-      const { data: activeRides } = await supabase.from('ride_listings').select('id, ride_date, departure_time').eq('status', 'active');
+      const { data: activeRides } = await supabase.from('ride_listings').select('*').eq('status', 'active');
       if (!activeRides) return;
       
-      const toUpdateIds = activeRides.filter(isRideExpired).map(r => r.id);
+      const toUpdateIds = activeRides.filter((r: any) => isRideExpired(r)).map(r => r.id);
       if (toUpdateIds.length > 0) {
         await supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired_system' }).in('id', toUpdateIds);
         await supabase.from('ride_requests').update({ status: 'cancelled' }).in('ride_id', toUpdateIds).in('status', ['pending', 'accepted']);
@@ -487,7 +488,14 @@ export default function Home() {
     const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
     if (error) { console.error('Ride list error:', error); setMessage('Aktiv elanlar yüklənmədi.') } else {
       const rows = (data as Ride[]) || []
-      const validRows = rows.filter(r => !isRideExpired(r));
+      const validRows = [];
+      for (const r of rows) {
+        if (isRideExpired(r)) {
+          supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired_system' }).eq('id', r.id).then();
+        } else {
+          validRows.push(r);
+        }
+      }
       setRides(validRows)
 
       const driverIds = [...new Set(validRows.map((r) => r.driver_id))]
@@ -891,7 +899,7 @@ export default function Home() {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps/dir/?api=1&destination=...?q=${lat},${lng}`;
+        const locMsg = `📍 Konum göndərildi: http://googleusercontent.com/maps.google.com/?q=${lat},${lng}`;
 
         const { error } = await supabase.from('messages').insert({ conversation_id: selectedConversationId!, sender_id: currentUser.driverId, message_text: locMsg, is_read: false });
 
@@ -1089,7 +1097,7 @@ export default function Home() {
     })
   }, [rides, searchText, filterRole, filterDate, isAdmin, driverProfilesMap, profile?.gender])
 
-  // DÜZƏLDİLDİ: Radar məntiqi (Radius 15 km qaldırıldı və hamını tapır)
+  // DÜZƏLDİLDİ: Radar məntiqi (Hamını tapır, 15km)
   const handleStartRadar = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız GPS dəstəkləmir.'); return; }
     setIsRadarActive(true);
@@ -1103,7 +1111,6 @@ export default function Home() {
           await supabase.from('profiles').update({ last_lat: lat, last_lng: lng }).eq('id', currentUser.driverId);
         }
 
-        // Bütün profilləri (özümüz xaric) axtarırıq
         const { data } = await supabase.from('profiles').select('*').neq('id', currentUser.driverId);
         
         if (data) {
@@ -1113,9 +1120,9 @@ export default function Home() {
               if (isNaN(uLat) || isNaN(uLng) || uLat === 0 || uLng === 0) return false;
               
               const dist = getDistance(lat, lng, uLat, uLng);
-              return dist <= 15; // 15 km Radius
+              return dist <= 15; 
            }).map(u => ({ ...u, distance: getDistance(lat, lng, Number(u.last_lat), Number(u.last_lng)) }))
-           .sort((a,b) => (a as any).distance - (b as any).distance);
+           .sort((a,b) => a.distance - b.distance);
            
            setRadarUsers(nearby);
         }
@@ -1181,15 +1188,15 @@ export default function Home() {
   return (
     <main style={styles.page}>
       
-      {/* YENİ: CSS Dəyişənləri (Gecə Rejimi) */}
+      {/* ── PREMIUM AĞ-QARA-QIZILI (GOLD) DİZAYN ── */}
       <style>{`
         :root {
-          --bg-page: #f8fafc; --bg-card: #ffffff; --bg-input: #ffffff; --bg-hover: #f1f5f9; --bg-active-ride: #eff6ff;
-          --text-main: #0f172a; --text-muted: #64748b; --border: #cbd5e1; --primary: #2563eb;
+          --bg-page: #f8fafc; --bg-card: #ffffff; --bg-input: #ffffff; --bg-hover: #f1f5f9; --bg-active-ride: #fffbeb;
+          --text-main: #0f172a; --text-muted: #64748b; --border: #cbd5e1; --primary: #d4af37; --primary-text: #ffffff; --shadow: 0 4px 14px rgba(0,0,0,0.06);
         }
         [data-theme='dark'] {
-          --bg-page: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a; --bg-hover: #334155; --bg-active-ride: #1e3a8a;
-          --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155; --primary: #3b82f6;
+          --bg-page: #000000; --bg-card: #111111; --bg-input: #1a1a1a; --bg-hover: #222222; --bg-active-ride: #1a1500;
+          --text-main: #f8fafc; --text-muted: #94a3b8; --border: #333333; --primary: #d4af37; --primary-text: #000000; --shadow: 0 4px 14px rgba(212,175,55,0.05);
         }
         body { background-color: var(--bg-page); color: var(--text-main); margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
       `}</style>
@@ -1198,15 +1205,15 @@ export default function Home() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <div>
             <h1 style={styles.title}>Yolüstü</h1>
-            <p style={styles.subtitle}>Bakıda sürücü və sərnişinləri birləşdirən icma platforma.</p>
+            <p style={styles.subtitle}>Sürücü və sərnişinləri birləşdirən <span style={{color: 'var(--primary)', fontWeight: 800}}>Premium</span> platforma.</p>
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             {isRealAdmin && (
-              <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setActiveTab(!isAdminMode ? 'admin' : 'dashboard') }} style={{ background: isAdminMode ? 'var(--bg-hover)' : '#7c3aed', color: isAdminMode ? 'var(--text-main)' : '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(124, 58, 237, 0.4)' }}>
-                {isAdminMode ? '👤 İstifadəçi rejimi' : '👨‍💻 Admin rejimi'}
+              <button type="button" onClick={() => { setIsAdminMode(!isAdminMode); setActiveTab(!isAdminMode ? 'admin' : 'dashboard') }} style={{ background: isAdminMode ? 'var(--bg-hover)' : 'var(--text-main)', color: isAdminMode ? 'var(--text-main)' : 'var(--bg-page)', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', boxShadow: 'var(--shadow)' }}>
+                {isAdminMode ? '👤 User rejimi' : '👨‍💻 Admin rejimi'}
               </button>
             )}
-            <button type="button" onClick={() => void handleSOS()} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)', animation: 'pulse 2s infinite' }}>
+            <button type="button" onClick={() => void handleSOS()} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 900, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: 'var(--shadow)', animation: 'pulse 2s infinite' }}>
               🚨 SOS
             </button>
           </div>
@@ -1257,7 +1264,7 @@ export default function Home() {
               </div>
               <div style={{ ...styles.statsCard, cursor: 'default' }}>
                 <p style={styles.statLabel}>Reytinqim</p>
-                <p style={{ ...styles.statValue, color: '#eab308', fontSize: 18 }}>{renderStars(reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0')}</p>
+                <p style={{ ...styles.statValue, color: 'var(--primary)', fontSize: 18 }}>{renderStars(reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length).toFixed(1) : '5.0')}</p>
               </div>
             </div>
           </section>
@@ -1365,9 +1372,9 @@ export default function Home() {
               <div style={styles.fieldWrap}><label style={styles.label}>Qeyd</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} style={styles.textarea} /></div>
 
               {profile?.gender === 'female' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#fdf4ff', border: '1px solid #f0abfc', borderRadius: 12, marginTop: 4, marginBottom: 14 }}>
-                  <input type="checkbox" id="womenOnly" checked={womenOnly} onChange={(e) => setWomenOnly(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#d946ef', cursor: 'pointer' }} />
-                  <label htmlFor="womenOnly" style={{ fontSize: 14, fontWeight: 700, color: '#a21caf', cursor: 'pointer', margin: 0 }}>🌸 Yalnız qadınlar üçün (Kişilər bu elanı axtarışda görə bilməyəcək)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 12, marginTop: 4, marginBottom: 14 }}>
+                  <input type="checkbox" id="womenOnly" checked={womenOnly} onChange={(e) => setWomenOnly(e.target.checked)} style={{ width: 18, height: 18, accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                  <label htmlFor="womenOnly" style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)', cursor: 'pointer', margin: 0 }}>🌸 Yalnız qadınlar üçün (Kişilər bu elanı axtarışda görə bilməyəcək)</label>
                 </div>
               )}
 
@@ -1404,7 +1411,7 @@ export default function Home() {
                 ) : !userLocation ? (
                   <div style={{ textAlign: 'center', padding: '50px 10px', position: 'relative' }}>
                     <div style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0, opacity: 0.05, background: 'radial-gradient(circle, var(--primary) 10%, transparent 10%)', backgroundSize: '20px 20px' }} />
-                    <div style={{ width: 60, height: 60, margin: '0 auto', borderRadius: '50%', background: 'rgba(37, 99, 235, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 60, height: 60, margin: '0 auto', borderRadius: '50%', background: 'rgba(212, 175, 55, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span style={{ fontSize: 24, animation: 'pulse 1s infinite' }}>📍</span>
                     </div>
                     <p style={{ ...styles.mutedText, marginTop: 16, fontWeight: 700 }}>Konumunuz tapılır...</p>
@@ -1426,10 +1433,10 @@ export default function Home() {
                         {radarUsers.map(user => (
                           <div key={user.id} style={{ padding: 14, background: 'var(--bg-page)', borderRadius: 12, border: '1px solid var(--border)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
-                              <span style={{ fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 6 }}>
                                 {user.role === 'driver' ? '🚗 Sürücü' : '🧍 Sərnişin'} - {user.full_name || user.username}
                               </span>
-                              <span style={{ fontWeight: 800, color: '#ef4444', fontSize: 13 }}>{(user as any).distance.toFixed(1)} km aralıda</span>
+                              <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: 13 }}>{(user as any).distance.toFixed(1)} km aralıda</span>
                             </div>
                             <div style={styles.actionRow}>
                               <button type="button" onClick={() => { 
@@ -1451,7 +1458,7 @@ export default function Home() {
                   <button type="button" onClick={() => setFilterDate(toDateInputValue(new Date()))} style={styles.chip}>📅 Bu gün</button>
                   <button type="button" onClick={() => setFilterRole('driver')} style={styles.chip}>🚗 Sürücü axtarıram</button>
                   <button type="button" onClick={() => setFilterRole('passenger')} style={styles.chip}>🧍 Sərnişin axtarıram</button>
-                  {profile?.gender === 'female' && <button type="button" onClick={() => setFilterGender('female')} style={{...styles.chip, background: '#fdf4ff', color: '#a21caf', borderColor: '#f0abfc'}}>🌸 Yalnız qadınlar</button>}
+                  {profile?.gender === 'female' && <button type="button" onClick={() => setFilterGender('female')} style={{...styles.chip, background: 'var(--bg-hover)', color: 'var(--primary)', borderColor: 'var(--primary)'}}>🌸 Yalnız qadınlar</button>}
                 </div>
 
                 <div style={styles.fieldWrap}>
@@ -1503,7 +1510,7 @@ export default function Home() {
                     <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
                     <h3 style={{ margin: '0 0 8px', color: 'var(--text-main)', fontSize: 18, fontWeight: 800 }}>Heç nə tapılmadı</h3>
                     <p style={{ margin: '0 0 16px', color: 'var(--text-muted)', fontSize: 14 }}>Bu filterlərə və ya marşruta uyğun hələ ki, elan yoxdur.</p>
-                    <button type="button" onClick={() => setActiveTab('create')} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
+                    <button type="button" onClick={() => setActiveTab('create')} style={{ background: 'var(--text-main)', color: 'var(--bg-page)', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>🚀 İlk Elanı Sən Yarat!</button>
                   </div>
                 ) : (
                   <div style={styles.ridesGrid}>
@@ -1514,7 +1521,7 @@ export default function Home() {
                         {driverProfilesMap[ride.driver_id] && (
                           <div style={{ display: 'flex', gap: 10, background: 'var(--bg-page)', padding: '4px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13 }}>
                             <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{driverProfilesMap[ride.driver_id].gender === 'female' ? '👩' : '👨'} {driverProfilesMap[ride.driver_id].name}</span>
-                            <span style={{ fontWeight: 800, color: '#eab308' }}>{renderStars(driverProfilesMap[ride.driver_id].rating)}</span>
+                            <span style={{ fontWeight: 800, color: 'var(--primary)' }}>{renderStars(driverProfilesMap[ride.driver_id].rating)}</span>
                           </div>
                         )}
                       </div>
@@ -1674,15 +1681,16 @@ export default function Home() {
                       <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
                       <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
                       
+                      {/* DÜZƏLDİLDİ: Rəsmi Google Maps Linkləri */}
                       {selectedConversation.status !== 'closed' && selectedConversationRide && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                           {selectedConversationRide.origin_lat && (
-                            <a href={`https://www.google.com/maps/dir/?api=1&destination=...?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps/search/?api=1&query={selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               📍 Başlanğıca get
                             </a>
                           )}
                           {selectedConversationRide.destination_lat && (
-                            <a href={`https://www.google.com/maps/dir/?api=1&destination=...?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps/search/?api=1&query={selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               🏁 Son nöqtəyə get
                             </a>
                           )}
@@ -1840,7 +1848,7 @@ export default function Home() {
                 <p style={{ margin: 0, fontWeight: 800, fontSize: 16, color: 'var(--text-main)' }}>{profile.role === 'driver' ? '🚗 Sürücü rejimi' : '🧑‍✈️ Sərnişin rejimi'}</p>
                 <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>{profile.role === 'driver' ? 'Elan verib sərnişin götürürsən' : 'Sürücü axtarışındasan'}</p>
               </div>
-              <button type="button" onClick={() => void handleSwitchRole()} style={{ padding: '10px 16px', background: profile.role === 'driver' ? '#16a34a' : 'var(--primary)', color: 'var(--primary-text)', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', }}>{profile.role === 'driver' ? '→ Sərnişinə keç' : '→ Sürücüyə keç'}</button>
+              <button type="button" onClick={() => void handleSwitchRole()} style={{ padding: '10px 16px', background: profile.role === 'driver' ? '#16a34a' : 'var(--text-main)', color: 'var(--bg-page)', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', }}>{profile.role === 'driver' ? '→ Sərnişinə keç' : '→ Sürücüyə keç'}</button>
             </div>
           )}
 
