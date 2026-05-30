@@ -19,52 +19,12 @@ type TabType = 'dashboard' | 'create' | 'search' | 'requests' | 'chat' | 'histor
 type AdminSection = 'overview' | 'users' | 'rides' | 'requests' | 'conversations' | 'messages' | 'reviews' | 'reports' | 'audit'
 
 type Ride = {
-  id: string
-  driver_id: number
-  origin: string
-  destination: string
-  origin_lat?: number | null
-  origin_lng?: number | null
-  destination_lat?: number | null
-  destination_lng?: number | null
-  ride_date: string | null
-  departure_time: string
-  seats: number
-  price_per_seat: number
-  notes: string | null
-  status: RideStatus
-  role: UserRole | null
-  women_only?: boolean
-  created_at?: string
-  updated_at?: string
-  completed_at?: string | null
-  closed_reason?: string | null
+  id: string; driver_id: number; origin: string; destination: string; origin_lat?: number | null; origin_lng?: number | null; destination_lat?: number | null; destination_lng?: number | null; ride_date: string | null; departure_time: string; seats: number; price_per_seat: number; notes: string | null; status: RideStatus; role: UserRole | null; women_only?: boolean; created_at?: string; updated_at?: string; completed_at?: string | null; closed_reason?: string | null;
 }
-
 type Profile = {
-  id: number
-  full_name: string | null
-  username: string | null
-  phone: string | null
-  bio: string | null
-  role: UserRole
-  gender?: 'male' | 'female'
-  home_address?: string | null
-  work_address?: string | null
-  car_brand: string | null
-  license_plate: string | null
-  car_color?: string | null
-  is_blocked?: boolean
-  admin_note?: string | null
-  last_seen_at?: string | null
-  last_lat?: number | null
-  last_lng?: number | null
+  id: number; full_name: string | null; username: string | null; phone: string | null; bio: string | null; role: UserRole; gender?: 'male' | 'female'; home_address?: string | null; work_address?: string | null; car_brand: string | null; license_plate: string | null; car_color?: string | null; is_blocked?: boolean; admin_note?: string | null; last_seen_at?: string | null; last_lat?: number | null; last_lng?: number | null;
 }
-
-type RideRequest = {
-  id: number; ride_id: string; requester_id: number; owner_id: number; requester_role: UserRole; owner_role: UserRole; message_text: string | null; seats_requested: number; status: RideRequestStatus; created_at: string; updated_at: string
-}
-
+type RideRequest = { id: number; ride_id: string; requester_id: number; owner_id: number; requester_role: UserRole; owner_role: UserRole; message_text: string | null; seats_requested: number; status: RideRequestStatus; created_at: string; updated_at: string }
 type RideRequestWithRide = RideRequest & { ride?: Ride | null }
 type Conversation = { id: number; ride_id: string; request_id: number | null; driver_user_id: number; passenger_user_id: number; status: ConversationStatus; created_at: string; updated_at: string }
 type ConversationWithMeta = Conversation & { ride?: Ride | null; unread_count?: number }
@@ -77,74 +37,71 @@ type AdminAuditLog = { id: number; admin_user_id: number; action_type: string; e
 
 const LIMITS = { messageMax: 1000, rideRequestMessageMax: 1000, reviewCommentMax: 1000, notesMax: 2000, adminNoteMax: 2000, reportReasonMax: 300, reportDetailsMax: 2000 }
 
-// CSS Dəyişənləri və Yeni Admin Cədvəl Stilləri
+// CSS Dəyişənləri və PREMIUM Dizayn Stilləri
 const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', background: 'var(--bg-page)', minHeight: '100dvh', color: 'var(--text-main)', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent', transition: 'background 0.3s, color 0.3s' },
-  headerCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, padding: 22, marginBottom: 18, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)', transition: 'background 0.3s' },
-  title: { margin: 0, fontSize: 30, fontWeight: 800, color: 'var(--text-main)' },
-  subtitle: { marginTop: 8, marginBottom: 0, color: 'var(--text-muted)', fontSize: 15, lineHeight: 1.5 },
+  page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', minHeight: '100dvh', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent' },
+  headerCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 22, marginBottom: 18, boxShadow: 'var(--shadow)', transition: 'background 0.3s' },
+  title: { margin: 0, fontSize: 32, fontWeight: 900, color: 'var(--text-main)', letterSpacing: '-0.5px' },
+  subtitle: { marginTop: 6, marginBottom: 0, color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.5, fontWeight: 500 },
   topTabs: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 },
-  tabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700, fontSize: 14, transition: '0.2s' },
-  activeTabButton: { padding: '10px 14px', borderRadius: 999, border: '1px solid var(--primary)', background: 'var(--primary)', color: '#ffffff', cursor: 'pointer', fontWeight: 700, fontSize: 14, transition: '0.2s', boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)' },
-  adminTabButton: { padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap' },
-  adminActiveTabButton: { padding: '8px 12px', borderRadius: 8, border: '1px solid var(--primary)', background: 'var(--primary)', color: '#ffffff', cursor: 'pointer', fontWeight: 800, fontSize: 13, whiteSpace: 'nowrap' },
-  sectionCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 18, padding: 20, marginBottom: 18, boxShadow: '0 3px 14px rgba(0, 0, 0, 0.03)', transition: 'background 0.3s' },
-  sectionTitle: { marginTop: 0, marginBottom: 16, fontSize: 22, fontWeight: 800, color: 'var(--text-main)' },
+  tabButton: { padding: '10px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700, fontSize: 13, transition: '0.2s' },
+  activeTabButton: { padding: '10px 16px', borderRadius: 12, border: '1px solid var(--primary)', background: 'var(--primary)', color: 'var(--primary-text)', cursor: 'pointer', fontWeight: 800, fontSize: 13, transition: '0.2s', boxShadow: '0 4px 14px rgba(212, 175, 55, 0.3)' },
+  adminTabButton: { padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' },
+  adminActiveTabButton: { padding: '8px 12px', borderRadius: 8, border: '1px solid var(--text-main)', background: 'var(--text-main)', color: 'var(--bg-page)', cursor: 'pointer', fontWeight: 800, fontSize: 12, whiteSpace: 'nowrap' },
+  sectionCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20, marginBottom: 18, boxShadow: 'var(--shadow)', transition: 'background 0.3s' },
+  sectionTitle: { marginTop: 0, marginBottom: 16, fontSize: 20, fontWeight: 800, color: 'var(--text-main)' },
   form: { display: 'grid', gap: 14 },
   fieldWrap: { display: 'grid', gap: 6 },
-  label: { fontSize: 14, fontWeight: 700, color: 'var(--text-main)' },
-  input: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: 15, outline: 'none', boxSizing: 'border-box', transition: 'border 0.2s' },
-  select: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: 15, outline: 'none', boxSizing: 'border-box' },
-  textarea: { width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: 15, outline: 'none', boxSizing: 'border-box', resize: 'vertical' },
-  primaryButton: { padding: '12px 16px', background: 'var(--primary)', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800, boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)' },
-  secondaryButton: { padding: '10px 14px', background: 'var(--bg-hover)', color: 'var(--text-main)', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 14, fontWeight: 700 },
-  ghostButton: { padding: '10px 14px', background: 'transparent', color: 'var(--text-main)', border: '1px solid var(--border)', borderRadius: 12, cursor: 'pointer', fontSize: 14, fontWeight: 700 },
-  successButton: { padding: '10px 14px', background: '#16a34a', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
-  dangerButton: { padding: '10px 14px', background: '#dc2626', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
-  warningButton: { padding: '10px 14px', background: '#f59e0b', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
-  closeButton: { padding: '10px 14px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
-  cancelButton: { padding: '12px 16px', background: '#94a3b8', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800 },
-  message: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#dbeafe', color: '#1e3a8a', border: '1px solid #bfdbfe', fontSize: 14 },
-  adminMessage: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe', fontSize: 14 },
+  label: { fontSize: 13, fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.5px' },
+  input: { width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: 15, outline: 'none', boxSizing: 'border-box', transition: 'border 0.2s' },
+  select: { width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: 15, outline: 'none', boxSizing: 'border-box' },
+  textarea: { width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-main)', fontSize: 15, outline: 'none', boxSizing: 'border-box', resize: 'vertical' },
+  primaryButton: { padding: '14px 18px', background: 'var(--primary)', color: 'var(--primary-text)', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800, boxShadow: '0 4px 12px rgba(212, 175, 55, 0.25)', textTransform: 'uppercase' },
+  secondaryButton: { padding: '12px 16px', background: 'var(--bg-hover)', color: 'var(--text-main)', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 14, fontWeight: 700 },
+  ghostButton: { padding: '10px 14px', background: 'transparent', color: 'var(--text-main)', border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700 },
+  successButton: { padding: '10px 14px', background: '#10b981', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 800 },
+  dangerButton: { padding: '10px 14px', background: '#ef4444', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 800 },
+  warningButton: { padding: '10px 14px', background: 'var(--primary)', color: 'var(--primary-text)', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 800 },
+  closeButton: { padding: '10px 14px', background: 'var(--text-main)', color: 'var(--bg-page)', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 800 },
+  cancelButton: { padding: '14px 18px', background: 'var(--bg-hover)', color: 'var(--text-main)', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800 },
+  message: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: 'var(--bg-active-ride)', color: 'var(--primary-text)', border: '1px solid var(--primary)', fontSize: 14 },
   ridesGrid: { display: 'grid', gap: 16 },
   statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' },
   twoColumnGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' },
-  statsCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.2s', },
-  adminStatsCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)' },
-  statLabel: { margin: 0, fontSize: 13, color: 'var(--text-muted)', fontWeight: 700 },
-  statValue: { margin: '8px 0 0', fontSize: 26, color: 'var(--text-main)', fontWeight: 800 },
-  myRideCard: { border: '1px solid var(--primary)', borderRadius: 16, padding: 16, background: 'var(--bg-active-ride)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(37, 99, 235, 0.08)' },
-  resultCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', color: 'var(--text-main)', boxShadow: '0 1px 6px rgba(0, 0, 0, 0.04)' },
+  statsCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 16, background: 'var(--bg-card)', cursor: 'pointer', boxShadow: 'var(--shadow)', transition: 'transform 0.2s' },
+  adminStatsCard: { border: '1px solid var(--border)', borderRadius: 12, padding: 16, background: 'var(--bg-card)' },
+  statLabel: { margin: 0, fontSize: 12, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' },
+  statValue: { margin: '8px 0 0', fontSize: 26, color: 'var(--text-main)', fontWeight: 900 },
+  myRideCard: { border: '2px solid var(--primary)', borderRadius: 16, padding: 18, background: 'var(--bg-card)', color: 'var(--text-main)', boxShadow: 'var(--shadow)' },
+  resultCard: { border: '1px solid var(--border)', borderRadius: 16, padding: 18, background: 'var(--bg-card)', color: 'var(--text-main)', boxShadow: 'var(--shadow)' },
   infoRow: { margin: '6px 0', color: 'var(--text-main)', lineHeight: 1.5 },
   mutedText: { color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.5 },
   chipRow: { display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, marginBottom: 10 },
-  chip: { padding: '8px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' },
-  chipActive: { padding: '8px 12px', borderRadius: 999, border: '1px solid var(--primary)', background: 'var(--primary)', color: '#ffffff', cursor: 'pointer', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap' },
-  buttonRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 4 },
-  actionRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 },
-  badge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: 'var(--bg-hover)', color: 'var(--text-main)' },
-  pendingBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef3c7', color: '#92400e' },
-  approvedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#dcfce7', color: '#166534' },
-  rejectedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fee2e2', color: '#991b1b' },
-  fullBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#ede9fe', color: '#5b21b6' },
-  completedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#d1fae5', color: '#065f46' },
-  warningBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef9c3', color: '#b45309' }, 
+  chip: { padding: '8px 14px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' },
+  chipActive: { padding: '8px 14px', borderRadius: 999, border: '1px solid var(--primary)', background: 'var(--primary)', color: 'var(--primary-text)', cursor: 'pointer', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap' },
+  actionRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 },
+  badge: { display: 'inline-block', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 800, marginBottom: 8, background: 'var(--bg-hover)', color: 'var(--text-main)', textTransform: 'uppercase' },
+  pendingBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 800, marginBottom: 8, background: 'var(--bg-active-ride)', color: 'var(--primary)', textTransform: 'uppercase' },
+  approvedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 800, marginBottom: 8, background: '#10b981', color: '#ffffff', textTransform: 'uppercase' },
+  rejectedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 800, marginBottom: 8, background: '#ef4444', color: '#ffffff', textTransform: 'uppercase' },
+  fullBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 800, marginBottom: 8, background: 'var(--text-main)', color: 'var(--bg-page)', textTransform: 'uppercase' },
+  completedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 800, marginBottom: 8, background: 'var(--border)', color: 'var(--text-main)', textTransform: 'uppercase' },
   unreadBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 22, padding: '0 8px', borderRadius: 999, background: '#ef4444', color: '#ffffff', fontSize: 12, fontWeight: 800, marginLeft: 8 },
   chatLayout: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' },
   conversationList: { display: 'grid', gap: 12 },
   conversationCard: { border: '1px solid var(--border)', borderRadius: 14, padding: 14, background: 'var(--bg-card)', cursor: 'pointer', transition: '0.2s' },
-  conversationCardActive: { border: '1px solid var(--primary)', borderRadius: 14, padding: 14, background: 'var(--bg-active-ride)', cursor: 'pointer' },
-  chatPanel: { border: '1px solid var(--border)', borderRadius: 16, background: 'var(--bg-card)', padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
+  conversationCardActive: { border: '2px solid var(--primary)', borderRadius: 14, padding: 14, background: 'var(--bg-hover)', cursor: 'pointer' },
+  chatPanel: { border: '1px solid var(--border)', borderRadius: 16, background: 'var(--bg-card)', padding: 16, boxShadow: 'var(--shadow)' },
   messageList: { display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
-  myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: 'var(--primary)', color: '#ffffff', padding: '10px 14px', borderRadius: '16px 16px 2px 16px' },
-  otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '10px 14px', borderRadius: '16px 16px 16px 2px' },
-  profileBlock: { padding: 20, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' },
+  myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: 'var(--primary)', color: 'var(--primary-text)', padding: '12px 16px', borderRadius: '16px 16px 4px 16px', fontWeight: 500 },
+  otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '12px 16px', borderRadius: '16px 16px 16px 4px', fontWeight: 500 },
   
-  // YENİ: Səliqəli Admin Cədvəl Stilləri (Dark Mode dəstəkli)
-  adminTableWrap: { overflowX: 'auto', background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', marginTop: 16, boxShadow: '0 4px 6px rgba(0,0,0,0.02)' },
-  adminTable: { width: '100%', minWidth: 800, borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 },
-  adminTh: { padding: '14px 16px', borderBottom: '2px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-main)', fontWeight: 800, whiteSpace: 'nowrap' },
-  adminTd: { padding: '14px 16px', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', verticalAlign: 'middle' },
+  // ADMIN PANEL TABLE (Minimalist & Ellipsis)
+  adminTableWrap: { overflowX: 'auto', background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', marginTop: 16, boxShadow: 'var(--shadow)' },
+  adminTable: { width: '100%', minWidth: 800, borderCollapse: 'collapse', textAlign: 'left', fontSize: 13, tableLayout: 'fixed' },
+  adminTh: { padding: '14px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-muted)', fontWeight: 800, whiteSpace: 'nowrap', textTransform: 'uppercase', fontSize: 11 },
+  adminTd: { padding: '14px 16px', borderBottom: '1px solid var(--border)', color: 'var(--text-main)', verticalAlign: 'middle' },
+  ellipsis: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }
 }
 
 function pad(value: number) { return String(value).padStart(2, '0') }
@@ -155,7 +112,6 @@ function roundToNextMinutes(date: Date, step = 5) { const d = new Date(date); d.
 function formatDateTime(value: string | null | undefined) { if (!value) return '-'; try { return new Date(value).toLocaleString() } catch { return String(value) } }
 function normalizeText(value: string | null | undefined) { return (value || '').toLowerCase().trim() }
 function getRoleLabel(role: UserRole | null) { return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
-function getAppRoleLabel(role: AppRole) { if (role === 'admin') return 'Admin'; return role === 'passenger' ? 'Sərnişin' : 'Sürücü' }
 
 function getRequestStatusLabel(status: RideRequestStatus) { if (status === 'accepted') return 'Qəbul edildi'; if (status === 'rejected') return 'Rədd edildi'; if (status === 'cancelled') return 'Ləğv edildi'; return 'Gözləmədə' }
 function getRequestBadgeStyle(status: RideRequestStatus) { if (status === 'accepted') return styles.approvedBadge; if (status === 'rejected' || status === 'cancelled') return styles.rejectedBadge; return styles.pendingBadge }
@@ -167,13 +123,10 @@ function renderStars(ratingStr: string | number) {
 }
 
 function getReportStatusLabel(status: ReportStatus) {
-  if (status === 'in_review') return 'Baxılır'
-  if (status === 'resolved') return 'Həll edildi'
-  if (status === 'dismissed') return 'Ləğv edilib'
-  return 'Açıq'
+  if (status === 'in_review') return 'Baxılır'; if (status === 'resolved') return 'Həll edildi'; if (status === 'dismissed') return 'Ləğv edilib'; return 'Açıq'
 }
 
-// ── DÜZƏLDİLDİ: 1 Saatlıq Avtomatik Ləğv ──
+// 1 SAATLIQ AVTOMATİK LƏĞV QAYDASI
 function isRideExpired(ride: Ride | null | undefined) {
   if (!ride || !ride.ride_date || !ride.departure_time) return false;
   const rideDateTime = new Date(`${ride.ride_date}T${ride.departure_time}:00`);
@@ -196,7 +149,6 @@ function getRideBadgeStyle(ride: Ride) {
   return styles.approvedBadge
 }
 
-// ── Haversine (Məsafə) Hesablayıcı ──
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -206,14 +158,14 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * c;
 }
 
-// Çatda göndərilən Rəsmi Google Maps linklərini kliklənə bilən formata salır
+// RƏSMİ GOOGLE MAPS LİNK FORMATI
 const formatMessageText = (text: string, isMine: boolean) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
   return parts.map((part, i) => {
     if (part.match(urlRegex)) {
       return (
-        <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: isMine ? '#fff' : 'var(--primary)', textDecoration: 'underline', fontWeight: 800 }}>
+        <a key={i} href={part} target="_blank" rel="noopener noreferrer" style={{ color: isMine ? 'var(--primary-text)' : 'var(--primary)', textDecoration: 'underline', fontWeight: 800 }}>
           🗺️ Xəritədə Aç
         </a>
       );
@@ -360,13 +312,13 @@ export default function Home() {
 
   const prevUnreadRef = useRef(0);
 
-  // Qaranlıq Rejim (Dark Mode) Aktivasiyası
+  // Qaranlıq Rejim (Premium Dark Mode)
   useEffect(() => {
     document.body.setAttribute("data-theme", isDarkMode ? "dark" : "light");
-    document.body.style.backgroundColor = isDarkMode ? '#0f172a' : '#f8fafc';
+    document.body.style.backgroundColor = isDarkMode ? '#000000' : '#ffffff';
   }, [isDarkMode]);
 
-  // Telegram Geri Düyməsi (BackButton) İdarəsi
+  // Telegram Geri Düyməsi İdarəsi
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp;
     if (!tg || !tg.BackButton) return;
@@ -441,12 +393,13 @@ export default function Home() {
 
   useEffect(() => { selectedConversationIdRef.current = selectedConversationId }, [selectedConversationId])
 
-  // Tətbiq açılanda GPS oxumaq və Profilə (DB) yazmaq
+  // APP YÜKLƏNƏNDƏ QLOBAL TƏMİZLƏMƏ VƏ GPS
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp
     if (tg) { tg.ready(); tg.expand() }
     setTgReady(true)
     void initializeData()
+    void runGlobalCleanup() // Bütün köhnə elanları məhv edir
 
     if (navigator.geolocation && currentUser.driverId) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -456,6 +409,21 @@ export default function Home() {
       }, () => {}, { enableHighAccuracy: true });
     }
   }, [])
+
+  // BÜTÜN KÖHNƏ ELANLARI BAZADA TƏMİZLƏYƏN FUNKSİYA
+  async function runGlobalCleanup() {
+    try {
+      const { data: activeRides } = await supabase.from('ride_listings').select('id, ride_date, departure_time').eq('status', 'active');
+      if (!activeRides) return;
+      
+      const toUpdateIds = activeRides.filter(isRideExpired).map(r => r.id);
+      if (toUpdateIds.length > 0) {
+        await supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired_system' }).in('id', toUpdateIds);
+        await supabase.from('ride_requests').update({ status: 'cancelled' }).in('ride_id', toUpdateIds).in('status', ['pending', 'accepted']);
+        await supabase.from('conversations').update({ status: 'closed' }).in('ride_id', toUpdateIds).eq('status', 'active');
+      }
+    } catch (e) { console.error('Cleanup Error:', e) }
+  }
 
   useEffect(() => {
     const activeUserId = getActiveUser().driverId
@@ -514,23 +482,12 @@ export default function Home() {
     }
   }
 
-  // DÜZƏLDİLDİ: Ağıllı Avtomatik Expire Kalkulyatoru və Arxa plan Cascade
   async function getRides() {
     setLoading(true)
     const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
     if (error) { console.error('Ride list error:', error); setMessage('Aktiv elanlar yüklənmədi.') } else {
       const rows = (data as Ride[]) || []
-      const validRows = [];
-      for (const r of rows) {
-        if (isRideExpired(r)) {
-          // Vaxtı keçibsə DB-də ləğv edir (Tarixçəyə atır) və müraciətləri bağlayır
-          supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired_system' }).eq('id', r.id).then();
-          supabase.from('ride_requests').update({ status: 'cancelled' }).eq('ride_id', r.id).in('status', ['pending', 'accepted']).then();
-          supabase.from('conversations').update({ status: 'closed' }).eq('ride_id', r.id).eq('status', 'active').then();
-        } else {
-          validRows.push(r);
-        }
-      }
+      const validRows = rows.filter(r => !isRideExpired(r));
       setRides(validRows)
 
       const driverIds = [...new Set(validRows.map((r) => r.driver_id))]
@@ -562,10 +519,6 @@ export default function Home() {
 
     for (const r of rows) {
       if (r.status === 'active' && isRideExpired(r)) {
-         supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired_system' }).eq('id', r.id).then();
-         supabase.from('ride_requests').update({ status: 'cancelled' }).eq('ride_id', r.id).in('status', ['pending', 'accepted']).then();
-         supabase.from('conversations').update({ status: 'closed' }).eq('ride_id', r.id).eq('status', 'active').then();
-         
          r.status = 'completed';
          r.closed_reason = 'expired_system';
          history.push(r);
@@ -575,7 +528,6 @@ export default function Home() {
          history.push(r);
       }
     }
-
     setAllMyRides(rows); setMyRides(active); setHistoryRides(history)
   }
 
@@ -932,7 +884,6 @@ export default function Home() {
     setMessageSending(false)
   }
 
-  // DÜZƏLDİLDİ: Çatda Rəsmi Google Maps GPS linki göndərmək
   const handleSendLocation = () => {
     if (!navigator.geolocation) { setMessage('Cihazınız konum paylaşmağı dəstəkləmir.'); return; }
     setMessageSending(true);
@@ -940,7 +891,7 @@ export default function Home() {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps/dir/?api=1&destination=...${lat},${lng}`;
+        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps/dir/?api=1&destination=...?q=${lat},${lng}`;
 
         const { error } = await supabase.from('messages').insert({ conversation_id: selectedConversationId!, sender_id: currentUser.driverId, message_text: locMsg, is_read: false });
 
@@ -1164,7 +1115,7 @@ export default function Home() {
               const dist = getDistance(lat, lng, uLat, uLng);
               return dist <= 15; // 15 km Radius
            }).map(u => ({ ...u, distance: getDistance(lat, lng, Number(u.last_lat), Number(u.last_lng)) }))
-           .sort((a,b) => a.distance - b.distance);
+           .sort((a,b) => (a as any).distance - (b as any).distance);
            
            setRadarUsers(nearby);
         }
@@ -1230,6 +1181,19 @@ export default function Home() {
   return (
     <main style={styles.page}>
       
+      {/* YENİ: CSS Dəyişənləri (Gecə Rejimi) */}
+      <style>{`
+        :root {
+          --bg-page: #f8fafc; --bg-card: #ffffff; --bg-input: #ffffff; --bg-hover: #f1f5f9; --bg-active-ride: #eff6ff;
+          --text-main: #0f172a; --text-muted: #64748b; --border: #cbd5e1; --primary: #2563eb;
+        }
+        [data-theme='dark'] {
+          --bg-page: #0f172a; --bg-card: #1e293b; --bg-input: #0f172a; --bg-hover: #334155; --bg-active-ride: #1e3a8a;
+          --text-main: #f8fafc; --text-muted: #94a3b8; --border: #334155; --primary: #3b82f6;
+        }
+        body { background-color: var(--bg-page); color: var(--text-main); margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
+      `}</style>
+
       <div style={styles.headerCard}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
           <div>
@@ -1710,16 +1674,15 @@ export default function Home() {
                       <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
                       <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
                       
-                      {/* DÜZƏLDİLDİ: Rəsmi Google Maps Linkləri */}
                       {selectedConversation.status !== 'closed' && selectedConversationRide && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                           {selectedConversationRide.origin_lat && (
-                            <a href={`https://www.google.com/maps/dir/?api=1&destination=...${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps/dir/?api=1&destination=...?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               📍 Başlanğıca get
                             </a>
                           )}
                           {selectedConversationRide.destination_lat && (
-                            <a href={`https://www.google.com/maps/dir/?api=1&destination=...${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps/dir/?api=1&destination=...?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               🏁 Son nöqtəyə get
                             </a>
                           )}
@@ -1877,7 +1840,7 @@ export default function Home() {
                 <p style={{ margin: 0, fontWeight: 800, fontSize: 16, color: 'var(--text-main)' }}>{profile.role === 'driver' ? '🚗 Sürücü rejimi' : '🧑‍✈️ Sərnişin rejimi'}</p>
                 <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>{profile.role === 'driver' ? 'Elan verib sərnişin götürürsən' : 'Sürücü axtarışındasan'}</p>
               </div>
-              <button type="button" onClick={() => void handleSwitchRole()} style={{ padding: '10px 16px', background: profile.role === 'driver' ? '#16a34a' : 'var(--primary)', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', }}>{profile.role === 'driver' ? '→ Sərnişinə keç' : '→ Sürücüyə keç'}</button>
+              <button type="button" onClick={() => void handleSwitchRole()} style={{ padding: '10px 16px', background: profile.role === 'driver' ? '#16a34a' : 'var(--primary)', color: 'var(--primary-text)', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', }}>{profile.role === 'driver' ? '→ Sərnişinə keç' : '→ Sürücüyə keç'}</button>
             </div>
           )}
 
@@ -1997,7 +1960,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* YENİ: Düzəldilmiş Cədvəl tipli ADMIN PANEL */}
+      {/* YENİ TAMAMİLƏ DƏYİŞDİRİLMİŞ ADMIN PANEL (User Friendly, Cədvəl, Dark Mode, Ellipsis) */}
       {activeTab === 'admin' && isAdmin && (
         <>
           <section style={styles.sectionCard}>
@@ -2022,11 +1985,11 @@ export default function Home() {
               <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px,1fr))', marginBottom: 20 }}>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #dc2626', background: adminReports.filter(r => r.status === 'open').length > 0 ? 'rgba(220,38,38,0.1)' : 'var(--bg-hover)' }}><p style={styles.statLabel}>🔴 Açıq reportlar</p><p style={{ ...styles.statValue, color: adminReports.filter(r => r.status === 'open').length > 0 ? '#dc2626' : 'var(--text-main)' }}>{adminReports.filter(r => r.status === 'open').length}</p></div>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #f59e0b' }}><p style={styles.statLabel}>🔒 Bloklanmış Profillər</p><p style={{ ...styles.statValue, color: '#f59e0b' }}>{adminUsers.filter(u => u.is_blocked).length}</p></div>
-                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #2563eb' }}><p style={styles.statLabel}>🚗 Gözləyən Elanlar</p><p style={{ ...styles.statValue, color: '#2563eb' }}>{allRidesAdmin.filter(r => r.status === 'active').length}</p></div>
+                <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid var(--primary)' }}><p style={styles.statLabel}>🚗 Gözləyən Elanlar</p><p style={{ ...styles.statValue, color: 'var(--primary)' }}>{allRidesAdmin.filter(r => r.status === 'active').length}</p></div>
                 <div style={{ ...styles.adminStatsCard, borderLeft: '4px solid #7c3aed' }}><p style={styles.statLabel}>⏳ Açıq Müraciətlər</p><p style={{ ...styles.statValue, color: '#7c3aed' }}>{allRideRequestsAdmin.filter(r => r.status === 'pending').length}</p></div>
               </div>
               <div style={styles.statsGrid}>
-                {[ { label: 'Cəmi Qeydiyyat', value: adminUsers.length, color: '#2563eb' }, { label: 'Yaradılmış Elan', value: allRidesAdmin.length, color: '#0891b2' }, { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' }, { label: 'Yazışmalar', value: allMessagesAdmin.length, color: '#059669' }, { label: 'Verilən Rəylər', value: allReviewsAdmin.length, color: '#d97706' }, { label: 'Cəmi Şikayət', value: adminReports.length, color: '#dc2626' }, ].map(item => (
+                {[ { label: 'Cəmi Qeydiyyat', value: adminUsers.length, color: 'var(--primary)' }, { label: 'Yaradılmış Elan', value: allRidesAdmin.length, color: '#0891b2' }, { label: 'Cəmi Müraciət', value: allRideRequestsAdmin.length, color: '#7c3aed' }, { label: 'Yazışmalar', value: allMessagesAdmin.length, color: '#059669' }, { label: 'Verilən Rəylər', value: allReviewsAdmin.length, color: '#d97706' }, { label: 'Cəmi Şikayət', value: adminReports.length, color: '#dc2626' }, ].map(item => (
                   <div key={item.label} style={styles.adminStatsCard}><p style={styles.statLabel}>{item.label}</p><p style={{ ...styles.statValue, color: item.color }}>{item.value}</p><div style={{ marginTop: 8, height: 5, borderRadius: 4, background: 'var(--bg-hover)' }}><div style={{ height: '100%', borderRadius: 4, background: item.color, width: `${Math.min(100, item.value > 0 ? Math.max(8, (item.value / Math.max(1, adminUsers.length + allRidesAdmin.length)) * 200) : 0)}%`, transition: 'width 0.6s ease', }} /></div></div>
                 ))}
               </div>
@@ -2045,7 +2008,7 @@ export default function Home() {
                         <td style={styles.adminTd}><strong>#{user.id}</strong><br/>{user.full_name || '-'}<br/><span style={{fontSize: 11, color: 'var(--text-muted)'}}>@{user.username || '-'}</span></td>
                         <td style={styles.adminTd}>{user.phone || '-'}</td>
                         <td style={styles.adminTd}><span style={{background: 'var(--bg-hover)', padding: '4px 8px', borderRadius: 6, fontSize: 12, fontWeight: 800}}>{getRoleLabel(user.role)}</span></td>
-                        <td style={styles.adminTd}>{user.car_brand ? `${user.car_brand} (${user.license_plate})` : '-'}</td>
+                        <td style={{...styles.adminTd, maxWidth: 120}}><span style={styles.ellipsis} title={user.car_brand ? `${user.car_brand} (${user.license_plate})` : '-'}>{user.car_brand ? `${user.car_brand} (${user.license_plate})` : '-'}</span></td>
                         <td style={styles.adminTd}>
                           <button type="button" style={adminUserBlockedMap[user.id] ? {...styles.dangerButton, width: '100%'} : {...styles.successButton, width: '100%'}} disabled={adminLoadingId === user.id} onClick={() => void handleAdminToggleUser(user)}>
                             {adminUserBlockedMap[user.id] ? 'Blokludur (Aç)' : 'Aktiv (Blokla)'}
@@ -2072,7 +2035,7 @@ export default function Home() {
                       <tr key={ride.id}>
                         <td style={styles.adminTd}><strong>#{ride.id.slice(0,6)}..</strong></td>
                         <td style={styles.adminTd}>👤 {ride.driver_id}</td>
-                        <td style={styles.adminTd}>{ride.origin}<br/><span style={{color: 'var(--text-muted)'}}>↓</span><br/>{ride.destination}</td>
+                        <td style={{...styles.adminTd, maxWidth: 150}}><div style={styles.ellipsis} title={ride.origin}>{ride.origin}</div><span style={{color: 'var(--text-muted)'}}>↓</span><div style={styles.ellipsis} title={ride.destination}>{ride.destination}</div></td>
                         <td style={styles.adminTd}>{ride.ride_date || '-'}<br/><strong>{ride.departure_time}</strong></td>
                         <td style={styles.adminTd}>{ride.seats} yer<br/>{ride.price_per_seat} AZN</td>
                         <td style={styles.adminTd}><div style={getRideBadgeStyle(ride)}>{getRideStatusLabel(ride)}</div></td>
@@ -2122,7 +2085,7 @@ export default function Home() {
                         <td style={styles.adminTd}>{item.ride_id.slice(0,6)}..</td>
                         <td style={styles.adminTd}>Req: {item.requester_id}<br/>Own: {item.owner_id}</td>
                         <td style={styles.adminTd}>{item.seats_requested}</td>
-                        <td style={styles.adminTd}>{item.message_text || '-'}</td>
+                        <td style={{...styles.adminTd, maxWidth: 150}}><div style={styles.ellipsis} title={item.message_text || '-'}>{item.message_text || '-'}</div></td>
                         <td style={styles.adminTd}><div style={getRequestBadgeStyle(item.status)}>{getRequestStatusLabel(item.status)}</div></td>
                         <td style={styles.adminTd}>
                           <div style={{display: 'flex', gap: 6}}>
@@ -2166,7 +2129,7 @@ export default function Home() {
                         <td style={styles.adminTd}>R: {conv.ride_id.slice(0,6)}..<br/>Req: {conv.request_id || '-'}</td>
                         <td style={styles.adminTd}>Dr: {conv.driver_user_id}<br/>Pa: {conv.passenger_user_id}</td>
                         <td style={styles.adminTd}>{formatDateTime(conv.updated_at)}</td>
-                        <td style={styles.adminTd}><span style={{...styles.badge, background: conv.status === 'active' ? '#dcfce7' : '#e2e8f0', color: conv.status === 'active' ? '#166534' : 'var(--text-muted)'}}>{conv.status}</span></td>
+                        <td style={styles.adminTd}><span style={{...styles.badge, background: conv.status === 'active' ? 'var(--primary)' : 'var(--bg-hover)', color: conv.status === 'active' ? 'var(--primary-text)' : 'var(--text-muted)'}}>{conv.status}</span></td>
                         <td style={styles.adminTd}>
                           <button type="button" style={{...styles.primaryButton, padding: '6px 12px', fontSize: 12}} onClick={() => void handleOpenConversation(conv.id)}>Mesajlara Bax</button>
                         </td>
@@ -2190,7 +2153,7 @@ export default function Home() {
                         <td style={styles.adminTd}>#{item.id}</td>
                         <td style={styles.adminTd}>#{item.conversation_id}</td>
                         <td style={styles.adminTd}>👤 {item.sender_id}</td>
-                        <td style={styles.adminTd}><div style={{maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis'}}>{item.message_text}</div></td>
+                        <td style={{...styles.adminTd, maxWidth: 250}}><div style={styles.ellipsis} title={item.message_text}>{item.message_text}</div></td>
                         <td style={styles.adminTd}>{formatDateTime(item.created_at)}</td>
                         <td style={styles.adminTd}>
                           <div style={{display: 'flex', gap: 6}}>
@@ -2228,8 +2191,8 @@ export default function Home() {
                       <tr key={item.id}>
                         <td style={styles.adminTd}>#{item.id}</td>
                         <td style={styles.adminTd}>{item.reviewer_id} ➔ {item.reviewee_id}</td>
-                        <td style={styles.adminTd}><strong style={{color: '#eab308'}}>{item.rating} ⭐</strong></td>
-                        <td style={styles.adminTd}>{item.comment_text || '-'}</td>
+                        <td style={styles.adminTd}><strong style={{color: 'var(--primary)'}}>{item.rating} ⭐</strong></td>
+                        <td style={{...styles.adminTd, maxWidth: 200}}><div style={styles.ellipsis} title={item.comment_text || '-'}>{item.comment_text || '-'}</div></td>
                         <td style={styles.adminTd}>
                           <div style={{display: 'flex', gap: 6}}>
                             <button type="button" style={{...styles.ghostButton, padding: '6px 10px'}} onClick={() => handleAdminStartEditReview(item)}>✏️</button>
@@ -2267,7 +2230,7 @@ export default function Home() {
                       <tr key={report.id}>
                         <td style={styles.adminTd}>#{report.id}</td>
                         <td style={styles.adminTd}>G: {report.reporter_id}<br/>H: {report.target_user_id || 'Sistem'}</td>
-                        <td style={styles.adminTd}><strong>{report.reason}</strong><br/><span style={{fontSize: 12, color: 'var(--text-muted)'}}>{report.details || '-'}</span></td>
+                        <td style={{...styles.adminTd, maxWidth: 200}}><div style={styles.ellipsis} title={report.reason}><strong>{report.reason}</strong></div><div style={{...styles.ellipsis, fontSize: 12, color: 'var(--text-muted)'}} title={report.details || '-'}>{report.details || '-'}</div></td>
                         <td style={styles.adminTd}>
                           <div style={{marginBottom: 6}}><span style={getReportBadgeStyle(report.status)}>{getReportStatusLabel(report.status)}</span></div>
                           <select value={adminReportStatusMap[report.id] || report.status} onChange={(e) => setAdminReportStatusMap((prev) => ({ ...prev, [report.id]: e.target.value as ReportStatus }))} style={{...styles.select, padding: '4px 8px', fontSize: 12, height: 'auto'}}><option value="open">Açıq</option><option value="in_review">Baxılır</option><option value="resolved">Həll olundu</option><option value="dismissed">Əsassızdır</option></select>
@@ -2295,7 +2258,7 @@ export default function Home() {
                       <tr key={log.id}>
                         <td style={styles.adminTd}>#{log.id}</td>
                         <td style={styles.adminTd}>👤 {log.admin_user_id}</td>
-                        <td style={styles.adminTd}><strong>{log.action_type}</strong><br/><span style={{fontSize: 11, color: 'var(--text-muted)'}}>{log.note || '-'}</span></td>
+                        <td style={{...styles.adminTd, maxWidth: 200}}><strong>{log.action_type}</strong><br/><div style={{...styles.ellipsis, fontSize: 11, color: 'var(--text-muted)'}} title={log.note || '-'}>{log.note || '-'}</div></td>
                         <td style={styles.adminTd}>{log.entity_type}</td>
                         <td style={styles.adminTd}>{log.entity_id}</td>
                         <td style={styles.adminTd}>{formatDateTime(log.created_at)}</td>
