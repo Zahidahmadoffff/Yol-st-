@@ -61,7 +61,10 @@ type Profile = {
   last_lng?: number | null
 }
 
-type RideRequest = { id: number; ride_id: string; requester_id: number; owner_id: number; requester_role: UserRole; owner_role: UserRole; message_text: string | null; seats_requested: number; status: RideRequestStatus; created_at: string; updated_at: string }
+type RideRequest = {
+  id: number; ride_id: string; requester_id: number; owner_id: number; requester_role: UserRole; owner_role: UserRole; message_text: string | null; seats_requested: number; status: RideRequestStatus; created_at: string; updated_at: string
+}
+
 type RideRequestWithRide = RideRequest & { ride?: Ride | null }
 type Conversation = { id: number; ride_id: string; request_id: number | null; driver_user_id: number; passenger_user_id: number; status: ConversationStatus; created_at: string; updated_at: string }
 type ConversationWithMeta = Conversation & { ride?: Ride | null; unread_count?: number }
@@ -74,7 +77,6 @@ type AdminAuditLog = { id: number; admin_user_id: number; action_type: string; e
 
 const LIMITS = { messageMax: 1000, rideRequestMessageMax: 1000, reviewCommentMax: 1000, notesMax: 2000, adminNoteMax: 2000, reportReasonMax: 300, reportDetailsMax: 2000 }
 
-// CSS Dəyişənləri və Yeni Admin Cədvəl Stilləri
 const styles: Record<string, React.CSSProperties> = {
   page: { maxWidth: 1280, margin: '0 auto', padding: '20px 16px 48px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', background: 'var(--bg-page)', minHeight: '100dvh', color: 'var(--text-main)', overscrollBehaviorY: 'none', WebkitTapHighlightColor: 'transparent', transition: 'background 0.3s, color 0.3s' },
   headerCard: { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 20, padding: 22, marginBottom: 18, boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)', transition: 'background 0.3s' },
@@ -102,6 +104,7 @@ const styles: Record<string, React.CSSProperties> = {
   closeButton: { padding: '10px 14px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 800 },
   cancelButton: { padding: '12px 16px', background: '#94a3b8', color: '#ffffff', border: 'none', borderRadius: 12, cursor: 'pointer', fontSize: 15, fontWeight: 800 },
   message: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#dbeafe', color: '#1e3a8a', border: '1px solid #bfdbfe', fontSize: 14 },
+  adminMessage: { marginTop: 8, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe', fontSize: 14 },
   ridesGrid: { display: 'grid', gap: 16 },
   statsGrid: { display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' },
   twoColumnGrid: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' },
@@ -117,8 +120,10 @@ const styles: Record<string, React.CSSProperties> = {
   chip: { padding: '8px 12px', borderRadius: 999, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-main)', cursor: 'pointer', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' },
   chipActive: { padding: '8px 12px', borderRadius: 999, border: '1px solid var(--primary)', background: 'var(--primary)', color: '#ffffff', cursor: 'pointer', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap' },
   chipAdmin: { padding: '8px 12px', borderRadius: 999, border: '1px solid #7c3aed', background: 'var(--bg-hover)', color: '#7c3aed', cursor: 'pointer', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap' },
+  buttonRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 4 },
   actionRow: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 },
   badge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: 'var(--bg-hover)', color: 'var(--text-main)' },
+  adminBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#7c3aed', color: '#ffffff' },
   pendingBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fef3c7', color: '#92400e' },
   approvedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#dcfce7', color: '#166534' },
   rejectedBadge: { display: 'inline-block', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800, marginBottom: 8, background: '#fee2e2', color: '#991b1b' },
@@ -134,9 +139,6 @@ const styles: Record<string, React.CSSProperties> = {
   messageList: { display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingBottom: 8, marginBottom: 14 },
   myMessage: { alignSelf: 'flex-end', maxWidth: '80%', background: 'var(--primary)', color: '#ffffff', padding: '10px 14px', borderRadius: '16px 16px 2px 16px' },
   otherMessage: { alignSelf: 'flex-start', maxWidth: '80%', background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '10px 14px', borderRadius: '16px 16px 16px 2px' },
-  profileBlock: { padding: 20, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' },
-  
-  // YENİ: Admin Cədvəl Stilləri (Dark Mode dəstəkli)
   adminTableWrap: { overflowX: 'auto', background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', marginTop: 16, boxShadow: '0 4px 6px rgba(0,0,0,0.02)' },
   adminTable: { width: '100%', minWidth: 800, borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 },
   adminTh: { padding: '14px 16px', borderBottom: '2px solid var(--border)', background: 'var(--bg-hover)', color: 'var(--text-muted)', fontWeight: 800, whiteSpace: 'nowrap' },
@@ -191,7 +193,6 @@ function getRideBadgeStyle(ride: Ride) {
   return styles.approvedBadge
 }
 
-// Haversine Məsafə Kalkulyatoru (KM)
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -201,7 +202,6 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * c;
 }
 
-// Çatda göndərilən Rəsmi Google Maps linklərini kliklənə bilən formata salır
 const formatMessageText = (text: string, isMine: boolean) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
@@ -218,7 +218,7 @@ const formatMessageText = (text: string, isMine: boolean) => {
 };
 
 const triggerVibration = (type: string = 'medium') => {
-  try { if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) { (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type); } } catch (e) { }
+  try { if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.HapticFeedback) { (window as any).Telegram.WebApp.HapticFeedback.impactOccurred(type); } } catch (e: any) { }
 };
 
 export default function Home() {
@@ -436,7 +436,6 @@ export default function Home() {
 
   useEffect(() => { selectedConversationIdRef.current = selectedConversationId }, [selectedConversationId])
 
-  // Tətbiq açılanda GPS oxumaq və Profilə (DB) yazmaq
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp
     if (tg) { tg.ready(); tg.expand() }
@@ -509,7 +508,6 @@ export default function Home() {
     }
   }
 
-  // DÜZƏLDİLDİ: Ağıllı Avtomatik Expire Kalkulyatoru (Bazada Təmizləmə)
   async function getRides() {
     setLoading(true)
     const { data, error } = await supabase.from('ride_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
@@ -518,7 +516,6 @@ export default function Home() {
       const validRows = [];
       for (const r of rows) {
         if (isRideExpired(r)) {
-          // Sistem avtomatik bazada vaxtı bitmişi arxivə atır
           supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired_system' }).eq('id', r.id).then();
         } else {
           validRows.push(r);
@@ -553,7 +550,6 @@ export default function Home() {
     const active = [];
     const history = [];
 
-    // Avtomatik arxivə atma məntiqi
     for (const r of rows) {
       if (r.status === 'active' && isRideExpired(r)) {
          supabase.from('ride_listings').update({ status: 'completed', closed_reason: 'expired_system' }).eq('id', r.id).then();
@@ -930,7 +926,7 @@ export default function Home() {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps/dir/?api=1&destination=...?q=${lat},${lng}`;
+        const locMsg = `📍 Konum göndərildi: https://www.google.com/maps?q=${lat},${lng}`;
 
         const { error } = await supabase.from('messages').insert({ conversation_id: selectedConversationId!, sender_id: currentUser.driverId, message_text: locMsg, is_read: false });
 
@@ -1149,7 +1145,7 @@ export default function Home() {
               const dist = getDistance(lat, lng, u.last_lat, u.last_lng);
               return dist <= 15; // 15 km Radius
            }).map(u => ({ ...u, distance: getDistance(lat, lng, u.last_lat!, u.last_lng!) }))
-           .sort((a,b) => a.distance - b.distance);
+           .sort((a,b) => (a as any).distance - (b as any).distance);
            
            setRadarUsers(nearby);
         }
@@ -1268,7 +1264,7 @@ export default function Home() {
         </div>
       )}
 
-      {activeTab === 'dashboard' && (
+      {activeTab === 'dashboard' && !isAdminMode && (
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Dashboard</h2>
@@ -1327,7 +1323,7 @@ export default function Home() {
         </>
       )}
 
-      {activeTab === 'create' && (
+      {activeTab === 'create' && !isAdminMode && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>{editingRideId ? 'Elanı redaktə et' : 'Yeni elan yarat'}</h2>
           {!profile ? (
@@ -1414,7 +1410,7 @@ export default function Home() {
         </section>
       )}
 
-      {activeTab === 'search' && (
+      {activeTab === 'search' && !isAdminMode && (
         <>
           <section style={styles.sectionCard}>
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, background: 'var(--bg-hover)', padding: 6, borderRadius: 12 }}>
@@ -1588,7 +1584,7 @@ export default function Home() {
         </>
       )}
 
-      {(activeTab === 'requests' || activeTab === 'chat') && (
+      {(activeTab === 'requests' || activeTab === 'chat') && !isAdminMode && (
         <section style={styles.sectionCard}>
           <div style={{ display: 'flex', gap: 10, marginBottom: 20, background: 'var(--bg-hover)', padding: 6, borderRadius: 12 }}>
             <button onClick={() => setActiveTab('chat')} style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', background: activeTab === 'chat' ? 'var(--bg-card)' : 'transparent', color: activeTab === 'chat' ? 'var(--text-main)' : 'var(--text-muted)', boxShadow: activeTab === 'chat' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none', transition: '0.2s' }}>
@@ -1708,16 +1704,15 @@ export default function Home() {
                       <p style={styles.infoRow}><strong>Conversation ID:</strong> {selectedConversation.id}</p>
                       <p style={styles.infoRow}><strong>Marşrut:</strong> {selectedConversationRide ? `${selectedConversationRide.origin} → ${selectedConversationRide.destination}` : '-'}</p>
                       
-                      {/* DÜZƏLDİLDİ: Rəsmi Google Maps Linkləri */}
                       {selectedConversation.status !== 'closed' && selectedConversationRide && (
                         <div style={{ display: 'flex', gap: 8, marginTop: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                           {selectedConversationRide.origin_lat && (
-                            <a href={`https://www.google.com/maps/dir/?api=1&destination=...?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps?q=${selectedConversationRide.origin_lat},${selectedConversationRide.origin_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               📍 Başlanğıca get
                             </a>
                           )}
                           {selectedConversationRide.destination_lat && (
-                            <a href={`https://www.google.com/maps/dir/?api=1&destination=...?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
+                            <a href={`https://www.google.com/maps?q=${selectedConversationRide.destination_lat},${selectedConversationRide.destination_lng}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-hover)', color: 'var(--text-main)', padding: '6px 12px', borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, border: '1px solid var(--border)' }}>
                               🏁 Son nöqtəyə get
                             </a>
                           )}
@@ -1785,7 +1780,7 @@ export default function Home() {
         </section>
       )}
 
-      {activeTab === 'history' && (
+      {activeTab === 'history' && !isAdminMode && (
         <>
           <section style={styles.sectionCard}>
             <h2 style={styles.sectionTitle}>Səfəri qiymətləndir (Review yaz)</h2>
@@ -1840,7 +1835,7 @@ export default function Home() {
         </>
       )}
 
-      {activeTab === 'support' && (
+      {activeTab === 'support' && !isAdminMode && (
         <section style={styles.sectionCard}>
           <h2 style={styles.sectionTitle}>Dəstək və Əlaqə</h2>
           <p style={styles.mutedText}>Təklif, istək və ya şikayətlərinizi bizə göndərin. Müraciətləriniz birbaşa adminə çatdırılacaq.</p>
@@ -1860,7 +1855,7 @@ export default function Home() {
         </section>
       )}
 
-      {activeTab === 'profile' && (
+      {activeTab === 'profile' && !isAdminMode && (
         <section style={styles.sectionCard}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <h2 style={{...styles.sectionTitle, margin: 0}}>{profile ? 'Profil idarəetməsi' : 'Profil yarat'}</h2>
